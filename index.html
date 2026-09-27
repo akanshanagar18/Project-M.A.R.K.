@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Route-Mate | Smart Commuter & Ride Matching</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent-color: #00ff66;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --border-color: #333333;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: var(--accent-color);
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9em;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .btn {
+            background: var(--accent-color);
+            color: #000;
+            font-weight: bold;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 1.1em;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: #00cc52;
+        }
+
+        .btn-secondary {
+            background: #ff5555;
+            color: #fff;
+        }
+        .btn-secondary:hover {
+            background: #cc0000;
+        }
+
+        .list-box {
+            background: #181818;
+            border: 1px solid var(--border-color);
+            padding: 15px;
+            border-radius: 8px;
+            min-height: 250px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .list-item {
+            background: #242424;
+            border-left: 4px solid var(--accent-color);
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+        .list-item.history {
+            border-left-color: #00bfff;
+        }
+
+        .stats-box {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .stat-item h2 {
+            margin: 0;
+            color: var(--accent-color);
+        }
+
+        .stat-item p {
+            margin: 5px 0 0 0;
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>ROUTE-MATE</h1>
+            <p>M.A.R.K MAPPED AUTOMATION ROUTE KINEMATICS</p>
+        </header>
+
+        <!-- Analytics Overview -->
+        <div class="card">
+            <div class="stats-box">
+                <div class="stat-item">
+                    <h2 id="statQueueCount">0</h2>
+                    <p>Pending Queue</p>
+                </div>
+                <div class="stat-item">
+                    <h2 id="statHistoryCount">0</h2>
+                    <p>Matched Trips</p>
+                </div>
+                <div class="stat-item">
+                    <h2 id="statRevenue">$0.00</h2>
+                    <p>Total Revenue</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid-layout">
+            <!-- Left Column: Actions / Forms -->
+            <div>
+                <div class="card">
+                    <h3>Register Route Request</h3>
+                    <div class="form-group">
+                        <label>User ID</label>
+                        <input type="number" id="userId" value="101">
+                    </div>
+                    <div class="form-group">
+                        <label>Pickup Location</label>
+                        <input type="text" id="initialDest" placeholder="e.g. Sector 62">
+                    </div>
+                    <div class="form-group">
+                        <label>Drop-off Location</label>
+                        <input type="text" id="finalDest" placeholder="e.g. Tech Park">
+                    </div>
+                    <div class="form-group">
+                        <label>Time (e.g. 930)</label>
+                        <input type="number" id="reqTime" value="930">
+                    </div>
+                    <div class="form-group">
+                        <label>Transit Mode</label>
+                        <select id="mode">
+                            <option value="cab">Cab</option>
+                            <option value="metro">Metro</option>
+                            <option value="carpool">Carpool</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Max Budget ($)</label>
+                        <input type="number" id="budget" value="200">
+                    </div>
+                    <button class="btn" onclick="addRequest()">Push to Queue</button>
+                </div>
+
+                <div class="card">
+                    <h3>Matching Engine (Process Ride)</h3>
+                    <div class="form-group">
+                        <label>Assigned Partner ID</label>
+                        <input type="number" id="partnerId" value="501">
+                    </div>
+                    <div class="form-group">
+                        <label>Final Agreed Fare ($)</label>
+                        <input type="number" id="fare" value="180">
+                    </div>
+                    <button class="btn" style="background: #00bfff;" onclick="processRide()">Match & Complete Ride</button>
+                    <button class="btn btn-secondary" onclick="undoAction()">Undo Last Action (Stack)</button>
+                </div>
+            </div>
+
+            <!-- Right Column: Visual Data Structure Monitors -->
+            <div>
+                <div class="card">
+                    <h3>Active Pending Queue (FIFO)</h3>
+                    <div id="queueList" class="list-box">
+                        <div class="list-item">Queue is currently empty.</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Matched Ride History (Vector)</h3>
+                    <div id="historyList" class="list-box">
+                        <div class="list-item history">No history recorded yet.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulated Data Structures mirroring your C++ backend
+        let pendingQueue = [];
+        let rideHistory = [];
+        let undoStack = []; // Stores action objects: {type: 'BOOK'/'COMPLETE', data:...}
+        
+        let nextReqId = 101;
+        let nextRideId = 1001;
+
+        function updateStats() {
+            document.getElementById("statQueueCount").innerText = pendingQueue.length;
+            document.getElementById("statHistoryCount").innerText = rideHistory.length;
+            
+            let totalRev = rideHistory.reduce((sum, item) => sum + item.fare, 0);
+            document.getElementById("statRevenue").innerText = "$" + totalRev.toFixed(2);
+        }
+
+        function renderUI() {
+            // Render Queue
+            let qBox = document.getElementById("queueList");
+            if (pendingQueue.length === 0) {
+                qBox.innerHTML = '<div class="list-item">Queue is currently empty.</div>';
+            } else {
+                qBox.innerHTML = pendingQueue.map(r => `
+                    <div class="list-item">
+                        <strong>Request #${r.id}</strong> | User: ${r.user_id}<br>
+                        <strong>Route:</strong> ${r.initial_dest} ➔ ${r.final_dest}<br>
+                        <strong>Mode:</strong> ${r.mode.toUpperCase()} | <strong>Budget:</strong> $${r.budget}
+                    </div>
+                `).join('');
+            }
+
+            // Render History
+            let hBox = document.getElementById("historyList");
+            if (rideHistory.length === 0) {
+                hBox.innerHTML = '<div class="list-item history">No history recorded yet.</div>';
+            } else {
+                hBox.innerHTML = rideHistory.map(h => `
+                    <div class="list-item history">
+                        <strong>Ride #${h.id}</strong> | User: ${h.user_id} ➔ Partner: ${h.partner_id}<br>
+                        <strong>Route:</strong> ${h.initial_dest} ➔ ${h.final_dest}<br>
+                        <strong>Fare:</strong> $${h.fare}
+                    </div>
+                `).join('');
+            }
+
+            updateStats();
+        }
+
+        function addRequest() {
+            let req = {
+                id: nextReqId++,
+                user_id: parseInt(document.getElementById("userId").value),
+                initial_dest: document.getElementById("initialDest").value || "Sector 62",
+                final_dest: document.getElementById("finalDest").value || "Tech Park",
+                time: parseInt(document.getElementById("reqTime").value),
+                mode: document.getElementById("mode").value,
+                budget: parseFloat(document.getElementById("budget").value)
+            };
+
+            pendingQueue.push(req); // Queue Push (FIFO)
+            undoStack.push({ type: 'BOOK', data: req }); // Stack Log (LIFO)
+            renderUI();
+            alert("Success: Route request added to Queue and logged in Undo Stack!");
+        }
+
+        function processRide() {
+            if (pendingQueue.length === 0) {
+                alert("Error: No pending ride requests in the queue!");
+                return;
+            }
+
+            let req = pendingQueue.shift(); // Queue Pop (FIFO)
+            let record = {
+                id: nextRideId++,
+                user_id: req.user_id,
+                partner_id: parseInt(document.getElementById("partnerId").value),
+                initial_dest: req.initial_dest,
+                final_dest: req.final_dest,
+                mode: req.mode,
+                fare: parseFloat(document.getElementById("fare").value)
+            };
+
+            rideHistory.push(record); // Vector Push
+            undoStack.push({ type: 'COMPLETE', data: record }); // Stack Log (LIFO)
+            renderUI();
+            alert("Success: Ride matched and moved to history vector!");
+        }
+
+        function undoAction() {
+            if (undoStack.length === 0) {
+                alert("Undo Stack is empty!");
+                return;
+            }
+
+            let lastAction = undoStack.pop(); // Stack Pop (LIFO)
+            if (lastAction.type === 'BOOK') {
+                pendingQueue = pendingQueue.filter(r => r.id !== lastAction.data.id);
+                alert("Undo successful: Removed request #" + lastAction.data.id + " from queue.");
+            } else if (lastAction.type === 'COMPLETE') {
+                rideHistory = rideHistory.filter(h => h.id !== lastAction.data.id);
+                alert("Undo successful: Removed ride record #" + lastAction.data.id + " from history vector.");
+            }
+            renderUI();
+        }
+
+        renderUI();
+    </script>
+</body>
+</html>
