@@ -2,6 +2,7 @@
 #define RIDE_H
 
 #include <string>
+#include <vector>
 
 // Types of actions for the undo stack
 enum ActionType {
@@ -32,8 +33,8 @@ struct Complete_Ride {
 //for the Undo Stack
 struct RideAction {
     ActionType type;
-    riderequest req;     // if we want to undo a booking
-    Complete_Ride rec;      // if we want to undo a matched ride
+    riderequest req;     
+    Complete_Ride rec;     
 };
 
 #endif
