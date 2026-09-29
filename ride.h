@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-// Types of actions for the undo stack
 enum ActionType {
     BOOK,
     COMPLETE
