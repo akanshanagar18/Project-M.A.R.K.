@@ -149,46 +149,46 @@ void initializeSampleData() {
     cout << "[Initialization] Setting up realistic sample data in C++ Data Structures...\n";
 
     // 1. Aryan Sharma
-    User u1; u1.id = 101; u1.name = "Aryan Sharma"; u1.phone = "9876543210"; u1.gender = "Male";
+    User u1; u1.id = 1001; u1.name = "Aryan Sharma"; u1.phone = "9876543210"; u1.gender = "Male";
     u1.source = "Sector 62, Noida"; u1.destination = "Botanical Garden, Noida";
     u1.preferredTime = "09:30"; u1.transportMode = "Metro"; u1.budget = 150.0;
     u1.hasRequest = true; u1.genderPreference = "Any"; u1.wantsSharedCab = false; u1.allowMultiple = true;
     userManager.registerUserDirect(u1);
-    rideManager.add_ride_req(101, u1.source, u1.destination, 930, u1.transportMode, u1.budget);
+    rideManager.add_ride_req(1001, u1.source, u1.destination, 930, u1.transportMode, u1.budget);
 
     // 2. Priya Verma
-    User u2; u2.id = 102; u2.name = "Priya Verma"; u2.phone = "9812345678"; u2.gender = "Female";
+    User u2; u2.id = 1002; u2.name = "Priya Verma"; u2.phone = "9812345678"; u2.gender = "Female";
     u2.source = "Sector 62, Noida"; u2.destination = "Botanical Garden, Noida";
     u2.preferredTime = "09:40"; u2.transportMode = "Metro"; u2.budget = 120.0;
     u2.hasRequest = true; u2.genderPreference = "Any"; u2.wantsSharedCab = false; u2.allowMultiple = true;
     userManager.registerUserDirect(u2);
-    rideManager.add_ride_req(102, u2.source, u2.destination, 940, u2.transportMode, u2.budget);
+    rideManager.add_ride_req(1002, u2.source, u2.destination, 940, u2.transportMode, u2.budget);
 
     // 3. Rohan Gupta
-    User u3; u3.id = 103; u3.name = "Rohan Gupta"; u3.phone = "9923456789"; u3.gender = "Male";
+    User u3; u3.id = 1003; u3.name = "Rohan Gupta"; u3.phone = "9923456789"; u3.gender = "Male";
     u3.source = "Sector 62, Noida"; u3.destination = "Connaught Place, Delhi";
     u3.preferredTime = "09:30"; u3.transportMode = "Cab"; u3.budget = 250.0;
     u3.hasRequest = true; u3.genderPreference = "Male"; u3.wantsSharedCab = true; u3.boardingStation = "Sector 62"; u3.allowMultiple = true;
     userManager.registerUserDirect(u3);
-    rideManager.add_ride_req(103, u3.source, u3.destination, 930, u3.transportMode, u3.budget);
+    rideManager.add_ride_req(1003, u3.source, u3.destination, 930, u3.transportMode, u3.budget);
 
     // 4. Kavita Rao
-    User u4; u4.id = 104; u4.name = "Kavita Rao"; u4.phone = "9734567890"; u4.gender = "Female";
+    User u4; u4.id = 1004; u4.name = "Kavita Rao"; u4.phone = "9734567890"; u4.gender = "Female";
     u4.source = "Sector 62, Noida"; u4.destination = "Connaught Place, Delhi";
     u4.preferredTime = "09:45"; u4.transportMode = "Cab"; u4.budget = 300.0;
     u4.hasRequest = true; u4.genderPreference = "Any"; u4.wantsSharedCab = true; u4.boardingStation = "Sector 62"; u4.allowMultiple = true;
     userManager.registerUserDirect(u4);
-    rideManager.add_ride_req(104, u4.source, u4.destination, 945, u4.transportMode, u4.budget);
+    rideManager.add_ride_req(1004, u4.source, u4.destination, 945, u4.transportMode, u4.budget);
 
     // 5. Amit Kumar
-    User u5; u5.id = 105; u5.name = "Amit Kumar"; u5.phone = "9645678901"; u5.gender = "Male";
+    User u5; u5.id = 1005; u5.name = "Amit Kumar"; u5.phone = "9645678901"; u5.gender = "Male";
     u5.source = "Dwarka Sector 21"; u5.destination = "Rajiv Chowk";
     u5.preferredTime = "10:00"; u5.transportMode = "Metro"; u5.budget = 80.0;
     u5.hasRequest = true; u5.genderPreference = "Any"; u5.wantsSharedCab = false; u5.allowMultiple = false;
     userManager.registerUserDirect(u5);
-    rideManager.add_ride_req(105, u5.source, u5.destination, 1000, u5.transportMode, u5.budget);
+    rideManager.add_ride_req(1005, u5.source, u5.destination, 1000, u5.transportMode, u5.budget);
 
-    cout << "[Initialization] Complete! 5 users in Linked List, 5 ride requests in FIFO Queue.\n";
+    cout << "[Initialization] Complete! 5 users in Linked List (IDs 1001-1005), 5 ride requests in FIFO Queue.\n";
 }
 
 void handleClient(SOCKET clientSocket) {
@@ -248,9 +248,35 @@ void handleClient(SOCKET clientSocket) {
         "Access-Control-Allow-Headers: Content-Type\r\n"
         "Connection: close\r\n";
 
+    auto sendJsonResponse = [&](const string& status, const string& jsonBody) {
+        string res = "HTTP/1.1 " + status + "\r\n" + corsHeaders +
+                     "Content-Type: application/json\r\n" +
+                     "Content-Length: " + to_string(jsonBody.length()) + "\r\n\r\n" + jsonBody;
+        send(clientSocket, res.c_str(), (int)res.length(), 0);
+        shutdown(clientSocket, SD_SEND);
+        closesocket(clientSocket);
+    };
+
+    auto sendFileResponse = [&](const string& contentType, const string& content) {
+        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders + 
+                     "Content-Type: " + contentType + "\r\n" +
+                     "Content-Length: " + to_string(content.length()) + "\r\n\r\n" + content;
+        send(clientSocket, res.c_str(), (int)res.length(), 0);
+        shutdown(clientSocket, SD_SEND);
+        closesocket(clientSocket);
+    };
+
+    auto sendNotFound = [&]() {
+        string res = "HTTP/1.1 404 Not Found\r\n" + corsHeaders + "Content-Length: 0\r\n\r\n";
+        send(clientSocket, res.c_str(), (int)res.length(), 0);
+        shutdown(clientSocket, SD_SEND);
+        closesocket(clientSocket);
+    };
+
     if (method == "OPTIONS") {
         string res = "HTTP/1.1 204 No Content\r\n" + corsHeaders + "Content-Length: 0\r\n\r\n";
-        send(clientSocket, res.c_str(), res.length(), 0);
+        send(clientSocket, res.c_str(), (int)res.length(), 0);
+        shutdown(clientSocket, SD_SEND);
         closesocket(clientSocket);
         return;
     }
@@ -260,16 +286,10 @@ void handleClient(SOCKET clientSocket) {
         ifstream f("index.html", ios::binary);
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
-            string content = ssf.str();
-            string res = "HTTP/1.1 200 OK\r\n" + corsHeaders + 
-                         "Content-Type: text/html; charset=utf-8\r\n" +
-                         "Content-Length: " + to_string(content.length()) + "\r\n\r\n" + content;
-            send(clientSocket, res.c_str(), res.length(), 0);
+            sendFileResponse("text/html; charset=utf-8", ssf.str());
         } else {
-            string notFound = "HTTP/1.1 404 Not Found\r\n\r\nindex.html not found";
-            send(clientSocket, notFound.c_str(), notFound.length(), 0);
+            sendNotFound();
         }
-        closesocket(clientSocket);
         return;
     }
 
@@ -277,16 +297,10 @@ void handleClient(SOCKET clientSocket) {
         ifstream f("roads_data.js", ios::binary);
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
-            string content = ssf.str();
-            string res = "HTTP/1.1 200 OK\r\n" + corsHeaders + 
-                         "Content-Type: application/javascript; charset=utf-8\r\n" +
-                         "Content-Length: " + to_string(content.length()) + "\r\n\r\n" + content;
-            send(clientSocket, res.c_str(), res.length(), 0);
+            sendFileResponse("application/javascript; charset=utf-8", ssf.str());
         } else {
-            string notFound = "HTTP/1.1 404 Not Found\r\n\r\nroads_data.js not found";
-            send(clientSocket, notFound.c_str(), notFound.length(), 0);
+            sendNotFound();
         }
-        closesocket(clientSocket);
         return;
     }
 
@@ -294,16 +308,21 @@ void handleClient(SOCKET clientSocket) {
         ifstream f("MARK_LOGO.PNG", ios::binary);
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
-            string content = ssf.str();
-            string res = "HTTP/1.1 200 OK\r\n" + corsHeaders + 
-                         "Content-Type: image/png\r\n" +
-                         "Content-Length: " + to_string(content.length()) + "\r\n\r\n" + content;
-            send(clientSocket, res.c_str(), res.length(), 0);
+            sendFileResponse("image/png", ssf.str());
         } else {
-            string notFound = "HTTP/1.1 404 Not Found\r\n\r\n";
-            send(clientSocket, notFound.c_str(), notFound.length(), 0);
+            sendNotFound();
         }
-        closesocket(clientSocket);
+        return;
+    }
+
+    if (method == "GET" && path == "/locations.csv") {
+        ifstream f("locations.csv", ios::binary);
+        if (f) {
+            ostringstream ssf; ssf << f.rdbuf();
+            sendFileResponse("text/csv; charset=utf-8", ssf.str());
+        } else {
+            sendNotFound();
+        }
         return;
     }
 
@@ -327,12 +346,7 @@ void handleClient(SOCKET clientSocket) {
              << "\"pendingQueueSize\":" << rideManager.get_queue_size()
              << "}";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
@@ -347,58 +361,51 @@ void handleClient(SOCKET clientSocket) {
         }
         json << "]";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
-    // 3. POST /api/users (Register User)
+    // 3. POST /api/users (Register User with Automatic Unique 4-Digit ID)
     if (method == "POST" && path == "/api/users") {
-        int id = getJsonInt(body, "id");
         string name = getJsonString(body, "name");
         string phone = getJsonString(body, "phone");
         string gender = getJsonString(body, "gender");
 
-        if (id <= 0 || name.empty()) {
-            string err = "{\"success\":false,\"message\":\"Invalid user details\"}";
-            string res = "HTTP/1.1 400 Bad Request\r\n" + corsHeaders + "Content-Type: application/json\r\n\r\n" + err;
-            send(clientSocket, res.c_str(), res.length(), 0);
-            closesocket(clientSocket);
+        if (name.empty()) {
+            sendJsonResponse("400 Bad Request", "{\"success\":false,\"message\":\"Name cannot be empty.\"}");
             return;
         }
 
+        // Automatic unique 4-digit ID generation (1000 - 9999)
+        int newId = userManager.generateUniqueId();
+
         User u;
-        u.id = id;
+        u.id = newId;
         u.name = name;
         u.phone = phone;
         u.gender = gender.empty() ? "Other" : gender;
 
         bool ok = userManager.registerUserDirect(u);
-        cout << "[Linked List] " << (ok ? "Registered user #" : "Failed registration (duplicate ID) #") 
-             << id << " (" << name << ")\n";
+        cout << "[Linked List] Automatically generated ID #" << newId 
+             << " -> Registered user: " << name << " (Phone: " << phone << ")\n";
 
         ostringstream json;
         json << "{\"success\":" << (ok ? "true" : "false") << ","
-             << "\"message\":\"" << (ok ? "User registered successfully into Linked List!" : "User ID already exists!") << "\"}";
+             << "\"id\":" << newId << ","
+             << "\"user\":" << userToJson(u) << ","
+             << "\"message\":\"User registered successfully! Your unique 4-digit User ID is " << newId << ". Please remember this ID to log in and access your account.\"}";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
     // 4. GET /api/users/search?id=...
     if (method == "GET" && path == "/api/users/search") {
-        int id = stoi(getQueryParam(url, "id"));
+        string idStr = getQueryParam(url, "id");
+        int id = 0;
+        try { if (!idStr.empty()) id = stoi(idStr); } catch (...) {}
         User u;
-        bool found = userManager.getUserById(id, u);
+        bool found = (id > 0) && userManager.getUserById(id, u);
         cout << "[Linked List] Searching for user ID #" << id << (found ? " (Found)" : " (Not Found)") << "\n";
 
         ostringstream json;
@@ -408,12 +415,7 @@ void handleClient(SOCKET clientSocket) {
             json << "{\"success\":false,\"message\":\"User #" << id << " not found in Linked List.\"}";
         }
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
@@ -431,35 +433,29 @@ void handleClient(SOCKET clientSocket) {
         json << "{\"success\":" << (ok ? "true" : "false") << ","
              << "\"message\":\"" << (ok ? "User updated successfully in Linked List!" : "User not found") << "\"}";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
-    // 6. POST /api/users/delete?id=...
+    // 6. POST /api/users/delete?id=... or body id
     if (method == "POST" && path == "/api/users/delete") {
-        int id = stoi(getQueryParam(url, "id"));
-        bool ok = userManager.deleteUser(id);
+        string idStr = getQueryParam(url, "id");
+        int id = 0;
+        try { if (!idStr.empty()) id = stoi(idStr); } catch (...) {}
+        if (id == 0) id = getJsonInt(body, "id");
+
+        bool ok = (id > 0) && userManager.deleteUser(id);
         cout << "[Linked List] " << (ok ? "Deleted user node #" : "Could not delete user #") << id << "\n";
 
         ostringstream json;
         json << "{\"success\":" << (ok ? "true" : "false") << ","
              << "\"message\":\"" << (ok ? "User deleted successfully from Linked List!" : "User not found") << "\"}";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
-    // 7. POST /api/rides/request (Request a Ride)
+    // 7. POST /api/rides/request (Request a Ride for Logged-in User)
     if (method == "POST" && path == "/api/rides/request") {
         int userId = getJsonInt(body, "userId");
         string src = getJsonString(body, "source");
@@ -474,10 +470,13 @@ void handleClient(SOCKET clientSocket) {
 
         User u;
         if (!userManager.getUserById(userId, u)) {
-            string err = "{\"success\":false,\"message\":\"User #" + to_string(userId) + " not registered. Register first!\"}";
-            string res = "HTTP/1.1 400 Bad Request\r\n" + corsHeaders + "Content-Type: application/json\r\n\r\n" + err;
-            send(clientSocket, res.c_str(), res.length(), 0);
-            closesocket(clientSocket);
+            sendJsonResponse("400 Bad Request", "{\"success\":false,\"message\":\"User #" + to_string(userId) + " not registered. Register first!\"}");
+            return;
+        }
+
+        // Prevent duplicate active ride requests per user
+        if (u.hasRequest) {
+            sendJsonResponse("400 Bad Request", "{\"success\":false,\"message\":\"User #" + to_string(userId) + " already has an active ride request in progress. Only 1 active request is allowed per user.\"}");
             return;
         }
 
@@ -492,21 +491,16 @@ void handleClient(SOCKET clientSocket) {
 
         // Push to FIFO Queue & Undo Stack
         rideManager.add_ride_req(userId, src, dst, numericTime, mode, budget);
-        cout << "[Queue FIFO] Enqueued ride request for User #" << userId << " (" << src << " ➔ " << dst << ")\n";
+        cout << "[Queue FIFO] Enqueued ride request for User #" << userId << " (" << src << " -> " << dst << ")\n";
 
         ostringstream json;
         json << "{\"success\":true,\"message\":\"Ride request saved & pushed to FIFO Queue!\"}";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
-    // 8. GET /api/rides/matches?userId=... or POST /api/rides/matches (Find Ride Matches using Priority Queue)
+    // 8. GET /api/rides/matches?userId=... or POST /api/rides/matches (Find Ride Matches for Logged-in User)
     if ((method == "GET" && path == "/api/rides/matches") || (method == "POST" && path == "/api/rides/matches")) {
         int userId = 0;
         if (method == "GET") {
@@ -521,28 +515,22 @@ void handleClient(SOCKET clientSocket) {
         User user;
 
         if (userId <= 0 || !userManager.getUserById(userId, user)) {
-            string err = "{\"success\":false,\"message\":\"User #" + to_string(userId) + " not found.\"}";
-            string res = "HTTP/1.1 404 Not Found\r\n" + corsHeaders + "Content-Type: application/json\r\n\r\n" + err;
-            send(clientSocket, res.c_str(), res.length(), 0);
-            closesocket(clientSocket);
+            sendJsonResponse("404 Not Found", "{\"success\":false,\"message\":\"User #" + to_string(userId) + " not found.\"}");
             return;
         }
 
         if (!user.hasRequest) {
-            string err = "{\"success\":false,\"message\":\"User #" + to_string(userId) + " has no active ride request.\"}";
-            string res = "HTTP/1.1 200 OK\r\n" + corsHeaders + "Content-Type: application/json\r\n\r\n" + err;
-            send(clientSocket, res.c_str(), res.length(), 0);
-            closesocket(clientSocket);
+            sendJsonResponse("200 OK", "{\"success\":false,\"message\":\"User #" + to_string(userId) + " has no active ride request. Please submit a ride request first.\"}");
             return;
         }
 
         // Run Priority Queue Matching Engine in C++
         MatchQueue pq = matchRides(user, userManager.getAllUsers());
-        cout << "[Priority Queue] Evaluated ride matches for User #" << userId 
+        cout << "[Priority Queue] Evaluated ride matches for Logged-in User #" << userId 
              << " -> Found " << pq.size() << " compatible matches.\n";
 
         ostringstream json;
-        json << "{\"success\":true,\"userId\":" << userId << ",\"matches\":[";
+        json << "{\"success\":true,\"userId\":" << userId << ",\"totalMatches\":" << pq.size() << ",\"matches\":[";
         bool first = true;
         while (!pq.empty()) {
             match_class m = pq.top();
@@ -561,16 +549,11 @@ void handleClient(SOCKET clientSocket) {
         }
         json << "]}";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
-    // 9. POST /api/rides/confirm_match (Confirm Match between 2 users)
+    // 9. POST /api/rides/confirm_match (Confirm Match between Logged-in User and Candidate)
     if (method == "POST" && path == "/api/rides/confirm_match") {
         int u1 = getJsonInt(body, "user1");
         int u2 = getJsonInt(body, "user2");
@@ -581,12 +564,7 @@ void handleClient(SOCKET clientSocket) {
 
         ostringstream json;
         json << "{\"success\":true,\"message\":\"Match confirmed successfully between User #" << u1 << " and User #" << u2 << "!\"}";
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
@@ -594,10 +572,7 @@ void handleClient(SOCKET clientSocket) {
     if (method == "POST" && path == "/api/rides/process") {
         double fare = getJsonDouble(body, "fare", 180.0);
         if (rideManager.get_queue_size() == 0) {
-            string err = "{\"success\":false,\"message\":\"No pending ride requests in FIFO queue.\"}";
-            string res = "HTTP/1.1 200 OK\r\n" + corsHeaders + "Content-Type: application/json\r\n\r\n" + err;
-            send(clientSocket, res.c_str(), res.length(), 0);
-            closesocket(clientSocket);
+            sendJsonResponse("200 OK", "{\"success\":false,\"message\":\"No pending ride requests in FIFO queue.\"}");
             return;
         }
 
@@ -606,12 +581,7 @@ void handleClient(SOCKET clientSocket) {
 
         ostringstream json;
         json << "{\"success\":true,\"message\":\"Ride processed, stored in History Vector, and logged to Undo Stack!\"}";
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
@@ -623,12 +593,7 @@ void handleClient(SOCKET clientSocket) {
         ostringstream json;
         json << "{\"success\":" << (ok ? "true" : "false") << ","
              << "\"message\":\"" << (ok ? "Undo successful: Popped last action from Stack!" : "Undo Stack is empty!") << "\"}";
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
@@ -651,12 +616,7 @@ void handleClient(SOCKET clientSocket) {
         }
         json << "]";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
@@ -678,12 +638,41 @@ void handleClient(SOCKET clientSocket) {
         }
         json << "]";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
+        return;
+    }
+
+    // 13.5 GET /api/locations/search?q=... or GET /api/locations
+    if (method == "GET" && (path == "/api/locations/search" || path == "/api/locations")) {
+        string q = getQueryParam(url, "q");
+        if (q.empty()) q = getQueryParam(url, "query");
+
+        vector<LocationRecord> matches;
+        if (!q.empty()) {
+            matches = routeManager.searchLocations(q, 15);
+        } else {
+            matches = routeManager.getAllLocations();
+        }
+
+        ostringstream json;
+        json << "{"
+             << "\"success\":true,"
+             << "\"query\":\"" << escapeJson(q) << "\","
+             << "\"total\":" << matches.size() << ","
+             << "\"locations\":[";
+        for (size_t i = 0; i < matches.size(); ++i) {
+            json << "{"
+                 << "\"name\":\"" << escapeJson(matches[i].name) << "\","
+                 << "\"type\":\"" << escapeJson(matches[i].type) << "\","
+                 << "\"city\":\"" << escapeJson(matches[i].city) << "\","
+                 << "\"lat\":" << matches[i].lat << ","
+                 << "\"lon\":" << matches[i].lon
+                 << "}";
+            if (i + 1 < matches.size()) json << ",";
+        }
+        json << "]}";
+
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
@@ -693,28 +682,53 @@ void handleClient(SOCKET clientSocket) {
         if (start.empty()) start = getQueryParam(url, "src");
         string end = getQueryParam(url, "end");
         if (end.empty()) end = getQueryParam(url, "dst");
+
+        string sLatStr = getQueryParam(url, "startLat");
+        string sLonStr = getQueryParam(url, "startLon");
+        string eLatStr = getQueryParam(url, "endLat");
+        string eLonStr = getQueryParam(url, "endLon");
+
+        // Coordinate-based node fallback if name not recognized directly
+        LocationRecord lStart, lEnd;
+        if (!routeManager.findLocationByName(start, lStart) && !sLatStr.empty() && !sLonStr.empty()) {
+            try {
+                double sLat = stod(sLatStr), sLon = stod(sLonStr);
+                start = routeManager.findNearestLocation(sLat, sLon).name;
+            } catch (...) {}
+        }
+        if (!routeManager.findLocationByName(end, lEnd) && !eLatStr.empty() && !eLonStr.empty()) {
+            try {
+                double eLat = stod(eLatStr), eLon = stod(eLonStr);
+                end = routeManager.findNearestLocation(eLat, eLon).name;
+            } catch (...) {}
+        }
+
         auto result = routeManager.getShortestPath(start, end);
+        auto coords = routeManager.getPathCoordinates(result.first);
         cout << "[Graph Dijkstra] Evaluated shortest path between " << start << " and " << end 
-             << " -> Distance: " << result.second << " km\n";
+             << " -> Distance: " << result.second << " km (" << result.first.size() << " nodes)\n";
 
         ostringstream json;
         json << "{"
              << "\"success\":" << (result.second != -1.0 ? "true" : "false") << ","
+             << "\"start\":\"" << escapeJson(start) << "\","
+             << "\"end\":\"" << escapeJson(end) << "\","
              << "\"distance\":" << result.second << ","
              << "\"distanceKm\":" << result.second << ","
+             << "\"hops\":" << (result.first.empty() ? 0 : (int)result.first.size() - 1) << ","
              << "\"path\":[";
         for (size_t i = 0; i < result.first.size(); ++i) {
             json << "\"" << escapeJson(result.first[i]) << "\"";
             if (i + 1 < result.first.size()) json << ",";
         }
+        json << "],\"coordinates\":[";
+        for (size_t i = 0; i < coords.size(); ++i) {
+            json << "[" << coords[i].first << "," << coords[i].second << "]";
+            if (i + 1 < coords.size()) json << ",";
+        }
         json << "]}";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
@@ -724,34 +738,55 @@ void handleClient(SOCKET clientSocket) {
         if (start.empty()) start = getQueryParam(url, "src");
         string end = getQueryParam(url, "end");
         if (end.empty()) end = getQueryParam(url, "dst");
+
+        string sLatStr = getQueryParam(url, "startLat");
+        string sLonStr = getQueryParam(url, "startLon");
+        string eLatStr = getQueryParam(url, "endLat");
+        string eLonStr = getQueryParam(url, "endLon");
+
+        LocationRecord lStart, lEnd;
+        if (!routeManager.findLocationByName(start, lStart) && !sLatStr.empty() && !sLonStr.empty()) {
+            try {
+                double sLat = stod(sLatStr), sLon = stod(sLonStr);
+                start = routeManager.findNearestLocation(sLat, sLon).name;
+            } catch (...) {}
+        }
+        if (!routeManager.findLocationByName(end, lEnd) && !eLatStr.empty() && !eLonStr.empty()) {
+            try {
+                double eLat = stod(eLatStr), eLon = stod(eLonStr);
+                end = routeManager.findNearestLocation(eLat, eLon).name;
+            } catch (...) {}
+        }
+
         vector<string> pathNodes = routeManager.getBFSPath(start, end);
+        auto coords = routeManager.getPathCoordinates(pathNodes);
         cout << "[Graph BFS] Evaluated minimum connections between " << start << " and " << end 
              << " -> Hops: " << (pathNodes.empty() ? 0 : pathNodes.size() - 1) << "\n";
 
         ostringstream json;
         json << "{"
              << "\"success\":" << (!pathNodes.empty() ? "true" : "false") << ","
+             << "\"start\":\"" << escapeJson(start) << "\","
+             << "\"end\":\"" << escapeJson(end) << "\","
              << "\"hops\":" << (pathNodes.empty() ? 0 : (int)pathNodes.size() - 1) << ","
              << "\"path\":[";
         for (size_t i = 0; i < pathNodes.size(); ++i) {
             json << "\"" << escapeJson(pathNodes[i]) << "\"";
             if (i + 1 < pathNodes.size()) json << ",";
         }
+        json << "],\"coordinates\":[";
+        for (size_t i = 0; i < coords.size(); ++i) {
+            json << "[" << coords[i].first << "," << coords[i].second << "]";
+            if (i + 1 < coords.size()) json << ",";
+        }
         json << "]}";
 
-        string responseBody = json.str();
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
-                     "Content-Type: application/json\r\n" +
-                     "Content-Length: " + to_string(responseBody.length()) + "\r\n\r\n" + responseBody;
-        send(clientSocket, res.c_str(), res.length(), 0);
-        closesocket(clientSocket);
+        sendJsonResponse("200 OK", json.str());
         return;
     }
 
     // Default 404
-    string notFound = "HTTP/1.1 404 Not Found\r\n" + corsHeaders + "Content-Length: 0\r\n\r\n";
-    send(clientSocket, notFound.c_str(), notFound.length(), 0);
-    closesocket(clientSocket);
+    sendNotFound();
 }
 
 int main(int argc, char* argv[]) {

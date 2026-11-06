@@ -7,6 +7,8 @@
 #include <limits>
 #include <algorithm>
 #include <sstream>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
@@ -101,7 +103,25 @@ private:
     }
 
 public:
-    UserManager() : head(nullptr) {}
+    UserManager() : head(nullptr) {
+        srand(static_cast<unsigned int>(time(nullptr)));
+    }
+
+    bool userExists(int id) const {
+        for (Node* temp = head; temp != nullptr; temp = temp->next) {
+            if (temp->data.id == id) return true;
+        }
+        return false;
+    }
+
+    // Generate random 4-digit ID between 1000 and 9999, guaranteed unique
+    int generateUniqueId() {
+        int newId;
+        do {
+            newId = 1000 + (rand() % 9000);
+        } while (userExists(newId));
+        return newId;
+    }
 
     vector<User> getAllUsers() {
         vector<User> users;
@@ -138,12 +158,21 @@ public:
     void registerUser() {
         User u;
         cout << "\n========== REGISTER USER ==========\n";
-        u.input();
+        u.id = generateUniqueId();
+        cout << "[System] Automatically generated unique 4-digit User ID: " << u.id << endl;
+        cout << "Important: Please remember your User ID (" << u.id << ") because it will be needed to access your account and request rides.\n";
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout << "Enter Name: ";
+        getline(cin, u.name);
+        cout << "Enter Phone: ";
+        getline(cin, u.phone);
+        cout << "Enter Gender (Male/Female/Other): ";
+        getline(cin, u.gender);
 
         if (registerUserDirect(u))
-            cout << "\nUser registered successfully!\n";
+            cout << "\nUser registered successfully with User ID #" << u.id << "!\n";
         else
-            cout << "\nUser ID already exists!\n";
+            cout << "\nRegistration error.\n";
     }
 
     bool updateUserDirect(int id, const string& name, const string& phone, const string& gender) {
@@ -247,6 +276,13 @@ public:
         Node* n = find(id);
         if (n == nullptr) {
             cout << "\nUser not found! Register first.\n";
+            return;
+        }
+
+        if (n->data.hasRequest) {
+            cout << "\nUser #" << id << " already has an active ride request in progress.\n";
+            cout << "Route: " << n->data.source << " -> " << n->data.destination << " (" << n->data.transportMode << ")\n";
+            cout << "M.A.R.K. allows one active ride request per user.\n";
             return;
         }
 

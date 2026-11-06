@@ -671,6 +671,133 @@
             animation: slideUp 0.25s ease;
         }
 
+        /* ---------------- Location Autocomplete Dropdown ---------------- */
+        .loc-input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .loc-dropdown {
+            position: absolute;
+            top: calc(100% + 4px);
+            left: 0;
+            right: 0;
+            background: #141724;
+            border: 1px solid #333d56;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+            max-height: 290px;
+            overflow-y: auto;
+            z-index: 99999;
+            display: none;
+            padding: 4px 0;
+        }
+
+        .loc-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+        .loc-dropdown::-webkit-scrollbar-thumb {
+            background: #2e364c;
+            border-radius: 3px;
+        }
+
+        .loc-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 9px 14px;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            user-select: none;
+        }
+        .loc-item:last-child {
+            border-bottom: none;
+        }
+        .loc-item:hover, .loc-item.active {
+            background: #202638;
+        }
+
+        .loc-item-icon {
+            font-size: 1.25em;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            flex-shrink: 0;
+        }
+
+        .loc-item-body {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .loc-item-name {
+            font-size: 0.88em;
+            color: var(--text-main);
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .loc-item-name strong {
+            color: var(--accent-pink);
+            font-weight: 700;
+        }
+
+        .loc-item-sub {
+            font-size: 0.74em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 2px;
+        }
+
+        .loc-item-badge {
+            background: #1e2436;
+            color: #94a3b8;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            border: 1px solid #2d354b;
+        }
+
+        .loc-item-city {
+            color: var(--accent-cyan);
+            font-weight: 500;
+        }
+
+        .loc-loading {
+            padding: 12px 16px;
+            font-size: 0.82em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .loc-empty {
+            padding: 12px 16px;
+            font-size: 0.82em;
+            color: #94a3b8;
+            text-align: center;
+        }
+
+        .loc-selected-badge {
+            font-size: 0.74em;
+            color: #10b981;
+            margin-top: 4px;
+            display: none;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+        }
+
         @keyframes slideUp {
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
@@ -756,8 +883,24 @@
                 <h2 id="pageTitle">Dashboard Overview</h2>
                 <p id="pageSubtitle">Mapped Automation Route Kinematics &amp; Commute Management System</p>
             </div>
-            <div class="top-meta">
+            <div class="top-meta" style="display:flex; align-items:center; gap:12px;">
                 <div class="live-clock" id="liveClock">--:--:--</div>
+
+                <!-- Commuter Login / Session Control -->
+                <div id="headerLoginBox" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="number" id="headerLoginId" placeholder="4-Digit User ID" style="width: 130px; padding: 6px 10px; font-size: 0.85em; background: #12151f; border: 1px solid var(--border-color); color: #fff; border-radius: 6px;">
+                    <button class="btn btn-sm btn-blue" onclick="handleUserLogin(document.getElementById('headerLoginId').value)">Log In</button>
+                </div>
+
+                <div id="headerSessionBox" style="display: none; align-items: center; gap: 10px; background: #12151f; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-color);">
+                    <div style="width:26px; height:26px; border-radius:50%; background:linear-gradient(135deg, var(--accent-pink), #ec4899); display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:0.8em; color:#fff;" id="headerUserInitial">U</div>
+                    <div style="font-size: 0.82em; line-height: 1.2;">
+                        <strong style="color:var(--text-main);" id="headerUserName">Commuter</strong>
+                        <span style="display:block; font-size:0.75em; color:var(--accent-pink);" id="headerUserIdBadge">ID: #----</span>
+                    </div>
+                    <button class="btn btn-sm btn-outline" style="padding: 3px 8px; font-size: 0.72em; border-radius: 10px;" onclick="handleUserLogout()" title="Log out of this commuter session">Logout</button>
+                </div>
+
                 <button class="btn btn-sm" onclick="switchTab('request')">+ Request Ride</button>
             </div>
         </header>
@@ -911,15 +1054,11 @@
                 <div class="card">
                     <div class="card-header">
                         <h3><span>👤 Register New User</span> <span class="badge-ds">Linked List Insert</span></h3>
-                        <span style="font-size: 0.8em; color: var(--text-muted);">Dynamic Node Allocation</span>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Unique 4-Digit ID Auto-Generated</span>
                     </div>
 
                     <form onsubmit="handleRegisterUser(event)">
                         <div class="form-grid">
-                            <div class="form-group">
-                                <label>User ID</label>
-                                <input type="number" id="newUserId" placeholder="e.g. 106" required>
-                            </div>
                             <div class="form-group">
                                 <label>Full Name</label>
                                 <input type="text" id="newUserName" placeholder="e.g. Rohit Sharma" required>
@@ -939,6 +1078,24 @@
                         </div>
                         <button type="submit" class="btn">Register User into Linked List</button>
                     </form>
+
+                    <!-- Registration Success Card with Auto-Generated 4-Digit ID -->
+                    <div id="regSuccessCard" style="display: none; margin-top: 18px; padding: 18px; background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; border-radius: 8px;">
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+                            <span style="font-size: 1.8em;">🎉</span>
+                            <div>
+                                <h4 style="margin: 0; color: #10b981; font-size: 1.05em;">User Registered Successfully!</h4>
+                                <span style="font-size: 0.82em; color: var(--text-muted);">Stored dynamically in C++ Linked List</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 1.05em; color: var(--text-main); margin: 8px 0;">
+                            Your Automatically Assigned 4-Digit User ID is: <strong style="color: var(--accent-pink); font-size: 1.3em; letter-spacing: 1px;" id="regSuccessId">----</strong>
+                        </div>
+                        <p style="margin: 0 0 12px 0; font-size: 0.88em; color: #f59e0b; font-weight: 500;">
+                            ⚠️ Please remember your 4-digit User ID! You will need it to access your account, create ride requests, and find matches.
+                        </p>
+                        <button class="btn btn-sm btn-blue" id="regLoginBtn" onclick="loginNewlyRegisteredUser()">🔑 Access Account with this User ID</button>
+                    </div>
                 </div>
 
                 <!-- Search & Filter Card -->
@@ -985,20 +1142,57 @@
             <!-- TAB 3: REQUEST A RIDE (FIFO QUEUE)                             -->
             <!-- ============================================================== -->
             <section id="tab-request" class="tab-section">
-                <div class="card">
+                <!-- Login Prompt if Not Logged In -->
+                <div class="card" id="reqLoginPromptCard" style="display: block; text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 2.8em; margin-bottom: 10px;">🔒</div>
+                    <h3 style="color: var(--text-main); margin-bottom: 8px;">Commuter Login Required</h3>
+                    <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 20px; font-size: 0.92em;">
+                        To submit a ride request, please log in with your registered 4-digit User ID. Only the logged-in commuter can create a ride request for their account.
+                    </p>
+                    <div style="display: inline-flex; gap: 10px; max-width: 320px; width: 100%;">
+                        <input type="number" id="quickReqLoginId" placeholder="Enter 4-Digit User ID" style="flex: 1;">
+                        <button class="btn btn-blue" onclick="handleUserLogin(document.getElementById('quickReqLoginId').value)">Access Account</button>
+                    </div>
+                </div>
+
+                <!-- Ride Request Card (Displayed when Logged In) -->
+                <div class="card" id="reqFormCard" style="display: none;">
                     <div class="card-header">
                         <h3><span>📝 Submit Ride Request</span> <span class="badge-ds">Queue Push (FIFO)</span></h3>
-                        <span style="font-size: 0.8em; color: var(--text-muted);">Queued into C++ Memory</span>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Enqueued into C++ Memory</span>
                     </div>
 
-                    <form onsubmit="handleRideRequest(event)">
-                        <div class="form-grid">
-                            <div class="form-group">
-                                <label>Registered User</label>
-                                <select id="reqUserId" required>
-                                    <option value="">Select registered user...</option>
-                                </select>
+                    <!-- Active Commuter Identification Banner -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: #12151f; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 18px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="user-avatar-small" id="reqUserAvatar" style="width: 32px; height: 32px; font-size: 0.9em;">U</span>
+                            <div>
+                                <span style="font-size: 0.75em; color: var(--text-muted); display: block;">LOGGED-IN COMMUTER</span>
+                                <strong style="color: var(--text-main); font-size: 1em;" id="reqActiveUserName">Commuter Name</strong>
+                                <span style="font-size: 0.82em; color: var(--accent-pink); font-weight: 600; margin-left: 6px;" id="reqActiveUserId">(ID: #----)</span>
                             </div>
+                        </div>
+                        <button class="btn btn-sm btn-outline" onclick="handleUserLogout()" style="padding: 4px 10px; font-size: 0.78em;">Switch / Logout</button>
+                    </div>
+
+                    <!-- Notice if User Already Has an Active Request -->
+                    <div id="alreadyHasRequestNotice" style="display: none; padding: 18px; background: rgba(244, 63, 94, 0.1); border: 1px solid var(--accent-pink); border-radius: 8px; margin-bottom: 18px;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                            <span style="font-size: 1.5em;">⚠️</span>
+                            <h4 style="margin: 0; color: var(--accent-pink);">Active Ride Request Already Exists</h4>
+                        </div>
+                        <p style="margin: 0 0 10px 0; color: var(--text-main); font-size: 0.92em;" id="existingReqDetails">
+                            You already have an active ride request in progress.
+                        </p>
+                        <p style="margin: 0; font-size: 0.85em; color: var(--text-muted);">
+                            M.A.R.K. allows one active ride request per commuter. You can search for compatible co-commuters in the matching engine.
+                        </p>
+                        <button class="btn btn-sm btn-blue" style="margin-top: 14px;" onclick="switchTab('matches')">🔍 Find Matches for this Ride &rarr;</button>
+                    </div>
+
+                    <!-- Actual Ride Request Form -->
+                    <form id="actualRideForm" onsubmit="handleRideRequest(event)">
+                        <div class="form-grid">
                             <div class="form-group">
                                 <label>Transit Mode</label>
                                 <select id="reqMode">
@@ -1013,11 +1207,19 @@
                             </div>
                             <div class="form-group">
                                 <label>Pickup Location / Source</label>
-                                <input type="text" id="reqSource" placeholder="e.g. Sector 62, Noida" required>
+                                <div class="loc-input-wrapper">
+                                    <input type="text" id="reqSource" placeholder="e.g. Sector 62, Noida" autocomplete="off" required>
+                                    <div class="loc-dropdown" id="dropdown-reqSource"></div>
+                                    <div class="loc-selected-badge" id="badge-reqSource">✓ Verified Location Selected</div>
+                                </div>
                             </div>
                             <div class="form-group">
                                 <label>Destination</label>
-                                <input type="text" id="reqDest" placeholder="e.g. Botanical Garden, Noida" required>
+                                <div class="loc-input-wrapper">
+                                    <input type="text" id="reqDest" placeholder="e.g. Botanical Garden, Noida" autocomplete="off" required>
+                                    <div class="loc-dropdown" id="dropdown-reqDest"></div>
+                                    <div class="loc-selected-badge" id="badge-reqDest">✓ Verified Location Selected</div>
+                                </div>
                             </div>
                         </div>
 
@@ -1056,7 +1258,11 @@
                             </div>
                             <div class="form-group">
                                 <label>Preferred Transit Station (if shared cab)</label>
-                                <input type="text" id="reqStation" placeholder="e.g. Sector 62 or Botanical Garden">
+                                <div class="loc-input-wrapper">
+                                    <input type="text" id="reqStation" placeholder="e.g. Sector 62 or Botanical Garden" autocomplete="off">
+                                    <div class="loc-dropdown" id="dropdown-reqStation"></div>
+                                    <div class="loc-selected-badge" id="badge-reqStation">✓ Verified Transit Hub Selected</div>
+                                </div>
                             </div>
                         </div>
 
@@ -1069,27 +1275,71 @@
             <!-- TAB 4: FIND RIDE MATCHES (PRIORITY QUEUE)                     -->
             <!-- ============================================================== -->
             <section id="tab-matches" class="tab-section">
-                <div class="card">
+                <!-- Login Prompt if Not Logged In -->
+                <div class="card" id="matchLoginPromptCard" style="display: block; text-align: center; padding: 40px 20px;">
+                    <div style="font-size: 2.8em; margin-bottom: 10px;">🔒</div>
+                    <h3 style="color: var(--text-main); margin-bottom: 8px;">Commuter Login Required</h3>
+                    <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 20px; font-size: 0.92em;">
+                        Please log in with your registered 4-digit User ID to find compatible co-commuters for your commute.
+                    </p>
+                    <div style="display: inline-flex; gap: 10px; max-width: 320px; width: 100%;">
+                        <input type="number" id="quickMatchLoginId" placeholder="Enter 4-Digit User ID" style="flex: 1;">
+                        <button class="btn btn-blue" onclick="handleUserLogin(document.getElementById('quickMatchLoginId').value)">Access Matches</button>
+                    </div>
+                </div>
+
+                <!-- Match Engine Card (Displayed when Logged In) -->
+                <div class="card" id="matchEngineCard" style="display: none;">
                     <div class="card-header">
                         <h3><span>🎯 Ride Matching Engine</span> <span class="badge-ds">Priority Queue (Max-Heap)</span></h3>
-                        <span style="font-size: 0.8em; color: var(--text-muted);">Calculates Route, Time, Gender &amp; Budget Match</span>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Evaluates Route, Time, Gender &amp; Budget</span>
                     </div>
 
-                    <div style="display: flex; gap: 14px; align-items: center; max-width: 600px;">
-                        <div style="flex: 1;">
-                            <label style="display:block; font-size:0.8em; color:var(--text-muted); margin-bottom:4px;">Select Commuter to Find Matches For:</label>
-                            <select id="matchUserSelect">
-                                <option value="">Select a user with an active ride request...</option>
-                            </select>
+                    <!-- Active Commuter Identification Banner -->
+                    <div style="display: flex; align-items: center; justify-content: space-between; background: #12151f; padding: 12px 16px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 18px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span class="user-avatar-small" id="matchUserAvatar" style="width: 32px; height: 32px; font-size: 0.9em;">U</span>
+                            <div>
+                                <span style="font-size: 0.75em; color: var(--text-muted); display: block;">MATCHING FOR COMMUTER</span>
+                                <strong style="color: var(--text-main); font-size: 1em;" id="matchActiveUserName">Commuter Name</strong>
+                                <span style="font-size: 0.82em; color: var(--accent-pink); font-weight: 600; margin-left: 6px;" id="matchActiveUserId">(ID: #----)</span>
+                            </div>
                         </div>
-                        <button class="btn btn-blue" style="margin-top: 18px;" onclick="handleFindMatches()">Find Matches</button>
+                        <button class="btn btn-sm btn-outline" onclick="handleUserLogout()" style="padding: 4px 10px; font-size: 0.78em;">Switch / Logout</button>
                     </div>
+
+                    <!-- Active Route Information (if request active) -->
+                    <div id="matchActiveRouteDetails" style="display: none; background: #151926; padding: 14px 16px; border-radius: 8px; border: 1px solid rgba(244, 63, 94, 0.3); margin-bottom: 18px;">
+                        <div style="font-size: 0.78em; color: var(--accent-pink); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">YOUR ACTIVE COMMUTE CORRIDOR</div>
+                        <div style="font-size: 1.05em; color: var(--text-main); font-weight: 600;" id="matchActiveRouteText">
+                            Sector 62, Noida ➔ Botanical Garden, Noida
+                        </div>
+                        <div style="font-size: 0.85em; color: var(--text-muted); margin-top: 4px;" id="matchActiveMetaText">
+                            Mode: Metro | Departure: 09:30 | Budget: Rs. 150
+                        </div>
+                    </div>
+
+                    <!-- Notice if User Has No Request -->
+                    <div id="matchNoRequestNotice" style="display: none; padding: 18px; background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 8px; margin-bottom: 18px;">
+                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                            <span style="font-size: 1.4em;">⚠️</span>
+                            <h4 style="margin: 0; color: #f59e0b;">No Active Ride Request</h4>
+                        </div>
+                        <p style="margin: 0 0 12px 0; color: var(--text-main); font-size: 0.9em;">
+                            You currently do not have an active ride request queued. Please submit a ride request first to evaluate compatibility against the pool of commuters.
+                        </p>
+                        <button class="btn btn-sm btn-blue" onclick="switchTab('request')">+ Submit a Ride Request &rarr;</button>
+                    </div>
+
+                    <button class="btn btn-blue" id="btnRunMatchEngine" style="display: none; width: 100%;" onclick="handleFindMatches()">
+                        🎯 Evaluate Co-Commuter Compatibility (C++ Priority Queue)
+                    </button>
                 </div>
 
                 <!-- Results Output Card -->
                 <div class="card" id="matchResultsCard" style="display: none;">
                     <div class="card-header">
-                        <h3 id="matchResultsTitle">Match Results</h3>
+                        <h3 id="matchResultsTitle">Compatible Co-Commuter Matches</h3>
                         <span id="matchCountBadge" class="badge badge-info">0 Matches</span>
                     </div>
 
@@ -1155,11 +1405,19 @@
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
                         <div class="form-group" style="margin:0;">
                             <label>Starting Location</label>
-                            <input type="text" id="routeStart" value="Sector 62, Noida">
+                            <div class="loc-input-wrapper">
+                                <input type="text" id="routeStart" value="Sector 62, Noida" autocomplete="off">
+                                <div class="loc-dropdown" id="dropdown-routeStart"></div>
+                                <div class="loc-selected-badge" id="badge-routeStart" style="display:inline-flex;">✓ Verified Location Selected</div>
+                            </div>
                         </div>
                         <div class="form-group" style="margin:0;">
                             <label>Destination Location</label>
-                            <input type="text" id="routeEnd" value="Botanical Garden, Noida">
+                            <div class="loc-input-wrapper">
+                                <input type="text" id="routeEnd" value="Botanical Garden, Noida" autocomplete="off">
+                                <div class="loc-dropdown" id="dropdown-routeEnd"></div>
+                                <div class="loc-selected-badge" id="badge-routeEnd" style="display:inline-flex;">✓ Verified Location Selected</div>
+                            </div>
                         </div>
                     </div>
 
@@ -1326,25 +1584,173 @@
         let map, routeLayerGroup, markerLayerGroup;
         let roadGraph = {}, roadNodeCoords = {};
 
+        // Active Logged-in Commuter Session State
+        let currentUserId = null;
+        let currentUser = null;
+        let newlyRegisteredId = null;
+
         // In-Memory Fallback State (if C++ server is not running)
         let localUsers = [
-            { id: 101, name: "Aryan Sharma", phone: "9876543210", gender: "Male", source: "Sector 62, Noida", destination: "Botanical Garden, Noida", preferredTime: "09:30", transportMode: "Metro", budget: 150, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true },
-            { id: 102, name: "Priya Verma", phone: "9812345678", gender: "Female", source: "Sector 62, Noida", destination: "Botanical Garden, Noida", preferredTime: "09:40", transportMode: "Metro", budget: 120, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true },
-            { id: 103, name: "Rohan Gupta", phone: "9923456789", gender: "Male", source: "Sector 62, Noida", destination: "Connaught Place, Delhi", preferredTime: "09:30", transportMode: "Cab", budget: 250, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Male", wantsSharedCab: true, boardingStation: "Sector 62", allowMultiple: true },
-            { id: 104, name: "Kavita Rao", phone: "9734567890", gender: "Female", source: "Sector 62, Noida", destination: "Connaught Place, Delhi", preferredTime: "09:45", transportMode: "Cab", budget: 300, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: true, boardingStation: "Sector 62", allowMultiple: true },
-            { id: 105, name: "Amit Kumar", phone: "9645678901", gender: "Male", source: "Dwarka Sector 21", destination: "Rajiv Chowk", preferredTime: "10:00", transportMode: "Metro", budget: 80, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: false }
+            { id: 1001, name: "Aryan Sharma", phone: "9876543210", gender: "Male", source: "Sector 62, Noida", destination: "Botanical Garden, Noida", preferredTime: "09:30", transportMode: "Metro", budget: 150, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true },
+            { id: 1002, name: "Priya Verma", phone: "9812345678", gender: "Female", source: "Sector 62, Noida", destination: "Botanical Garden, Noida", preferredTime: "09:40", transportMode: "Metro", budget: 120, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true },
+            { id: 1003, name: "Rohan Gupta", phone: "9923456789", gender: "Male", source: "Sector 62, Noida", destination: "Connaught Place, Delhi", preferredTime: "09:30", transportMode: "Cab", budget: 250, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Male", wantsSharedCab: true, boardingStation: "Sector 62", allowMultiple: true },
+            { id: 1004, name: "Kavita Rao", phone: "9734567890", gender: "Female", source: "Sector 62, Noida", destination: "Connaught Place, Delhi", preferredTime: "09:45", transportMode: "Cab", budget: 300, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: true, boardingStation: "Sector 62", allowMultiple: true },
+            { id: 1005, name: "Amit Kumar", phone: "9645678901", gender: "Male", source: "Dwarka Sector 21", destination: "Rajiv Chowk", preferredTime: "10:00", transportMode: "Metro", budget: 80, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: false }
         ];
 
         let localQueue = [
-            { id: 101, user_id: 101, initial_dest: "Sector 62, Noida", final_dest: "Botanical Garden, Noida", time: 930, mode: "Metro", budget: 150 },
-            { id: 102, user_id: 102, initial_dest: "Sector 62, Noida", final_dest: "Botanical Garden, Noida", time: 940, mode: "Metro", budget: 120 },
-            { id: 103, user_id: 103, initial_dest: "Sector 62, Noida", final_dest: "Connaught Place, Delhi", time: 930, mode: "Cab", budget: 250 },
-            { id: 104, user_id: 104, initial_dest: "Sector 62, Noida", final_dest: "Connaught Place, Delhi", time: 945, mode: "Cab", budget: 300 },
-            { id: 105, user_id: 105, initial_dest: "Dwarka Sector 21", final_dest: "Rajiv Chowk", time: 1000, mode: "Metro", budget: 80 }
+            { id: 1001, user_id: 1001, initial_dest: "Sector 62, Noida", final_dest: "Botanical Garden, Noida", time: 930, mode: "Metro", budget: 150 },
+            { id: 1002, user_id: 1002, initial_dest: "Sector 62, Noida", final_dest: "Botanical Garden, Noida", time: 940, mode: "Metro", budget: 120 },
+            { id: 1003, user_id: 1003, initial_dest: "Sector 62, Noida", final_dest: "Connaught Place, Delhi", time: 930, mode: "Cab", budget: 250 },
+            { id: 1004, user_id: 1004, initial_dest: "Sector 62, Noida", final_dest: "Connaught Place, Delhi", time: 945, mode: "Cab", budget: 300 },
+            { id: 1005, user_id: 1005, initial_dest: "Dwarka Sector 21", final_dest: "Rajiv Chowk", time: 1000, mode: "Metro", budget: 80 }
         ];
 
         let localHistory = [];
         let localUndoStack = [];
+
+        // ---------------- User Session Management ----------------
+        async function handleUserLogin(inputVal) {
+            let id = parseInt(inputVal);
+            if (!id || isNaN(id)) {
+                alert("Please enter a valid 4-digit User ID.");
+                return;
+            }
+
+            let user = null;
+            if (isBackendLive) {
+                try {
+                    let res = await fetch(`/api/users/search?id=${id}`);
+                    let data = await res.json();
+                    if (data.success && data.user) user = data.user;
+                } catch(e) {}
+            }
+            if (!user) user = localUsers.find(u => u.id === id);
+
+            if (!user) {
+                alert(`User ID #${id} not found in the Linked List!\nPlease check the 4-digit ID or register a new commuter account.`);
+                return;
+            }
+
+            currentUserId = id;
+            currentUser = user;
+            updateSessionUI();
+            renderRideAccess();
+            showToast(`Logged in successfully as ${user.name} (ID #${id})`);
+        }
+
+        function handleUserLogout() {
+            currentUserId = null;
+            currentUser = null;
+            updateSessionUI();
+            renderRideAccess();
+            showToast("Logged out of commuter session.");
+        }
+
+        function updateSessionUI() {
+            const loginBox = document.getElementById('headerLoginBox');
+            const sessionBox = document.getElementById('headerSessionBox');
+            if (currentUserId && currentUser) {
+                if (loginBox) loginBox.style.display = 'none';
+                if (sessionBox) {
+                    sessionBox.style.display = 'flex';
+                    document.getElementById('headerUserInitial').innerText = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U';
+                    document.getElementById('headerUserName').innerText = currentUser.name;
+                    document.getElementById('headerUserIdBadge').innerText = 'ID: #' + currentUserId;
+                }
+            } else {
+                if (loginBox) loginBox.style.display = 'flex';
+                if (sessionBox) sessionBox.style.display = 'none';
+                let inp = document.getElementById('headerLoginId');
+                if (inp) inp.value = '';
+            }
+        }
+
+        async function refreshCurrentUserData() {
+            if (!currentUserId) return;
+            if (isBackendLive) {
+                try {
+                    let res = await fetch(`/api/users/search?id=${currentUserId}`);
+                    let data = await res.json();
+                    if (data.success && data.user) {
+                        currentUser = data.user;
+                    }
+                } catch (e) {}
+            } else {
+                let u = localUsers.find(x => x.id === currentUserId);
+                if (u) currentUser = u;
+            }
+        }
+
+        async function renderRideAccess() {
+            await refreshCurrentUserData();
+
+            // 1. Request a Ride Tab
+            const reqLoginCard = document.getElementById('reqLoginPromptCard');
+            const reqFormCard = document.getElementById('reqFormCard');
+            const alreadyHasReqNotice = document.getElementById('alreadyHasRequestNotice');
+            const actualRideForm = document.getElementById('actualRideForm');
+
+            if (!currentUserId || !currentUser) {
+                if (reqLoginCard) reqLoginCard.style.display = 'block';
+                if (reqFormCard) reqFormCard.style.display = 'none';
+            } else {
+                if (reqLoginCard) reqLoginCard.style.display = 'none';
+                if (reqFormCard) reqFormCard.style.display = 'block';
+
+                document.getElementById('reqActiveUserName').innerText = currentUser.name;
+                document.getElementById('reqActiveUserId').innerText = '(ID: #' + currentUser.id + ')';
+                document.getElementById('reqUserAvatar').innerText = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U';
+
+                if (currentUser.hasRequest) {
+                    if (alreadyHasReqNotice) {
+                        alreadyHasReqNotice.style.display = 'block';
+                        document.getElementById('existingReqDetails').innerHTML = 
+                            `You already have an active ride request in progress: <strong>${currentUser.source} ➔ ${currentUser.destination}</strong> (${currentUser.transportMode} at ${currentUser.preferredTime}, Rs. ${currentUser.budget}).`;
+                    }
+                    if (actualRideForm) actualRideForm.style.display = 'none';
+                } else {
+                    if (alreadyHasReqNotice) alreadyHasReqNotice.style.display = 'none';
+                    if (actualRideForm) actualRideForm.style.display = 'block';
+                }
+            }
+
+            // 2. Find Ride Matches Tab
+            const matchLoginCard = document.getElementById('matchLoginPromptCard');
+            const matchEngineCard = document.getElementById('matchEngineCard');
+            const matchRouteDetails = document.getElementById('matchActiveRouteDetails');
+            const matchNoReqNotice = document.getElementById('matchNoRequestNotice');
+            const btnRunMatch = document.getElementById('btnRunMatchEngine');
+            const resultsCard = document.getElementById('matchResultsCard');
+
+            if (!currentUserId || !currentUser) {
+                if (matchLoginCard) matchLoginCard.style.display = 'block';
+                if (matchEngineCard) matchEngineCard.style.display = 'none';
+                if (resultsCard) resultsCard.style.display = 'none';
+            } else {
+                if (matchLoginCard) matchLoginCard.style.display = 'none';
+                if (matchEngineCard) matchEngineCard.style.display = 'block';
+
+                document.getElementById('matchActiveUserName').innerText = currentUser.name;
+                document.getElementById('matchActiveUserId').innerText = '(ID: #' + currentUser.id + ')';
+                document.getElementById('matchUserAvatar').innerText = currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U';
+
+                if (currentUser.hasRequest) {
+                    if (matchRouteDetails) {
+                        matchRouteDetails.style.display = 'block';
+                        document.getElementById('matchActiveRouteText').innerText = `${currentUser.source} ➔ ${currentUser.destination}`;
+                        document.getElementById('matchActiveMetaText').innerText = `Mode: ${currentUser.transportMode} | Departure: ${currentUser.preferredTime} | Budget: Rs. ${currentUser.budget}`;
+                    }
+                    if (btnRunMatch) btnRunMatch.style.display = 'block';
+                    if (matchNoReqNotice) matchNoReqNotice.style.display = 'none';
+                } else {
+                    if (matchRouteDetails) matchRouteDetails.style.display = 'none';
+                    if (btnRunMatch) btnRunMatch.style.display = 'none';
+                    if (matchNoReqNotice) matchNoReqNotice.style.display = 'block';
+                    if (resultsCard) resultsCard.style.display = 'none';
+                }
+            }
+        }
 
         // ---------------- Navigation & Tab Switching ----------------
         function switchTab(tabId) {
@@ -1382,8 +1788,8 @@
                 setTimeout(() => { if (map) map.invalidateSize(); }, 200);
             }
             if (tabId === 'users') loadUsers();
-            if (tabId === 'request') populateUserDropdown();
-            if (tabId === 'matches') populateMatchDropdown();
+            if (tabId === 'request') renderRideAccess();
+            if (tabId === 'matches') renderRideAccess();
             if (tabId === 'rides') loadQueue();
             if (tabId === 'history') loadHistory();
             if (tabId === 'dashboard') loadStats();
@@ -1489,45 +1895,68 @@
 
         async function handleRegisterUser(e) {
             e.preventDefault();
-            const id = parseInt(document.getElementById('newUserId').value);
             const name = document.getElementById('newUserName').value.trim();
             const phone = document.getElementById('newUserPhone').value.trim();
             const gender = document.getElementById('newUserGender').value;
+
+            if (!name || !phone) {
+                alert("Please enter Name and Phone Number.");
+                return;
+            }
 
             if (isBackendLive) {
                 try {
                     let res = await fetch('/api/users', {
                         method: 'POST',
-                        body: JSON.stringify({ id, name, phone, gender })
+                        body: JSON.stringify({ name, phone, gender })
                     });
                     let data = await res.json();
-                    if (data.success) {
-                        showToast(`User #${id} successfully inserted into C++ Linked List!`);
-                        document.getElementById('newUserId').value = '';
+                    if (data.success && data.id) {
+                        newlyRegisteredId = data.id;
+                        showRegistrationSuccess(data.id, name);
                         document.getElementById('newUserName').value = '';
                         document.getElementById('newUserPhone').value = '';
                         loadUsers();
                         loadStats();
                         return;
                     } else {
-                        alert(data.message);
+                        alert(data.message || "Registration failed.");
                         return;
                     }
                 } catch (err) {}
             }
 
-            // Local fallback
-            if (localUsers.find(u => u.id === id)) {
-                alert(`Error: User ID #${id} already exists in Linked List!`);
-                return;
-            }
-            localUsers.push({ id, name, phone, gender, hasRequest: false, isMatched: false, matchedPartnerId: 0 });
-            showToast(`User #${id} registered in Linked List!`);
-            document.getElementById('newUserId').value = '';
+            // Local fallback: generate unique 4-digit ID
+            let newId;
+            do {
+                newId = Math.floor(1000 + Math.random() * 9000);
+            } while (localUsers.find(u => u.id === newId));
+
+            localUsers.push({ id: newId, name, phone, gender, hasRequest: false, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true });
+            newlyRegisteredId = newId;
+            showRegistrationSuccess(newId, name);
             document.getElementById('newUserName').value = '';
             document.getElementById('newUserPhone').value = '';
             loadUsers();
             loadStats();
+        }
+
+        function showRegistrationSuccess(id, name) {
+            const card = document.getElementById('regSuccessCard');
+            const badge = document.getElementById('regSuccessId');
+            if (badge) badge.innerText = '#' + id;
+            if (card) {
+                card.style.display = 'block';
+                card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+            showToast(`User ${name} registered! Assigned 4-Digit ID #${id}`);
+        }
+
+        function loginNewlyRegisteredUser() {
+            if (newlyRegisteredId) {
+                handleUserLogin(newlyRegisteredId);
+                switchTab('request');
+            }
         }
 
         async function handleSearchUser() {
@@ -1591,24 +2020,20 @@
             loadStats();
         }
 
-        // ---------------- Ride Request ----------------
-        async function populateUserDropdown() {
-            let users = [];
-            if (isBackendLive) {
-                try {
-                    let res = await fetch('/api/users');
-                    users = await res.json();
-                } catch (e) { users = localUsers; }
-            } else { users = localUsers; }
-
-            const sel = document.getElementById('reqUserId');
-            sel.innerHTML = '<option value="">Select registered user...</option>' + 
-                users.map(u => `<option value="${u.id}">${u.name} (ID #${u.id})</option>`).join('');
-        }
-
+        // ---------------- User-Specific Ride Request ----------------
         async function handleRideRequest(e) {
             e.preventDefault();
-            const userId = parseInt(document.getElementById('reqUserId').value);
+            if (!currentUserId || !currentUser) {
+                alert("Please log in with your 4-digit User ID first.");
+                return;
+            }
+
+            if (currentUser.hasRequest) {
+                alert("You already have an active ride request in progress. Only 1 active request is permitted per commuter.");
+                return;
+            }
+
+            const userId = currentUserId;
             const mode = document.getElementById('reqMode').value;
             const source = document.getElementById('reqSource').value.trim();
             const destination = document.getElementById('reqDest').value.trim();
@@ -1619,25 +2044,49 @@
             const boardingStation = document.getElementById('reqStation').value.trim();
             const allowMultiple = document.getElementById('reqAllowMultiple').value === 'true';
 
-            if (!userId || !source || !destination) {
-                alert("Please fill in all required fields.");
+            if (!source || !destination) {
+                alert("Please fill in both pickup source and destination.");
                 return;
             }
+
+            // Auto-resolve or validate locations using the unified location system
+            let sLoc = activeLocationSelections['reqSource'];
+            if (!sLoc || sLoc.name !== source) sLoc = await resolveLocation(source);
+            let eLoc = activeLocationSelections['reqDest'];
+            if (!eLoc || eLoc.name !== destination) eLoc = await resolveLocation(destination);
+
+            if (!sLoc || !eLoc) {
+                alert("Please select valid recognized locations for pickup and destination from the autocomplete suggestions dropdown.");
+                return;
+            }
+
+            const finalSource = sLoc.name;
+            const finalDestination = eLoc.name;
 
             if (isBackendLive) {
                 try {
                     let res = await fetch('/api/rides/request', {
                         method: 'POST',
                         body: JSON.stringify({
-                            userId, source, destination, preferredTime, transportMode: mode,
+                            userId, source: finalSource, destination: finalDestination, preferredTime, transportMode: mode,
                             budget, genderPreference, wantsSharedCab, boardingStation, allowMultiple
                         })
                     });
                     let data = await res.json();
                     if (data.success) {
                         showToast(`Ride request submitted & pushed to C++ FIFO Queue!`);
+                        currentUser.hasRequest = true;
+                        currentUser.source = source;
+                        currentUser.destination = destination;
+                        currentUser.preferredTime = preferredTime;
+                        currentUser.transportMode = mode;
+                        currentUser.budget = budget;
+                        renderRideAccess();
                         loadStats();
-                        switchTab('rides');
+                        switchTab('matches');
+                        return;
+                    } else {
+                        alert(data.message);
                         return;
                     }
                 } catch (e) {}
@@ -1658,7 +2107,7 @@
                 u.allowMultiple = allowMultiple;
             }
             localQueue.push({
-                id: 100 + localQueue.length + 1,
+                id: 1000 + localQueue.length + 1,
                 user_id: userId,
                 initial_dest: source,
                 final_dest: destination,
@@ -1667,33 +2116,24 @@
                 budget: budget
             });
             showToast(`Ride request pushed to FIFO Queue!`);
+            currentUser.hasRequest = true;
+            renderRideAccess();
             loadStats();
-            switchTab('rides');
+            switchTab('matches');
         }
 
-        // ---------------- Ride Matching (Priority Queue) ----------------
-        async function populateMatchDropdown() {
-            let users = [];
-            if (isBackendLive) {
-                try {
-                    let res = await fetch('/api/users');
-                    users = await res.json();
-                } catch (e) { users = localUsers; }
-            } else { users = localUsers; }
-
-            const sel = document.getElementById('matchUserSelect');
-            const reqUsers = users.filter(u => u.hasRequest);
-            sel.innerHTML = '<option value="">Select a user with an active ride request...</option>' + 
-                reqUsers.map(u => `<option value="${u.id}">${u.name} (ID #${u.id}) - ${u.source} ➔ ${u.destination}</option>`).join('');
-        }
-
+        // ---------------- User-Specific Ride Matching (Priority Queue) ----------------
         async function handleFindMatches() {
-            const userId = parseInt(document.getElementById('matchUserSelect').value);
-            if (!userId) {
-                alert("Please select a user to find matches for.");
+            if (!currentUserId || !currentUser) {
+                alert("Please log in with your 4-digit User ID to find matches.");
+                return;
+            }
+            if (!currentUser.hasRequest) {
+                alert("You have no active ride request. Please submit a ride request first.");
                 return;
             }
 
+            const userId = currentUserId;
             const resultsCard = document.getElementById('matchResultsCard');
             const container = document.getElementById('matchesContainer');
             const badge = document.getElementById('matchCountBadge');
@@ -1711,12 +2151,12 @@
             }
 
             // Local matching simulation using identical C++ rules
-            let user = localUsers.find(u => u.id === userId);
-            if (!user) return;
+            let user = currentUser;
             let matches = [];
 
             for (let c of localUsers) {
-                if (c.id === user.id || !c.hasRequest || (c.isMatched && !c.allowMultiple)) continue;
+                // Must not be self, must have active request, not already matched
+                if (c.id === user.id || !c.hasRequest || (c.isMatched && (!user.allowMultiple || !c.allowMultiple))) continue;
                 let score = 0, type = "";
                 if (user.transportMode.toLowerCase() === c.transportMode.toLowerCase()) {
                     if (user.source.toLowerCase() === c.source.toLowerCase() && user.destination.toLowerCase() === c.destination.toLowerCase()) {
@@ -1792,6 +2232,11 @@
                     let data = await res.json();
                     if (data.success) {
                         showToast(`Match confirmed! User #${u1} linked with User #${u2}.`);
+                        if (currentUser && currentUser.id === u1) {
+                            currentUser.isMatched = true;
+                            currentUser.matchedPartnerId = u2;
+                        }
+                        renderRideAccess();
                         loadStats();
                         switchTab('rides');
                         return;
@@ -1803,7 +2248,12 @@
             let user2 = localUsers.find(u => u.id === u2);
             if (user1) { user1.isMatched = true; user1.matchedPartnerId = u2; }
             if (user2) { user2.isMatched = true; user2.matchedPartnerId = u1; }
+            if (currentUser && currentUser.id === u1) {
+                currentUser.isMatched = true;
+                currentUser.matchedPartnerId = u2;
+            }
             showToast(`Match confirmed between User #${u1} and User #${u2}!`);
+            renderRideAccess();
             loadStats();
             switchTab('rides');
         }
@@ -2029,101 +2479,325 @@
             return { node: bestNode, distance: minDist };
         }
 
-        // Geocoding helper
-        const geocodeCache = {
-            "sector 62, noida": [28.6210, 77.3640],
-            "botanical garden, noida": [28.5640, 77.3340],
-            "connaught place, delhi": [28.6304, 77.2177],
-            "india gate, delhi": [28.6129, 77.2295]
+        // ==============================================================
+        // REUSABLE UNIFIED NCR LOCATION AUTOCOMPLETE SYSTEM
+        // ==============================================================
+        const activeLocationSelections = {
+            reqSource: null,
+            reqDest: null,
+            reqStation: null,
+            routeStart: null,
+            routeEnd: null
         };
 
-        async function geocode(q) {
-            let clean = q.trim().toLowerCase();
-            if (geocodeCache[clean]) return { name: q, lat: geocodeCache[clean][0], lon: geocodeCache[clean][1] };
+        const locQueryCache = new Map();
+        let cachedAllLocations = null;
+
+        // Helper to get location icon
+        function getLocationIcon(type) {
+            let t = (type || '').toLowerCase();
+            if (t.includes('metro')) return '🚇';
+            if (t.includes('railway') || t.includes('train')) return '🚉';
+            if (t.includes('bus')) return '🚌';
+            if (t.includes('airport')) return '✈️';
+            if (t.includes('hospital')) return '🏥';
+            if (t.includes('university') || t.includes('college')) return '🎓';
+            if (t.includes('mall') || t.includes('market')) return '🛍️';
+            if (t.includes('landmark')) return '🏛️';
+            return '📍';
+        }
+
+        // Highlight matching query text
+        function highlightMatch(text, query) {
+            if (!query || !text) return text;
+            let q = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            let regex = new RegExp(`(${q})`, 'gi');
+            return text.replace(regex, '<strong>$1</strong>');
+        }
+
+        // Fetch location suggestions from C++ backend + supplementary Photon
+        async function fetchLocationsCombined(query) {
+            let cleanQ = query.trim();
+            if (!cleanQ) return [];
+
+            let cacheKey = cleanQ.toLowerCase();
+            if (locQueryCache.has(cacheKey)) {
+                return locQueryCache.get(cacheKey);
+            }
+
+            let localMatches = [];
+
+            // 1. Primary: C++ Native Location Database Search
             try {
-                let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`);
-                let data = await res.json();
-                if (data && data.length > 0) return { name: data[0].display_name.split(',')[0], lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
-            } catch (e) {}
+                let res = await fetch(`/api/locations/search?q=${encodeURIComponent(cleanQ)}`, { signal: AbortSignal.timeout(2000) });
+                if (res.ok) {
+                    let data = await res.json();
+                    if (data.success && Array.isArray(data.locations)) {
+                        localMatches = data.locations;
+                    }
+                }
+            } catch (err) {}
+
+            // 2. Supplementary: Photon OpenStreetMap live search (for queries >= 2 chars)
+            let photonMatches = [];
+            if (cleanQ.length >= 2) {
+                try {
+                    let pUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQ)}&lat=28.6139&lon=77.2090&limit=6`;
+                    let pRes = await fetch(pUrl, { signal: AbortSignal.timeout(1800) });
+                    if (pRes.ok) {
+                        let pData = await pRes.json();
+                        if (pData && Array.isArray(pData.features)) {
+                            photonMatches = pData.features.map(f => {
+                                let props = f.properties || {};
+                                let coords = f.geometry && f.geometry.coordinates ? f.geometry.coordinates : [77.2090, 28.6139];
+                                return {
+                                    name: props.name || cleanQ,
+                                    type: props.osm_value ? props.osm_value.replace(/_/g, ' ').toUpperCase() : 'Location',
+                                    city: props.city || props.district || props.county || props.state || 'Delhi NCR',
+                                    lat: coords[1],
+                                    lon: coords[0]
+                                };
+                            });
+                        }
+                    }
+                } catch (err) {}
+            }
+
+            // 3. Deduplicate and merge results (local CSV results prioritized)
+            let seenNames = new Set();
+            let merged = [];
+
+            for (let loc of localMatches) {
+                let key = loc.name.toLowerCase().trim();
+                if (!seenNames.has(key)) {
+                    seenNames.add(key);
+                    merged.push(loc);
+                }
+            }
+
+            for (let loc of photonMatches) {
+                let key = loc.name.toLowerCase().trim();
+                if (!seenNames.has(key)) {
+                    seenNames.add(key);
+                    merged.push(loc);
+                }
+            }
+
+            let finalResults = merged.slice(0, 10);
+            locQueryCache.set(cacheKey, finalResults);
+            return finalResults;
+        }
+
+        // Attach reusable autocomplete to an input field
+        function attachLocationAutocomplete(inputId) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(`dropdown-${inputId}`);
+            const badge = document.getElementById(`badge-${inputId}`);
+            if (!input || !dropdown) return;
+
+            let debounceTimer = null;
+            let currentFocusIdx = -1;
+            let currentResults = [];
+
+            // Input listener
+            input.addEventListener('input', function() {
+                // Invalidate existing selection if user modifies text
+                activeLocationSelections[inputId] = null;
+                if (badge) badge.style.display = 'none';
+
+                clearTimeout(debounceTimer);
+                const query = this.value.trim();
+
+                if (!query) {
+                    dropdown.style.display = 'none';
+                    dropdown.innerHTML = '';
+                    currentResults = [];
+                    return;
+                }
+
+                debounceTimer = setTimeout(async () => {
+                    dropdown.innerHTML = '<div class="loc-loading">🔍 Searching NCR locations...</div>';
+                    dropdown.style.display = 'block';
+
+                    currentResults = await fetchLocationsCombined(query);
+                    currentFocusIdx = -1;
+
+                    if (currentResults.length === 0) {
+                        dropdown.innerHTML = `<div class="loc-empty">No locations matching "${query}". Try another landmark or sector.</div>`;
+                        return;
+                    }
+
+                    dropdown.innerHTML = currentResults.map((loc, idx) => `
+                        <div class="loc-item" data-idx="${idx}">
+                            <div class="loc-item-icon">${getLocationIcon(loc.type)}</div>
+                            <div class="loc-item-body">
+                                <div class="loc-item-name">${highlightMatch(loc.name, query)}</div>
+                                <div class="loc-item-sub">
+                                    <span class="loc-item-badge">${loc.type}</span>
+                                    • <span class="loc-item-city">${loc.city}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    // Add click listeners to items
+                    dropdown.querySelectorAll('.loc-item').forEach(el => {
+                        el.addEventListener('mousedown', function(e) {
+                            e.preventDefault(); // prevent blur before click
+                            let idx = parseInt(this.getAttribute('data-idx'));
+                            if (currentResults[idx]) {
+                                selectLocationItem(inputId, currentResults[idx]);
+                            }
+                        });
+                    });
+                }, 200);
+            });
+
+            // Keyboard navigation
+            input.addEventListener('keydown', function(e) {
+                if (dropdown.style.display !== 'block' || currentResults.length === 0) return;
+                const items = dropdown.querySelectorAll('.loc-item');
+
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    currentFocusIdx = (currentFocusIdx + 1) % items.length;
+                    updateActiveItem(items, currentFocusIdx);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    currentFocusIdx = (currentFocusIdx - 1 + items.length) % items.length;
+                    updateActiveItem(items, currentFocusIdx);
+                } else if (e.key === 'Enter') {
+                    if (currentFocusIdx >= 0 && currentResults[currentFocusIdx]) {
+                        e.preventDefault();
+                        selectLocationItem(inputId, currentResults[currentFocusIdx]);
+                    }
+                } else if (e.key === 'Escape') {
+                    dropdown.style.display = 'none';
+                }
+            });
+
+            // Focus listener: re-show suggestions if query exists
+            input.addEventListener('focus', function() {
+                if (this.value.trim() && currentResults.length > 0) {
+                    dropdown.style.display = 'block';
+                }
+            });
+
+            // Blur listener: validate typed text
+            input.addEventListener('blur', function() {
+                setTimeout(() => {
+                    dropdown.style.display = 'none';
+                    // Auto-resolve if user typed exact match
+                    if (!activeLocationSelections[inputId] && this.value.trim()) {
+                        resolveLocationByNameFast(inputId, this.value.trim());
+                    }
+                }, 250);
+            });
+        }
+
+        function updateActiveItem(items, idx) {
+            items.forEach((item, i) => {
+                if (i === idx) {
+                    item.classList.add('active');
+                    item.scrollIntoView({ block: 'nearest' });
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        function selectLocationItem(inputId, loc) {
+            const input = document.getElementById(inputId);
+            const dropdown = document.getElementById(`dropdown-${inputId}`);
+            const badge = document.getElementById(`badge-${inputId}`);
+
+            if (input) input.value = loc.name;
+            activeLocationSelections[inputId] = {
+                name: loc.name,
+                type: loc.type,
+                city: loc.city,
+                lat: parseFloat(loc.lat),
+                lon: parseFloat(loc.lon)
+            };
+
+            if (badge) {
+                badge.innerText = `✓ Verified ${loc.type} (${loc.city})`;
+                badge.style.display = 'inline-flex';
+            }
+            if (dropdown) dropdown.style.display = 'none';
+        }
+
+        async function resolveLocationByNameFast(inputId, query) {
+            let matches = await fetchLocationsCombined(query);
+            if (matches && matches.length > 0) {
+                // If top match is close
+                selectLocationItem(inputId, matches[0]);
+            }
+        }
+
+        async function resolveLocation(name) {
+            if (!name) return null;
+            let matches = await fetchLocationsCombined(name);
+            if (matches && matches.length > 0) {
+                return matches[0];
+            }
             return null;
         }
 
-        // Min-Priority Queue for Dijkstra
-        class MinPQ {
-            constructor() { this.heap = []; }
-            push(item, p) { this.heap.push({ item, p }); this.heap.sort((a,b) => a.p - b.p); }
-            pop() { return this.heap.shift(); }
-            empty() { return this.heap.length === 0; }
-        }
+        // Initialize autocomplete on all 5 geographical location fields across the project
+        function initAllLocationAutocompletes() {
+            const allLocFields = ['reqSource', 'reqDest', 'reqStation', 'routeStart', 'routeEnd'];
+            allLocFields.forEach(attachLocationAutocomplete);
 
-        function runDijkstra(startNode, endNode) {
-            let dist = {}, prev = {}, visited = new Set(), pq = new MinPQ();
-            dist[startNode] = 0;
-            pq.push(startNode, 0);
+            // Pre-seed default route planner selections
+            activeLocationSelections['routeStart'] = {
+                name: "Sector 62, Noida",
+                type: "Area/Sector",
+                city: "Noida",
+                lat: 28.6210,
+                lon: 77.3640
+            };
+            activeLocationSelections['routeEnd'] = {
+                name: "Botanical Garden, Noida",
+                type: "Metro Station",
+                city: "Noida",
+                lat: 28.5644,
+                lon: 77.3344
+            };
 
-            while (!pq.empty()) {
-                let { item: u, p: curDist } = pq.pop();
-                if (visited.has(u)) continue;
-                visited.add(u);
-                if (u === endNode) break;
-
-                for (let edge of roadGraph[u] || []) {
-                    let v = edge.target;
-                    let alt = curDist + edge.distance;
-                    if (alt < (dist[v] !== undefined ? dist[v] : Infinity)) {
-                        dist[v] = alt;
-                        prev[v] = { node: u, geom: edge.geometry };
-                        pq.push(v, alt);
+            // Close all dropdowns when clicking anywhere outside
+            document.addEventListener('click', function(e) {
+                allLocFields.forEach(id => {
+                    let wrapper = document.getElementById(id)?.closest('.loc-input-wrapper');
+                    let dd = document.getElementById(`dropdown-${id}`);
+                    if (wrapper && dd && !wrapper.contains(e.target)) {
+                        dd.style.display = 'none';
                     }
-                }
-            }
-
-            if (dist[endNode] === undefined) return null;
-            let fullGeom = [], curr = endNode, hops = 0;
-            while (curr !== startNode) {
-                hops++;
-                let info = prev[curr];
-                fullGeom = info.geom.slice(0, -1).concat(fullGeom);
-                curr = info.node;
-            }
-            if (prev[endNode]) fullGeom.push(prev[endNode].geom[prev[endNode].geom.length - 1]);
-            return { dist: dist[endNode], hops, geom: fullGeom };
+                });
+            });
         }
 
-        function runBFS(startNode, endNode) {
-            let queue = [startNode], visited = new Set([startNode]), parent = {}, found = false;
-
-            while (queue.length > 0) {
-                let u = queue.shift();
-                if (u === endNode) { found = true; break; }
-                for (let edge of roadGraph[u] || []) {
-                    let v = edge.target;
-                    if (!visited.has(v)) {
-                        visited.add(v);
-                        parent[v] = { node: u, geom: edge.geometry, dist: edge.distance };
-                        queue.push(v);
-                    }
-                }
-            }
-
-            if (!found) return null;
-            let fullGeom = [], curr = endNode, totalDist = 0, hops = 0;
-            while (curr !== startNode) {
-                hops++;
-                let info = parent[curr];
-                totalDist += info.dist;
-                fullGeom = info.geom.slice(0, -1).concat(fullGeom);
-                curr = info.node;
-            }
-            if (parent[endNode]) fullGeom.push(parent[endNode].geom[parent[endNode].geom.length - 1]);
-            return { dist: totalDist, hops, geom: fullGeom };
+        // Preset pill handler
+        function setPreset(startName, endName) {
+            document.getElementById('routeStart').value = startName;
+            document.getElementById('routeEnd').value = endName;
+            resolveLocationByNameFast('routeStart', startName);
+            resolveLocationByNameFast('routeEnd', endName);
         }
 
+        // ==============================================================
+        // EXECUTE ROUTING (CALLS NATIVE C++ GRAPH DIJKSTRA & BFS)
+        // ==============================================================
         async function executeRouting(mode) {
             const startStr = document.getElementById('routeStart').value.trim();
             const endStr = document.getElementById('routeEnd').value.trim();
             const spin = document.getElementById('routeLoadingMsg');
             const summary = document.getElementById('routeSummaryBox');
+
+            if (!startStr || !endStr) {
+                alert("Please specify both Starting Location and Destination.");
+                return;
+            }
 
             spin.style.display = 'block';
             summary.style.display = 'none';
@@ -2131,32 +2805,83 @@
             markerLayerGroup.clearLayers();
 
             try {
-                const sLoc = await geocode(startStr);
-                const eLoc = await geocode(endStr);
-                if (!sLoc || !eLoc) throw new Error("Could not geocode one or both locations. Please check spelling.");
+                // Ensure verified coordinates for start and destination
+                let sLoc = activeLocationSelections['routeStart'];
+                if (!sLoc || sLoc.name !== startStr) sLoc = await resolveLocation(startStr);
 
-                const sNear = findNearestNode(sLoc.lat, sLoc.lon);
-                const eNear = findNearestNode(eLoc.lat, eLoc.lon);
+                let eLoc = activeLocationSelections['routeEnd'];
+                if (!eLoc || eLoc.name !== endStr) eLoc = await resolveLocation(endStr);
 
-                // Add start & dest markers
-                L.marker([sLoc.lat, sLoc.lon]).bindPopup(`<b>Start:</b> ${sLoc.name}`).addTo(markerLayerGroup);
-                L.marker([eLoc.lat, eLoc.lon]).bindPopup(`<b>Destination:</b> ${eLoc.name}`).addTo(markerLayerGroup);
+                if (!sLoc || !eLoc) {
+                    throw new Error("Could not verify one or both locations. Please select a valid location from the suggestions dropdown.");
+                }
+
+                // Add start & dest markers on Leaflet map
+                L.marker([sLoc.lat, sLoc.lon])
+                    .bindPopup(`<b>Start:</b> ${sLoc.name}<br><small style="color:#0284c7;">${sLoc.type} • ${sLoc.city}</small>`)
+                    .addTo(markerLayerGroup);
+
+                L.marker([eLoc.lat, eLoc.lon])
+                    .bindPopup(`<b>Destination:</b> ${eLoc.name}<br><small style="color:#0284c7;">${eLoc.type} • ${eLoc.city}</small>`)
+                    .addTo(markerLayerGroup);
 
                 let dRes = null, bRes = null;
-                if (mode === 'dijkstra' || mode === 'both') dRes = runDijkstra(sNear.node, eNear.node);
-                if (mode === 'bfs' || mode === 'both') bRes = runBFS(sNear.node, eNear.node);
+
+                // 1. Call native C++ Graph Dijkstra endpoint
+                if (mode === 'dijkstra' || mode === 'both') {
+                    let url = `/api/routes/dijkstra?start=${encodeURIComponent(sLoc.name)}&end=${encodeURIComponent(eLoc.name)}&startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`;
+                    let res = await fetch(url);
+                    let data = await res.json();
+                    if (data.success && Array.isArray(data.coordinates) && data.coordinates.length > 0) {
+                        dRes = {
+                            dist: data.distanceKm !== undefined ? data.distanceKm : data.distance,
+                            hops: data.hops !== undefined ? data.hops : (data.path ? data.path.length - 1 : 0),
+                            path: data.path || [],
+                            geom: data.coordinates
+                        };
+                    }
+                }
+
+                // 2. Call native C++ Graph BFS endpoint
+                if (mode === 'bfs' || mode === 'both') {
+                    let url = `/api/routes/bfs?start=${encodeURIComponent(sLoc.name)}&end=${encodeURIComponent(eLoc.name)}&startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`;
+                    let res = await fetch(url);
+                    let data = await res.json();
+                    if (data.success && Array.isArray(data.coordinates) && data.coordinates.length > 0) {
+                        bRes = {
+                            dist: data.distanceKm !== undefined ? data.distanceKm : (data.hops * 3.1),
+                            hops: data.hops !== undefined ? data.hops : (data.path ? data.path.length - 1 : 0),
+                            path: data.path || [],
+                            geom: data.coordinates
+                        };
+                    }
+                }
+
+                // Fallback to local graph if offline standalone mode
+                if (!dRes && !bRes && typeof roadGraph !== 'undefined' && Object.keys(roadGraph).length > 0) {
+                    const sNear = findNearestNode(sLoc.lat, sLoc.lon);
+                    const eNear = findNearestNode(eLoc.lat, eLoc.lon);
+                    if (mode === 'dijkstra' || mode === 'both') dRes = runDijkstra(sNear.node, eNear.node);
+                    if (mode === 'bfs' || mode === 'both') bRes = runBFS(sNear.node, eNear.node);
+                }
+
+                if (!dRes && !bRes) {
+                    throw new Error("No navigable road connection found in C++ Graph between these locations.");
+                }
 
                 let polylineBounds = null;
 
-                if (bRes) {
-                    let polyB = L.polyline(bRes.geom, { color: '#06b6d4', weight: 5, dashArray: '8, 8' }).addTo(routeLayerGroup);
-                    polyB.bindPopup(`BFS Minimum Hops: ${bRes.hops} hops (${bRes.dist.toFixed(2)} km)`);
+                // Draw BFS route (Cyan dashed line)
+                if (bRes && bRes.geom && bRes.geom.length > 0) {
+                    let polyB = L.polyline(bRes.geom, { color: '#06b6d4', weight: 5, dashArray: '8, 8', opacity: 0.9 }).addTo(routeLayerGroup);
+                    polyB.bindPopup(`<b>BFS Minimum Connections:</b> ${bRes.hops} hops`);
                     polylineBounds = polyB.getBounds();
                 }
 
-                if (dRes) {
+                // Draw Dijkstra route (Pink solid line)
+                if (dRes && dRes.geom && dRes.geom.length > 0) {
                     let polyD = L.polyline(dRes.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                    polyD.bindPopup(`Dijkstra Shortest Route: ${dRes.dist.toFixed(2)} km (${dRes.hops} hops)`);
+                    polyD.bindPopup(`<b>Dijkstra Shortest Route:</b> ${dRes.dist.toFixed(2)} km (${dRes.hops} hops)`);
                     polylineBounds = polyD.getBounds();
                 }
 
@@ -2164,13 +2889,20 @@
                     map.fitBounds(polylineBounds, { padding: [50, 50] });
                 }
 
+                // Render Route Summary
                 summary.style.display = 'block';
                 let html = `<strong>Route Result:</strong> ${sLoc.name} ➔ ${eLoc.name}<br>`;
                 if (dRes) {
-                    html += `<strong>Dijkstra (Shortest Distance):</strong> <span style="color:var(--accent-pink); font-weight:700;">${dRes.dist.toFixed(2)} km</span> (${dRes.hops} intersections, ${dRes.geom.length} road coordinates)<br>`;
+                    html += `<strong>Dijkstra (Shortest Distance):</strong> <span style="color:var(--accent-pink); font-weight:700;">${dRes.dist.toFixed(2)} km</span> (${dRes.hops} hops, ${dRes.geom.length} coordinate waypoints via C++ Priority Queue)<br>`;
+                    if (dRes.path && dRes.path.length > 1) {
+                        html += `<div style="font-size:0.78em; color:var(--text-muted); margin-top:4px;"><strong>Corridor Path:</strong> ${dRes.path.join(' ➔ ')}</div>`;
+                    }
                 }
                 if (bRes) {
-                    html += `<strong>BFS (Minimum Hops):</strong> <span style="color:var(--accent-cyan); font-weight:700;">${bRes.hops} intersections</span> (${bRes.dist.toFixed(2)} km, ${bRes.geom.length} road coordinates)`;
+                    html += `<strong>BFS (Minimum Hops):</strong> <span style="color:var(--accent-cyan); font-weight:700;">${bRes.hops} hops</span> (computed via C++ Queue)<br>`;
+                    if (bRes.path && bRes.path.length > 1 && (!dRes || mode === 'bfs')) {
+                        html += `<div style="font-size:0.78em; color:var(--text-muted); margin-top:4px;"><strong>Fewest Hops Path:</strong> ${bRes.path.join(' ➔ ')}</div>`;
+                    }
                 }
                 summary.innerHTML = html;
 
@@ -2190,6 +2922,7 @@
         window.onload = function() {
             initMap();
             checkBackendConnection();
+            initAllLocationAutocompletes();
         };
     </script>
 </body>
