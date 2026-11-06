@@ -11,103 +11,632 @@
     
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --accent-color: #f472b6; 
-            --accent-dijkstra: #e11d48;
-            --accent-bfs: #00bfff;
-            --text-main: #ffffff;
-            --text-muted: #aaaaaa;
-            --border-color: #333333;
+            --bg-main: #0c0e14;
+            --bg-sidebar: #13161f;
+            --bg-card: #181c27;
+            --bg-card-hover: #1e2332;
+            --border-color: #262c3d;
+            --accent-pink: #f43f5e;
+            --accent-pink-hover: #e11d48;
+            --accent-blue: #0284c7;
+            --accent-cyan: #06b6d4;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            background-color: var(--bg-color);
+            background-color: var(--bg-main);
             color: var(--text-main);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 25px;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        .container {
-            max-width: 1350px;
-            margin: auto;
+        /* ---------------- Sidebar Navigation ---------------- */
+        aside {
+            width: 270px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            z-index: 100;
         }
 
-        header {
-            text-align: center;
-            margin-bottom: 25px;
+        .sidebar-brand {
+            padding: 24px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .app-logo {
-            width: 80px;
-            height: 80px;
+        .sidebar-logo {
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            border: 3px solid var(--accent-color);
-            box-shadow: 0 0 18px rgba(244, 114, 182, 0.4);
+            border: 2px solid var(--accent-pink);
+            box-shadow: 0 0 12px rgba(244, 63, 94, 0.4);
+            object-fit: cover;
         }
 
-        header h1 {
-            color: var(--accent-color);
-            font-size: 2.5em;
-            margin: 8px 0 2px 0;
-            letter-spacing: 2px;
+        .brand-text h1 {
+            font-size: 1.35em;
+            color: var(--text-main);
+            font-weight: 700;
+            letter-spacing: 1.5px;
         }
 
-        header p {
+        .brand-text span {
+            font-size: 0.68em;
+            color: var(--accent-pink);
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            display: block;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 16px 12px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            margin-bottom: 4px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 16px;
             color: var(--text-muted);
-            margin: 0;
+            text-decoration: none;
+            border-radius: 8px;
             font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border-left: 3px solid transparent;
         }
 
-        .grid-layout {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+        .nav-link:hover {
+            color: var(--text-main);
+            background-color: rgba(255, 255, 255, 0.04);
         }
 
-        @media(max-width: 1000px) {
-            .grid-layout { grid-template-columns: 1fr; }
+        .nav-link.active {
+            color: #ffffff;
+            background-color: rgba(244, 63, 94, 0.12);
+            border-left-color: var(--accent-pink);
+            font-weight: 600;
         }
 
-        .card {
-            background: var(--card-bg);
+        .nav-icon {
+            font-size: 1.15em;
+            width: 22px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
+            padding: 16px 20px;
+            border-top: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.15);
+            font-size: 0.78em;
+        }
+
+        .backend-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 8px var(--accent-green);
+        }
+
+        /* ---------------- Main Content Layout ---------------- */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        header.top-bar {
+            height: 68px;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-color);
+            background-color: rgba(19, 22, 31, 0.75);
+            backdrop-filter: blur(8px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .top-title h2 {
+            font-size: 1.25em;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .top-title p {
+            font-size: 0.78em;
+            color: var(--text-muted);
+        }
+
+        .top-meta {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .live-clock {
+            font-size: 0.82em;
+            color: var(--text-dim);
+            background: #181c27;
+            padding: 6px 12px;
+            border-radius: 6px;
             border: 1px solid var(--border-color);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-            margin-bottom: 20px;
         }
 
-        .card h3 {
-            margin-top: 0;
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 8px;
-            color: var(--accent-color);
+        .content-area {
+            padding: 28px 32px;
+            flex: 1;
+        }
+
+        .tab-section {
+            display: none;
+            animation: fadeIn 0.25s ease forwards;
+        }
+
+        .tab-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ---------------- Cards & UI Components ---------------- */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 22px;
+            margin-bottom: 24px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+        }
+
+        .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
         }
 
+        .card-header h3 {
+            font-size: 1.15em;
+            color: var(--text-main);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header h3 span.badge-ds {
+            font-size: 0.65em;
+            background: rgba(244, 63, 94, 0.15);
+            color: var(--accent-pink);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* ---------------- Statistics Grid ---------------- */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(244, 63, 94, 0.4);
+        }
+
+        .stat-icon-wrapper {
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.45em;
+        }
+
+        .stat-icon-users { background: rgba(14, 165, 233, 0.15); color: #38bdf8; }
+        .stat-icon-requests { background: rgba(244, 63, 94, 0.15); color: var(--accent-pink); }
+        .stat-icon-matches { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+        .stat-icon-rides { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+
+        .stat-info h4 {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .stat-info .stat-value {
+            font-size: 1.85em;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* ---------------- Quick Access Modules ---------------- */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .module-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.2s ease;
+        }
+
+        .module-card:hover {
+            background-color: var(--bg-card-hover);
+            border-color: #3b4255;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .module-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+
+        .module-header h4 {
+            font-size: 1.05em;
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .module-header .module-icon {
+            font-size: 1.3em;
+        }
+
+        .module-card p {
+            font-size: 0.85em;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .btn-module {
+            align-self: flex-start;
+            background: transparent;
+            color: var(--accent-pink);
+            border: 1px solid rgba(244, 63, 94, 0.4);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 0.82em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-module:hover {
+            background: var(--accent-pink);
+            color: #fff;
+            border-color: var(--accent-pink);
+        }
+
+        /* ---------------- Forms & Inputs ---------------- */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.82em;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="email"],
+        input[type="time"],
+        select, textarea {
+            width: 100%;
+            background-color: #12151e;
+            border: 1px solid #2d3448;
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 7px;
+            font-size: 0.9em;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent-pink);
+            box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.2);
+        }
+
+        .btn {
+            background-color: var(--accent-pink);
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.92em;
+            border: none;
+            padding: 11px 20px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-pink-hover);
+        }
+
+        .btn-blue {
+            background-color: #0284c7;
+        }
+        .btn-blue:hover {
+            background-color: #0369a1;
+        }
+
+        .btn-secondary {
+            background-color: #2b3245;
+            color: #f8fafc;
+        }
+        .btn-secondary:hover {
+            background-color: #373f57;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+        }
+        .btn-outline:hover {
+            border-color: var(--accent-pink);
+            color: var(--text-main);
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8em;
+            border-radius: 5px;
+        }
+
+        /* ---------------- Tables ---------------- */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88em;
+            text-align: left;
+        }
+
+        table.data-table th {
+            background-color: #12151f;
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            text-transform: uppercase;
+            font-size: 0.78em;
+            letter-spacing: 0.5px;
+        }
+
+        table.data-table td {
+            padding: 13px 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--text-main);
+        }
+
+        table.data-table tr:hover td {
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        /* ---------------- Badges & Indicators ---------------- */
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+
+        .badge-success { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-danger  { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-info    { background: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3); }
+
+        /* ---------------- Matching Engine Cards ---------------- */
+        .matches-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+            gap: 18px;
+            margin-top: 18px;
+        }
+
+        .match-card {
+            background-color: #141722;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 18px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .match-card.best-match {
+            border-color: rgba(244, 63, 94, 0.5);
+            box-shadow: 0 0 16px rgba(244, 63, 94, 0.15);
+        }
+
+        .match-score-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: linear-gradient(135deg, #f43f5e, #be123c);
+            color: #fff;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.78em;
+            font-weight: 700;
+        }
+
+        .match-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .user-avatar-small {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #252b3d;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: var(--accent-pink);
+        }
+
+        .match-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 12px;
+            margin: 12px 0;
+            font-size: 0.84em;
+        }
+
+        .match-details-grid div span {
+            color: var(--text-muted);
+            display: block;
+            font-size: 0.75em;
+            margin-bottom: 2px;
+        }
+
+        /* ---------------- Route Planner Map ---------------- */
         #map {
-            height: 460px;
+            height: 480px;
             width: 100%;
             border-radius: 8px;
             border: 1px solid var(--border-color);
-            margin-top: 10px;
+            margin-top: 12px;
         }
 
+        .preset-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .pill-btn {
+            background: #151824;
+            color: var(--accent-pink);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pill-btn:hover {
+            background: var(--accent-pink);
+            color: #fff;
+            border-color: var(--accent-pink);
+        }
+
+        /* Map Legend */
         .map-legend {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
-            background: #181818;
+            gap: 16px;
+            background: #12151f;
             border: 1px solid var(--border-color);
             padding: 10px 14px;
             border-radius: 6px;
             margin-top: 10px;
-            font-size: 0.85em;
-            align-items: center;
+            font-size: 0.82em;
         }
 
         .legend-item {
@@ -116,410 +645,674 @@
             gap: 6px;
         }
 
-        .legend-line {
-            width: 24px;
+        .legend-color-line {
+            width: 22px;
             height: 4px;
             border-radius: 2px;
-            display: inline-block;
         }
 
-        .legend-line.dijkstra {
-            background-color: var(--accent-dijkstra);
-        }
+        .legend-color-line.dijkstra { background-color: var(--accent-pink); }
+        .legend-color-line.bfs { background-color: var(--accent-cyan); border-top: 2px dashed var(--accent-cyan); background: transparent; }
 
-        .legend-line.bfs {
-            background-color: var(--accent-bfs);
-            border-top: 2px dashed var(--accent-bfs);
-            background: transparent;
-        }
-
-        .legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            display: inline-block;
-        }
-
-        .legend-dot.start { background-color: #10b981; }
-        .legend-dot.dest { background-color: #ef4444; }
-
-        .form-group { margin-bottom: 12px; }
-
-        label {
-            display: block;
-            font-size: 0.85em;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            background: #2a2a2a;
-            border: 1px solid #444;
+        /* Notification Toast */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1e2433;
             color: #fff;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--accent-color);
-        }
-
-        .btn {
-            background: var(--accent-color);
-            color: #121212;
-            font-weight: bold;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            width: 100%;
-            font-size: 1em;
-            margin-top: 8px;
-            transition: background 0.2s;
-        }
-
-        .btn:hover { background: #e879f9; }
-        .btn-secondary { background: #ff5555; color: #fff; }
-        .btn-secondary:hover { background: #cc0000; }
-        .btn-blue { background: #00bfff; color: #121212; }
-        .btn-blue:hover { background: #0099cc; color: #fff; }
-        .btn-purple { background: #a78bfa; color: #121212; }
-        .btn-purple:hover { background: #8b5cf6; color: #fff; }
-
-        .preset-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 12px;
-        }
-
-        .btn-preset {
-            background: #2a2a2a;
-            color: #f472b6;
-            border: 1px solid #444;
-            padding: 6px 10px;
-            border-radius: 14px;
-            font-size: 0.78em;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .btn-preset:hover {
-            background: #f472b6;
-            color: #121212;
-            border-color: #f472b6;
-        }
-
-        .list-box {
-            background: #181818;
-            border: 1px solid var(--border-color);
-            padding: 12px;
+            padding: 14px 22px;
             border-radius: 8px;
-            min-height: 150px;
-            max-height: 220px;
-            overflow-y: auto;
-        }
-
-        .list-item {
-            background: #242424;
-            border-left: 4px solid var(--accent-color);
-            padding: 10px;
-            margin-bottom: 8px;
-            border-radius: 4px;
+            border-left: 4px solid var(--accent-pink);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
             font-size: 0.9em;
-        }
-
-        .list-item.history { border-left-color: #00bfff; }
-        .list-item.graph { border-left-color: #a78bfa; }
-
-        .stats-box {
-            display: flex;
-            justify-content: space-around;
-            text-align: center;
-        }
-
-        .stat-item h2 { margin: 0; color: var(--accent-color); }
-        .stat-item p { margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.85em; }
-
-        .path-result-box {
-            background: #181818;
-            border: 1px solid var(--accent-color);
-            padding: 14px;
-            border-radius: 8px;
-            margin-top: 12px;
-            font-size: 0.9em;
-            line-height: 1.5;
-        }
-
-        .path-result-box.error {
-            border-color: #ff5555;
-            color: #ff8888;
-        }
-
-        .badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 4px;
-            font-size: 0.75em;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .badge-dijkstra { background: var(--accent-dijkstra); color: #fff; }
-        .badge-bfs { background: var(--accent-bfs); color: #121212; }
-
-        .metric-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin: 10px 0;
-        }
-        .metric-card {
-            background: #222;
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid #333;
-        }
-        .metric-card span { display: block; font-size: 0.75em; color: var(--text-muted); }
-        .metric-card strong { font-size: 1.15em; color: #fff; }
-
-        .loading-spinner {
             display: none;
-            color: var(--accent-color);
-            font-size: 0.9em;
-            margin-top: 8px;
-            text-align: center;
-            padding: 8px;
-            background: #222;
-            border-radius: 6px;
+            z-index: 1000;
+            animation: slideUp 0.25s ease;
         }
 
-        /* Custom Leaflet Map Markers */
-        .map-pin {
-            width: 28px;
-            height: 28px;
-            border-radius: 50% 50% 50% 0;
-            position: absolute;
-            transform: rotate(-45deg);
-            left: 50%;
-            top: 50%;
-            margin: -24px 0 0 -14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
-        }
-        .map-pin.start {
-            background: #10b981;
-            border: 2px solid #ffffff;
-        }
-        .map-pin.dest {
-            background: #ef4444;
-            border: 2px solid #ffffff;
-        }
-        .map-pin span {
-            transform: rotate(45deg);
-            color: #ffffff;
-            font-weight: bold;
-            font-size: 12px;
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <img src="MARK_LOGO.PNG" alt="M.A.R.K Logo" class="app-logo">
-            <h1>M.A.R.K</h1>
-            <p>MAPPED AUTOMATION ROUTE KINEMATICS (COMPLETE SYSTEM)</p>
+    <!-- ----------------- SIDEBAR ----------------- -->
+    <aside>
+        <div class="sidebar-brand">
+            <img src="MARK_LOGO.PNG" alt="M.A.R.K. Logo" class="sidebar-logo">
+            <div class="brand-text">
+                <h1>M.A.R.K.</h1>
+                <span>ROUTE KINEMATICS</span>
+            </div>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a class="nav-link active" onclick="switchTab('dashboard')">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('users')">
+                    <span class="nav-icon">👥</span>
+                    <span>User Management</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('request')">
+                    <span class="nav-icon">📝</span>
+                    <span>Request a Ride</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('matches')">
+                    <span class="nav-icon">🔍</span>
+                    <span>Find Ride Matches</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('rides')">
+                    <span class="nav-icon">🚖</span>
+                    <span>Ride Management</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('routes')">
+                    <span class="nav-icon">🗺️</span>
+                    <span>Route Planner</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('history')">
+                    <span class="nav-icon">📜</span>
+                    <span>Ride History</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" onclick="switchTab('ds-overview')">
+                    <span class="nav-icon">🧠</span>
+                    <span>Data Structures</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="sidebar-footer">
+            <div class="backend-status">
+                <span class="status-dot" id="serverDot"></span>
+                <span id="serverStatusText">C++ Backend Connected</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ----------------- MAIN VIEW ----------------- -->
+    <main>
+        <!-- Top Sticky Header Bar -->
+        <header class="top-bar">
+            <div class="top-title">
+                <h2 id="pageTitle">Dashboard Overview</h2>
+                <p id="pageSubtitle">Mapped Automation Route Kinematics &amp; Commute Management System</p>
+            </div>
+            <div class="top-meta">
+                <div class="live-clock" id="liveClock">--:--:--</div>
+                <button class="btn btn-sm" onclick="switchTab('request')">+ Request Ride</button>
+            </div>
         </header>
 
-        <!-- Analytics Overview Bar -->
-        <div class="card">
-            <div class="stats-box">
-                <div class="stat-item">
-                    <h2 id="statQueueCount">0</h2>
-                    <p>Pending Queue (FIFO)</p>
-                </div>
-                <div class="stat-item">
-                    <h2 id="statHistoryCount">0</h2>
-                    <p>Matched Trips (Vector)</p>
-                </div>
-                <div class="stat-item">
-                    <h2 id="statLocationsCount">0</h2>
-                    <p>Road Network Nodes</p>
-                </div>
-                <div class="stat-item">
-                    <h2 id="statRevenue">$0.00</h2>
-                    <p>Total Revenue</p>
-                </div>
-            </div>
-        </div>
+        <div class="content-area">
 
-        <!-- Leaflet Map Visualizer -->
-        <div class="card">
-            <h3>
-                <span>Interactive Route Map Visualizer (OpenStreetMap &amp; Real Roads)</span>
-                <span style="font-size: 0.65em; color: var(--text-muted); font-weight: normal;">Following actual road network curves</span>
-            </h3>
-            <div id="map"></div>
-            
-            <div class="map-legend">
-                <span style="font-weight: bold; color: var(--text-muted); margin-right: 5px;">Legend:</span>
-                <div class="legend-item">
-                    <span class="legend-dot start"></span>
-                    <span>Start Location</span>
+            <!-- ============================================================== -->
+            <!-- TAB 1: DASHBOARD                                               -->
+            <!-- ============================================================== -->
+            <section id="tab-dashboard" class="tab-section active">
+                <!-- Statistics Overview Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-icon-users">👥</div>
+                        <div class="stat-info">
+                            <h4>Total Registered Users</h4>
+                            <div class="stat-value" id="statUsers">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-icon-requests">📋</div>
+                        <div class="stat-info">
+                            <h4>Active Ride Requests</h4>
+                            <div class="stat-value" id="statRequests">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-icon-matches">🤝</div>
+                        <div class="stat-info">
+                            <h4>Successful Matches</h4>
+                            <div class="stat-value" id="statMatches">0</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-icon-rides">🏁</div>
+                        <div class="stat-info">
+                            <h4>Completed Rides</h4>
+                            <div class="stat-value" id="statCompleted">0</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="legend-item">
-                    <span class="legend-dot dest"></span>
-                    <span>Destination</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-line dijkstra"></span>
-                    <span>Dijkstra (Shortest Road Distance)</span>
-                </div>
-                <div class="legend-item">
-                    <span class="legend-line bfs"></span>
-                    <span>BFS (Minimum Hops / Connections)</span>
-                </div>
-            </div>
-        </div>
 
-        <div class="grid-layout">
-            <!-- Left Column: Forms & Operations -->
-            <div>
-                <!-- Ride Request Form -->
+                <!-- Quick Access Modules -->
                 <div class="card">
-                    <h3>Register Ride Request</h3>
-                    <div class="form-group">
-                        <label>User ID</label>
-                        <input type="number" id="userId" value="101">
+                    <div class="card-header">
+                        <h3>⚡ Quick Access Modules</h3>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Core System Workflows</span>
                     </div>
-                    <div class="form-group">
-                        <label>Pickup Location</label>
-                        <input type="text" id="initialDest" placeholder="e.g. Sector 62, Noida" value="Sector 62, Noida">
+
+                    <div class="modules-grid">
+                        <div class="module-card">
+                            <div>
+                                <div class="module-header">
+                                    <span class="module-icon">👤</span>
+                                    <h4>Register a User</h4>
+                                </div>
+                                <p>Onboard new commuters dynamically using the C++ Linked List data structure with zero fragmentation.</p>
+                            </div>
+                            <button class="btn-module" onclick="switchTab('users')">Register User &rarr;</button>
+                        </div>
+
+                        <div class="module-card">
+                            <div>
+                                <div class="module-header">
+                                    <span class="module-icon">📝</span>
+                                    <h4>Request a Ride</h4>
+                                </div>
+                                <p>Submit detailed commute preferences (route, transit mode, time, budget) and enqueue into the FIFO queue.</p>
+                            </div>
+                            <button class="btn-module" onclick="switchTab('request')">Request Ride &rarr;</button>
+                        </div>
+
+                        <div class="module-card">
+                            <div>
+                                <div class="module-header">
+                                    <span class="module-icon">🎯</span>
+                                    <h4>Find Ride Matches</h4>
+                                </div>
+                                <p>Evaluate co-commuter compatibility with our C++ Priority Queue matching engine based on route and time.</p>
+                            </div>
+                            <button class="btn-module" onclick="switchTab('matches')">Find Matches &rarr;</button>
+                        </div>
+
+                        <div class="module-card">
+                            <div>
+                                <div class="module-header">
+                                    <span class="module-icon">🚖</span>
+                                    <h4>Manage Rides &amp; Stack</h4>
+                                </div>
+                                <p>Dispatch rides from the FIFO queue, log completed trips to Vector, and undo actions using the LIFO Stack.</p>
+                            </div>
+                            <button class="btn-module" onclick="switchTab('rides')">Manage Queue &rarr;</button>
+                        </div>
+
+                        <div class="module-card">
+                            <div>
+                                <div class="module-header">
+                                    <span class="module-icon">🗺️</span>
+                                    <h4>Explore Routes</h4>
+                                </div>
+                                <p>Compute true road-following shortest routes using Dijkstra &amp; BFS on real OpenStreetMap road graphs.</p>
+                            </div>
+                            <button class="btn-module" onclick="switchTab('routes')">Open Map &rarr;</button>
+                        </div>
+
+                        <div class="module-card">
+                            <div>
+                                <div class="module-header">
+                                    <span class="module-icon">📜</span>
+                                    <h4>View Ride History</h4>
+                                </div>
+                                <p>Inspect historical trip records and total system fare revenue stored in the C++ Vector data structure.</p>
+                            </div>
+                            <button class="btn-module" onclick="switchTab('history')">View History &rarr;</button>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Drop-off Location</label>
-                        <input type="text" id="finalDest" placeholder="e.g. Botanical Garden, Noida" value="Botanical Garden, Noida">
-                    </div>
-                    <div class="form-group">
-                        <label>Time (e.g. 930)</label>
-                        <input type="number" id="reqTime" value="930">
-                    </div>
-                    <div class="form-group">
-                        <label>Transit Mode</label>
-                        <select id="mode">
-                            <option value="cab">Cab</option>
-                            <option value="metro">Metro</option>
-                            <option value="carpool">Carpool</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Max Budget ($)</label>
-                        <input type="number" id="budget" value="200">
-                    </div>
-                    <button class="btn" onclick="addRequest()">Push to Queue (FIFO)</button>
                 </div>
 
-                <!-- Add Graph Edge Form (Manual Demonstration) -->
+                <!-- Live System Data Structure Monitor -->
                 <div class="card">
-                    <h3>Manual Graph Network (Adjacency List Demo)</h3>
-                    <p style="font-size: 0.8em; color: var(--text-muted); margin-top:0;">Add custom edges to demonstrate manual Graph data structure operations alongside real road routing.</p>
-                    <div class="form-group">
-                        <label>Source Node (U)</label>
-                        <input type="text" id="roadU" placeholder="e.g. Sector62">
+                    <div class="card-header">
+                        <h3>🧠 Live Data Structure State Monitor</h3>
+                        <span class="badge badge-success">C++ Native Memory</span>
                     </div>
-                    <div class="form-group">
-                        <label>Target Node (V)</label>
-                        <input type="text" id="roadV" placeholder="e.g. BotanicalGarden">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; font-size: 0.88em;">
+                        <div style="background:#12151f; padding:12px; border-radius:8px; border:1px solid var(--border-color);">
+                            <span style="color:var(--text-muted); display:block; font-size:0.75em;">LINKED LIST (USERS)</span>
+                            <strong style="color:var(--text-main); font-size:1.2em;" id="monLinkedList">0 Nodes</strong>
+                        </div>
+                        <div style="background:#12151f; padding:12px; border-radius:8px; border:1px solid var(--border-color);">
+                            <span style="color:var(--text-muted); display:block; font-size:0.75em;">QUEUE (FIFO DISPATCH)</span>
+                            <strong style="color:var(--accent-pink); font-size:1.2em;" id="monQueue">0 Pending</strong>
+                        </div>
+                        <div style="background:#12151f; padding:12px; border-radius:8px; border:1px solid var(--border-color);">
+                            <span style="color:var(--text-muted); display:block; font-size:0.75em;">STACK (LIFO UNDO)</span>
+                            <strong style="color:#a78bfa; font-size:1.2em;" id="monStack">0 Actions</strong>
+                        </div>
+                        <div style="background:#12151f; padding:12px; border-radius:8px; border:1px solid var(--border-color);">
+                            <span style="color:var(--text-muted); display:block; font-size:0.75em;">VECTOR (RIDE HISTORY)</span>
+                            <strong style="color:#38bdf8; font-size:1.2em;" id="monVector">0 Records</strong>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label>Distance / Weight (km)</label>
-                        <input type="number" step="0.1" id="roadDist" value="5.5">
+                </div>
+            </section>
+
+            <!-- ============================================================== -->
+            <!-- TAB 2: USER MANAGEMENT (LINKED LIST)                          -->
+            <!-- ============================================================== -->
+            <section id="tab-users" class="tab-section">
+                <!-- Registration Form Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><span>👤 Register New User</span> <span class="badge-ds">Linked List Insert</span></h3>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Dynamic Node Allocation</span>
                     </div>
-                    <button class="btn btn-purple" onclick="addGraphEdge()">Add Manual Graph Edge</button>
+
+                    <form onsubmit="handleRegisterUser(event)">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>User ID</label>
+                                <input type="number" id="newUserId" placeholder="e.g. 106" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Full Name</label>
+                                <input type="text" id="newUserName" placeholder="e.g. Rohit Sharma" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="text" id="newUserPhone" placeholder="e.g. 9811223344" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Gender</label>
+                                <select id="newUserGender">
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">Register User into Linked List</button>
+                    </form>
                 </div>
 
-                <!-- Matching Engine & Undo Stack -->
+                <!-- Search & Filter Card -->
                 <div class="card">
-                    <h3>Matching Engine &amp; Stack</h3>
-                    <div class="form-group">
-                        <label>Assigned Partner ID</label>
-                        <input type="number" id="partnerId" value="501">
+                    <div class="card-header">
+                        <h3><span>🔍 Search User</span> <span class="badge-ds">O(N) Traversal</span></h3>
                     </div>
-                    <div class="form-group">
-                        <label>Final Agreed Fare ($)</label>
-                        <input type="number" id="fare" value="180">
+                    <div style="display: flex; gap: 12px; max-width: 500px;">
+                        <input type="number" id="searchUserId" placeholder="Enter User ID to search...">
+                        <button class="btn btn-blue" onclick="handleSearchUser()">Search</button>
+                        <button class="btn btn-secondary" onclick="loadUsers()">Reset</button>
                     </div>
-                    <button class="btn btn-blue" onclick="processRide()">Match &amp; Complete Ride</button>
-                    <button class="btn btn-secondary" onclick="undoAction()">Undo Last Action (Stack)</button>
+                    <div id="searchResultBox" style="display: none; margin-top: 14px; padding: 12px; background: #12151f; border-radius: 8px; border: 1px solid var(--border-color);"></div>
                 </div>
-            </div>
 
-            <!-- Right Column: Graph Pathfinders & Data Structure Monitors -->
-            <div>
-                <!-- DS Pathfinding Panel -->
+                <!-- All Registered Users Table -->
                 <div class="card">
-                    <h3>Road Pathfinding (Dijkstra &amp; BFS)</h3>
-                    
-                    <div class="form-group">
-                        <label>Quick Test Presets:</label>
-                        <div class="preset-container">
-                            <button class="btn-preset" onclick="setPreset('Sector 62, Noida', 'Botanical Garden, Noida')">Sec 62 ➔ Botanical Garden</button>
-                            <button class="btn-preset" onclick="setPreset('Sector 62, Noida', 'Connaught Place, Delhi')">Sec 62 ➔ Connaught Place</button>
-                            <button class="btn-preset" onclick="setPreset('India Gate, Delhi', 'Connaught Place, Delhi')">India Gate ➔ Connaught Place</button>
+                    <div class="card-header">
+                        <h3><span>📋 Registered Commuters Directory</span></h3>
+                        <button class="btn btn-outline btn-sm" onclick="loadUsers()">↻ Refresh</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Gender</th>
+                                    <th>Active Request</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr><td colspan="7" style="text-align: center; color: var(--text-muted);">Loading users from C++ Linked List...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================== -->
+            <!-- TAB 3: REQUEST A RIDE (FIFO QUEUE)                             -->
+            <!-- ============================================================== -->
+            <section id="tab-request" class="tab-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><span>📝 Submit Ride Request</span> <span class="badge-ds">Queue Push (FIFO)</span></h3>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Queued into C++ Memory</span>
+                    </div>
+
+                    <form onsubmit="handleRideRequest(event)">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Registered User</label>
+                                <select id="reqUserId" required>
+                                    <option value="">Select registered user...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Transit Mode</label>
+                                <select id="reqMode">
+                                    <option value="Metro">Metro</option>
+                                    <option value="Cab">Cab</option>
+                                    <option value="Carpool">Carpool</option>
+                                    <option value="Auto">Auto</option>
+                                    <option value="Bus">Bus</option>
+                                    <option value="Train">Train</option>
+                                    <option value="Bike">Bike</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Pickup Location / Source</label>
+                                <input type="text" id="reqSource" placeholder="e.g. Sector 62, Noida" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Destination</label>
+                                <input type="text" id="reqDest" placeholder="e.g. Botanical Garden, Noida" required>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Preferred Departure Time (HH:MM)</label>
+                                <input type="text" id="reqTime" placeholder="e.g. 09:30" value="09:30" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Maximum Budget (Rs.)</label>
+                                <input type="number" id="reqBudget" value="150" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Gender Co-passenger Preference</label>
+                                <select id="reqGenderPref">
+                                    <option value="Any">Any Gender</option>
+                                    <option value="Same">Same Gender Only</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Multiple Passenger Sharing</label>
+                                <select id="reqAllowMultiple">
+                                    <option value="true">Yes (Allow multiple matches)</option>
+                                    <option value="false">No (1-on-1 sharing only)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>Want Shared Cab to Station/Hub?</label>
+                                <select id="reqWantsCab">
+                                    <option value="false">No</option>
+                                    <option value="true">Yes</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Preferred Transit Station (if shared cab)</label>
+                                <input type="text" id="reqStation" placeholder="e.g. Sector 62 or Botanical Garden">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn" style="width: 100%;">Push Ride Request to FIFO Queue &amp; Stack</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- ============================================================== -->
+            <!-- TAB 4: FIND RIDE MATCHES (PRIORITY QUEUE)                     -->
+            <!-- ============================================================== -->
+            <section id="tab-matches" class="tab-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><span>🎯 Ride Matching Engine</span> <span class="badge-ds">Priority Queue (Max-Heap)</span></h3>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Calculates Route, Time, Gender &amp; Budget Match</span>
+                    </div>
+
+                    <div style="display: flex; gap: 14px; align-items: center; max-width: 600px;">
+                        <div style="flex: 1;">
+                            <label style="display:block; font-size:0.8em; color:var(--text-muted); margin-bottom:4px;">Select Commuter to Find Matches For:</label>
+                            <select id="matchUserSelect">
+                                <option value="">Select a user with an active ride request...</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-blue" style="margin-top: 18px;" onclick="handleFindMatches()">Find Matches</button>
+                    </div>
+                </div>
+
+                <!-- Results Output Card -->
+                <div class="card" id="matchResultsCard" style="display: none;">
+                    <div class="card-header">
+                        <h3 id="matchResultsTitle">Match Results</h3>
+                        <span id="matchCountBadge" class="badge badge-info">0 Matches</span>
+                    </div>
+
+                    <div id="matchesContainer" class="matches-container">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================== -->
+            <!-- TAB 5: RIDE MANAGEMENT (QUEUE & STACK)                         -->
+            <!-- ============================================================== -->
+            <section id="tab-rides" class="tab-section">
+                <div style="display: flex; gap: 14px; margin-bottom: 20px;">
+                    <button class="btn btn-blue" onclick="handleProcessNextRide()">▶ Process Next Ride (FIFO Queue)</button>
+                    <button class="btn btn-secondary" onclick="handleUndoAction()">↩ Undo Last Action (Stack Pop)</button>
+                </div>
+
+                <!-- Active Pending Queue -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><span>📥 Active Pending Ride Queue</span> <span class="badge-ds">FIFO Queue</span></h3>
+                        <span id="queueBadge" class="badge badge-warning">0 Pending</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Req ID</th>
+                                    <th>User ID</th>
+                                    <th>Pickup</th>
+                                    <th>Destination</th>
+                                    <th>Mode</th>
+                                    <th>Time</th>
+                                    <th>Budget</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="queueTableBody">
+                                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Queue is currently empty.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================== -->
+            <!-- TAB 6: ROUTE PLANNER (OSM MAP & DIJKSTRA/BFS)                 -->
+            <!-- ============================================================== -->
+            <section id="tab-routes" class="tab-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><span>🗺️ Interactive Route Navigation Visualizer</span> <span class="badge-ds">Graph / Dijkstra / BFS</span></h3>
+                    </div>
+
+                    <div class="preset-pills">
+                        <span style="font-size: 0.82em; color: var(--text-muted); align-self: center;">Presets:</span>
+                        <button class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Botanical Garden, Noida')">Sec 62 ➔ Botanical Garden</button>
+                        <button class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Connaught Place, Delhi')">Sec 62 ➔ Connaught Place</button>
+                        <button class="pill-btn" onclick="setPreset('India Gate, Delhi', 'Connaught Place, Delhi')">India Gate ➔ Connaught Place</button>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
+                        <div class="form-group" style="margin:0;">
+                            <label>Starting Location</label>
+                            <input type="text" id="routeStart" value="Sector 62, Noida">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label>Destination Location</label>
+                            <input type="text" id="routeEnd" value="Botanical Garden, Noida">
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>Start Location</label>
-                        <input type="text" id="pathStart" placeholder="Enter starting address or landmark" value="Sector 62, Noida">
-                    </div>
-                    <div class="form-group">
-                        <label>Destination Location</label>
-                        <input type="text" id="pathEnd" placeholder="Enter destination address or landmark" value="Botanical Garden, Noida">
-                    </div>
-                    
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn" style="margin-top:0;" onclick="findRoute('dijkstra')">Shortest Path (Dijkstra)</button>
-                        <button class="btn btn-blue" style="margin-top:0;" onclick="findRoute('bfs')">Min Hops (BFS)</button>
-                        <button class="btn btn-purple" style="margin-top:0;" onclick="findRoute('both')">Compare Both</button>
+                    <div style="display: flex; gap: 10px; margin-top: 8px;">
+                        <button class="btn" onclick="executeRouting('dijkstra')">Shortest Path (Dijkstra)</button>
+                        <button class="btn btn-blue" onclick="executeRouting('bfs')">Min Connections (BFS)</button>
+                        <button class="btn btn-secondary" onclick="executeRouting('both')">Compare Both</button>
                     </div>
 
-                    <div id="routeLoading" class="loading-spinner">
-                        ⏳ Resolving coordinates &amp; computing road graph shortest path...
+                    <div id="routeLoadingMsg" style="display:none; color:var(--accent-pink); margin-top:10px; font-size:0.88em;">
+                        ⏳ Tracing road network graph and computing shortest path...
                     </div>
 
-                    <div id="pathResult" class="path-result-box" style="display: none;"></div>
+                    <div id="routeSummaryBox" style="display:none; margin-top:14px; padding:14px; background:#12151f; border-radius:8px; border:1px solid var(--accent-pink);"></div>
+
+                    <div id="map"></div>
+
+                    <div class="map-legend">
+                        <span style="font-weight: 600; color: var(--text-muted);">Map Legend:</span>
+                        <div class="legend-item">
+                            <span class="legend-color-line dijkstra"></span>
+                            <span>Dijkstra (Shortest Road Distance in km)</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color-line bfs"></span>
+                            <span>BFS (Minimum Turns / Hops)</span>
+                        </div>
+                    </div>
                 </div>
+            </section>
 
-                <!-- Graph Adjacency List Monitor -->
+            <!-- ============================================================== -->
+            <!-- TAB 7: RIDE HISTORY (VECTOR)                                   -->
+            <!-- ============================================================== -->
+            <section id="tab-history" class="tab-section">
                 <div class="card">
-                    <h3>Graph Adjacency List Monitor</h3>
-                    <div id="adjacencyListDisplay" class="list-box"></div>
-                </div>
-
-                <!-- Active Pending Queue (FIFO) -->
-                <div class="card">
-                    <h3>Active Pending Queue (FIFO)</h3>
-                    <div id="queueList" class="list-box">
-                        <div class="list-item">Queue is currently empty.</div>
+                    <div class="card-header">
+                        <h3><span>📜 Completed Ride History</span> <span class="badge-ds">Vector Storage</span></h3>
+                        <span id="historyRevenueBadge" class="badge badge-success">Revenue: $0.00</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Ride ID</th>
+                                    <th>Primary User</th>
+                                    <th>Partner ID</th>
+                                    <th>Pickup Location</th>
+                                    <th>Destination</th>
+                                    <th>Transport Mode</th>
+                                    <th>Agreed Fare</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody">
+                                <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No completed rides recorded yet.</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
+            </section>
 
-                <!-- Matched Ride History (Vector) -->
+            <!-- ============================================================== -->
+            <!-- TAB 8: DATA STRUCTURE OVERVIEW                                 -->
+            <!-- ============================================================== -->
+            <section id="tab-ds-overview" class="tab-section">
                 <div class="card">
-                    <h3>Matched Ride History (Vector)</h3>
-                    <div id="historyList" class="list-box">
-                        <div class="list-item history">No history recorded yet.</div>
+                    <div class="card-header">
+                        <h3><span>🧠 Data Structure Architecture &amp; Rationale</span></h3>
+                        <span class="badge badge-info">College Evaluation Reference</span>
+                    </div>
+
+                    <div class="modules-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+                        <div class="module-card">
+                            <div class="module-header">
+                                <span class="module-icon">🔗</span>
+                                <h4>Linked List</h4>
+                            </div>
+                            <p><strong>Used in:</strong> User Management<br>
+                            <strong>Rationale:</strong> Facilitates O(1) dynamic user node insertion and flexible pointer-based deletion without contiguous array reallocation or size limits.</p>
+                        </div>
+
+                        <div class="module-card">
+                            <div class="module-header">
+                                <span class="module-icon">📥</span>
+                                <h4>Queue (FIFO)</h4>
+                            </div>
+                            <p><strong>Used in:</strong> Pending Ride Dispatch<br>
+                            <strong>Rationale:</strong> Enforces First-In-First-Out fairness in matching and dispatching incoming commuter requests in chronological arrival order.</p>
+                        </div>
+
+                        <div class="module-card">
+                            <div class="module-header">
+                                <span class="module-icon">⭐</span>
+                                <h4>Priority Queue (Heap)</h4>
+                            </div>
+                            <p><strong>Used in:</strong> Smart Ride Matching<br>
+                            <strong>Rationale:</strong> Evaluates multi-parameter compatibility (route overlap, time diff, budget, gender) and ranks candidates in O(log N) time using a Max-Heap.</p>
+                        </div>
+
+                        <div class="module-card">
+                            <div class="module-header">
+                                <span class="module-icon">↩️</span>
+                                <h4>Stack (LIFO)</h4>
+                            </div>
+                            <p><strong>Used in:</strong> Undo Operations<br>
+                            <strong>Rationale:</strong> Implements transactional rollback of ride requests and dispatch matches using Last-In-First-Out state restoration.</p>
+                        </div>
+
+                        <div class="module-card">
+                            <div class="module-header">
+                                <span class="module-icon">📦</span>
+                                <h4>Vector (Dynamic Array)</h4>
+                            </div>
+                            <p><strong>Used in:</strong> Completed Ride History<br>
+                            <strong>Rationale:</strong> Provides cache-friendly contiguous storage with fast O(1) amortized appending for finalized trips and financial audit records.</p>
+                        </div>
+
+                        <div class="module-card">
+                            <div class="module-header">
+                                <span class="module-icon">🕸️</span>
+                                <h4>Graph (Adjacency List)</h4>
+                            </div>
+                            <p><strong>Used in:</strong> Road Transport Network<br>
+                            <strong>Rationale:</strong> Represents road junctions as vertices and connecting road segments as weighted edges with physical distances in kilometres.</p>
+                        </div>
+
+                        <div class="module-card">
+                            <div class="module-header">
+                                <span class="module-icon">🛣️</span>
+                                <h4>Dijkstra's Algorithm</h4>
+                            </div>
+                            <p><strong>Used in:</strong> Shortest Road Distance<br>
+                            <strong>Rationale:</strong> Computes the mathematically minimal driving route across weighted road network edges using a Min-Heap priority queue.</p>
+                        </div>
+
+                        <div class="module-card">
+                            <div class="module-header">
+                                <span class="module-icon">🔄</span>
+                                <h4>Breadth-First Search (BFS)</h4>
+                            </div>
+                            <p><strong>Used in:</strong> Minimum Hops Route<br>
+                            <strong>Rationale:</strong> Explores unweighted graph levels using a FIFO Queue to find the path with fewest intersections / turnings.</p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </section>
+
         </div>
-    </div>
+    </main>
+
+    <!-- Notification Toast Element -->
+    <div id="toast">Operation completed successfully</div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -528,927 +1321,875 @@
     <script src="roads_data.js"></script>
 
     <script>
-        // Data Structures State
-        let pendingQueue = [];  // FIFO Queue
-        let rideHistory = [];   // Vector
-        let undoStack = [];     // LIFO Stack
-        let nextReqId = 101;
-        let nextRideId = 1001;
+        // Global State & In-Memory Fallback
+        let isBackendLive = false;
+        let map, routeLayerGroup, markerLayerGroup;
+        let roadGraph = {}, roadNodeCoords = {};
 
-        // Manual Graph Structure for Demonstration
-        let manualNodeCoordinates = {
-            "Sector62": [28.6210, 77.3640],
-            "TechPark": [28.6120, 77.3200],
-            "BotanicalGarden": [28.5640, 77.3340],
-            "ConnaughtPlace": [28.6304, 77.2177],
-            "RajNagar": [28.5700, 77.1200]
-        };
+        // In-Memory Fallback State (if C++ server is not running)
+        let localUsers = [
+            { id: 101, name: "Aryan Sharma", phone: "9876543210", gender: "Male", source: "Sector 62, Noida", destination: "Botanical Garden, Noida", preferredTime: "09:30", transportMode: "Metro", budget: 150, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true },
+            { id: 102, name: "Priya Verma", phone: "9812345678", gender: "Female", source: "Sector 62, Noida", destination: "Botanical Garden, Noida", preferredTime: "09:40", transportMode: "Metro", budget: 120, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true },
+            { id: 103, name: "Rohan Gupta", phone: "9923456789", gender: "Male", source: "Sector 62, Noida", destination: "Connaught Place, Delhi", preferredTime: "09:30", transportMode: "Cab", budget: 250, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Male", wantsSharedCab: true, boardingStation: "Sector 62", allowMultiple: true },
+            { id: 104, name: "Kavita Rao", phone: "9734567890", gender: "Female", source: "Sector 62, Noida", destination: "Connaught Place, Delhi", preferredTime: "09:45", transportMode: "Cab", budget: 300, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: true, boardingStation: "Sector 62", allowMultiple: true },
+            { id: 105, name: "Amit Kumar", phone: "9645678901", gender: "Male", source: "Dwarka Sector 21", destination: "Rajiv Chowk", preferredTime: "10:00", transportMode: "Metro", budget: 80, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: false }
+        ];
 
-        let manualGraph = {
-            "Sector62": [
-                { target: "TechPark", distance: 3.5 },
-                { target: "BotanicalGarden", distance: 9.8 }
-            ],
-            "TechPark": [
-                { target: "Sector62", distance: 3.5 },
-                { target: "ConnaughtPlace", distance: 14.2 }
-            ],
-            "BotanicalGarden": [
-                { target: "Sector62", distance: 9.8 },
-                { target: "RajNagar", distance: 12.0 },
-                { target: "ConnaughtPlace", distance: 15.5 }
-            ],
-            "ConnaughtPlace": [
-                { target: "TechPark", distance: 14.2 },
-                { target: "BotanicalGarden", distance: 15.5 },
-                { target: "RajNagar", distance: 9.5 }
-            ],
-            "RajNagar": [
-                { target: "BotanicalGarden", distance: 12.0 },
-                { target: "ConnaughtPlace", distance: 9.5 }
-            ]
-        };
+        let localQueue = [
+            { id: 101, user_id: 101, initial_dest: "Sector 62, Noida", final_dest: "Botanical Garden, Noida", time: 930, mode: "Metro", budget: 150 },
+            { id: 102, user_id: 102, initial_dest: "Sector 62, Noida", final_dest: "Botanical Garden, Noida", time: 940, mode: "Metro", budget: 120 },
+            { id: 103, user_id: 103, initial_dest: "Sector 62, Noida", final_dest: "Connaught Place, Delhi", time: 930, mode: "Cab", budget: 250 },
+            { id: 104, user_id: 104, initial_dest: "Sector 62, Noida", final_dest: "Connaught Place, Delhi", time: 945, mode: "Cab", budget: 300 },
+            { id: 105, user_id: 105, initial_dest: "Dwarka Sector 21", final_dest: "Rajiv Chowk", time: 1000, mode: "Metro", budget: 80 }
+        ];
 
-        // Real OpenStreetMap Road Graph (Adjacency List)
-        // roadGraph[nodeId] = [ { target: nodeId, distance: km, geometry: [[lat, lon], ...] } ]
-        let roadGraph = {};
-        let roadNodeCoords = {};
-        let isRoadGraphReady = false;
+        let localHistory = [];
+        let localUndoStack = [];
 
-        // Leaflet Map & Layer Groups
-        let map;
-        let routeLayerGroup;
-        let markerLayerGroup;
+        // ---------------- Navigation & Tab Switching ----------------
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-section').forEach(sec => sec.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
 
-        // Known Geocoding Cache for Instant Matching
-        const knownLocations = {
-            "sector 62, noida": [28.6210, 77.3640],
-            "sector 62": [28.6210, 77.3640],
-            "sector62": [28.6210, 77.3640],
-            "botanical garden, noida": [28.5640, 77.3340],
-            "botanical garden": [28.5640, 77.3340],
-            "botanicalgarden": [28.5640, 77.3340],
-            "connaught place, delhi": [28.6304, 77.2177],
-            "connaught place": [28.6304, 77.2177],
-            "connaughtplace": [28.6304, 77.2177],
-            "tech park, noida": [28.6120, 77.3200],
-            "tech park": [28.6120, 77.3200],
-            "techpark": [28.6120, 77.3200],
-            "raj nagar": [28.5700, 77.1200],
-            "rajnagar": [28.5700, 77.1200],
-            "india gate, delhi": [28.6129, 77.2295],
-            "india gate": [28.6129, 77.2295],
-            "indiagate": [28.6129, 77.2295],
-            "akshardham, delhi": [28.6127, 77.2773],
-            "akshardham": [28.6127, 77.2773]
-        };
+            const target = document.getElementById('tab-' + tabId);
+            if (target) target.classList.add('active');
 
-        // Cache for dynamic road queries
-        let roadCache = {};
+            const navLinks = document.querySelectorAll('.nav-link');
+            navLinks.forEach(link => {
+                if (link.getAttribute('onclick') && link.getAttribute('onclick').includes(tabId)) {
+                    link.classList.add('active');
+                }
+            });
 
-        // -------------------------------------------------------------
-        // GEOMETRIC UTILITY: Haversine Great Circle Distance
-        // -------------------------------------------------------------
-        function haversineDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371.0; // Earth radius in kilometers
-            const toRad = Math.PI / 180.0;
-            const dLat = (lat2 - lat1) * toRad;
-            const dLon = (lon2 - lon1) * toRad;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                      Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) *
-                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return R * c;
+            // Update Top Bar titles
+            const titles = {
+                'dashboard': ['Dashboard Overview', 'Real-time Metrics & Quick Modules'],
+                'users': ['User Management', 'Linked List Commuter Directory'],
+                'request': ['Request a Ride', 'Queue Dispatch Registration'],
+                'matches': ['Find Ride Matches', 'Priority Queue Compatibility Engine'],
+                'rides': ['Ride Management', 'FIFO Queue & LIFO Stack Processing'],
+                'routes': ['Route Navigation Planner', 'OSM Road Graph Dijkstra & BFS Visualizer'],
+                'history': ['Completed Ride History', 'Dynamic Vector Trip Records'],
+                'ds-overview': ['Data Structures Specification', 'Core Computer Science Concepts & Rationale']
+            };
+
+            if (titles[tabId]) {
+                document.getElementById('pageTitle').innerText = titles[tabId][0];
+                document.getElementById('pageSubtitle').innerText = titles[tabId][1];
+            }
+
+            if (tabId === 'routes') {
+                setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+            }
+            if (tabId === 'users') loadUsers();
+            if (tabId === 'request') populateUserDropdown();
+            if (tabId === 'matches') populateMatchDropdown();
+            if (tabId === 'rides') loadQueue();
+            if (tabId === 'history') loadHistory();
+            if (tabId === 'dashboard') loadStats();
         }
 
-        // -------------------------------------------------------------
-        // MIN-PRIORITY QUEUE (Binary Min-Heap for Dijkstra O((V+E)logV))
-        // -------------------------------------------------------------
-        class MinPriorityQueue {
-            constructor() {
-                this.heap = [];
-            }
-            enqueue(element, priority) {
-                this.heap.push({ element, priority });
-                this._bubbleUp(this.heap.length - 1);
-            }
-            dequeue() {
-                if (this.heap.length === 0) return null;
-                const top = this.heap[0];
-                const bottom = this.heap.pop();
-                if (this.heap.length > 0) {
-                    this.heap[0] = bottom;
-                    this._sinkDown(0);
-                }
-                return top;
-            }
-            isEmpty() {
-                return this.heap.length === 0;
-            }
-            _bubbleUp(idx) {
-                const item = this.heap[idx];
-                while (idx > 0) {
-                    const parentIdx = Math.floor((idx - 1) / 2);
-                    const parent = this.heap[parentIdx];
-                    if (item.priority >= parent.priority) break;
-                    this.heap[idx] = parent;
-                    idx = parentIdx;
-                }
-                this.heap[idx] = item;
-            }
-            _sinkDown(idx) {
-                const length = this.heap.length;
-                const item = this.heap[idx];
-                while (true) {
-                    let leftIdx = 2 * idx + 1;
-                    let rightIdx = 2 * idx + 2;
-                    let swapIdx = null;
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => { t.style.display = 'none'; }, 3200);
+        }
 
-                    if (leftIdx < length && this.heap[leftIdx].priority < item.priority) {
-                        swapIdx = leftIdx;
-                    }
-                    if (rightIdx < length) {
-                        if ((swapIdx === null && this.heap[rightIdx].priority < item.priority) ||
-                            (swapIdx !== null && this.heap[rightIdx].priority < this.heap[leftIdx].priority)) {
-                            swapIdx = rightIdx;
-                        }
-                    }
-                    if (swapIdx === null) break;
-                    this.heap[idx] = this.heap[swapIdx];
-                    idx = swapIdx;
+        // ---------------- API Integration with C++ Backend ----------------
+        async function checkBackendConnection() {
+            try {
+                let res = await fetch('/api/stats', { signal: AbortSignal.timeout(1500) });
+                if (res.ok) {
+                    isBackendLive = true;
+                    document.getElementById('serverDot').style.backgroundColor = 'var(--accent-green)';
+                    document.getElementById('serverStatusText').innerText = 'C++ Backend Connected (Port 8080)';
+                } else {
+                    throw new Error();
                 }
-                this.heap[idx] = item;
+            } catch (e) {
+                isBackendLive = false;
+                document.getElementById('serverDot').style.backgroundColor = '#fbbf24';
+                document.getElementById('serverStatusText').innerText = 'Standalone Browser Mode';
+            }
+            loadStats();
+        }
+
+        async function loadStats() {
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/stats');
+                    let data = await res.json();
+                    document.getElementById('statUsers').innerText = data.totalUsers;
+                    document.getElementById('statRequests').innerText = data.activeRequests;
+                    document.getElementById('statMatches').innerText = data.successfulMatches;
+                    document.getElementById('statCompleted').innerText = data.completedRides;
+                    document.getElementById('monLinkedList').innerText = data.totalUsers + ' Nodes';
+                    document.getElementById('monQueue').innerText = data.pendingQueueSize + ' Pending';
+                    document.getElementById('monVector').innerText = data.completedRides + ' Records';
+                    document.getElementById('historyRevenueBadge').innerText = 'Revenue: $' + data.totalRevenue.toFixed(2);
+                    return;
+                } catch (e) {}
+            }
+
+            // Fallback stats
+            let activeReqs = localUsers.filter(u => u.hasRequest && !u.isMatched).length;
+            let matched = localUsers.filter(u => u.isMatched).length;
+            document.getElementById('statUsers').innerText = localUsers.length;
+            document.getElementById('statRequests').innerText = activeReqs;
+            document.getElementById('statMatches').innerText = matched;
+            document.getElementById('statCompleted').innerText = localHistory.length;
+            document.getElementById('monLinkedList').innerText = localUsers.length + ' Nodes';
+            document.getElementById('monQueue').innerText = localQueue.length + ' Pending';
+            document.getElementById('monStack').innerText = localUndoStack.length + ' Actions';
+            document.getElementById('monVector').innerText = localHistory.length + ' Records';
+        }
+
+        // ---------------- User Management ----------------
+        async function loadUsers() {
+            let users = [];
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/users');
+                    users = await res.json();
+                } catch (e) { users = localUsers; }
+            } else {
+                users = localUsers;
+            }
+
+            const tbody = document.getElementById('usersTableBody');
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted);">No users in Linked List.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = users.map(u => {
+                let statusBadge = '<span class="badge badge-warning">No Request</span>';
+                if (u.isMatched) {
+                    statusBadge = `<span class="badge badge-success">Matched (#${u.matchedPartnerId})</span>`;
+                } else if (u.hasRequest) {
+                    statusBadge = '<span class="badge badge-info">Active Request</span>';
+                }
+
+                return `
+                    <tr>
+                        <td><strong>#${u.id}</strong></td>
+                        <td>${u.name}</td>
+                        <td>${u.phone}</td>
+                        <td>${u.gender}</td>
+                        <td>${u.hasRequest ? (u.source + ' ➔ ' + u.destination) : '<span style="color:#666;">None</span>'}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="handleDeleteUser(${u.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function handleRegisterUser(e) {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('newUserId').value);
+            const name = document.getElementById('newUserName').value.trim();
+            const phone = document.getElementById('newUserPhone').value.trim();
+            const gender = document.getElementById('newUserGender').value;
+
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/users', {
+                        method: 'POST',
+                        body: JSON.stringify({ id, name, phone, gender })
+                    });
+                    let data = await res.json();
+                    if (data.success) {
+                        showToast(`User #${id} successfully inserted into C++ Linked List!`);
+                        document.getElementById('newUserId').value = '';
+                        document.getElementById('newUserName').value = '';
+                        document.getElementById('newUserPhone').value = '';
+                        loadUsers();
+                        loadStats();
+                        return;
+                    } else {
+                        alert(data.message);
+                        return;
+                    }
+                } catch (err) {}
+            }
+
+            // Local fallback
+            if (localUsers.find(u => u.id === id)) {
+                alert(`Error: User ID #${id} already exists in Linked List!`);
+                return;
+            }
+            localUsers.push({ id, name, phone, gender, hasRequest: false, isMatched: false, matchedPartnerId: 0 });
+            showToast(`User #${id} registered in Linked List!`);
+            document.getElementById('newUserId').value = '';
+            document.getElementById('newUserName').value = '';
+            document.getElementById('newUserPhone').value = '';
+            loadUsers();
+            loadStats();
+        }
+
+        async function handleSearchUser() {
+            const id = parseInt(document.getElementById('searchUserId').value);
+            if (!id) return;
+            const resBox = document.getElementById('searchResultBox');
+
+            if (isBackendLive) {
+                try {
+                    let res = await fetch(`/api/users/search?id=${id}`);
+                    let data = await res.json();
+                    if (data.success && data.user) {
+                        renderSearchResult(data.user);
+                        return;
+                    } else {
+                        resBox.style.display = 'block';
+                        resBox.innerHTML = `<span style="color:#ef4444;">User #${id} not found in Linked List.</span>`;
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            let u = localUsers.find(u => u.id === id);
+            if (u) renderSearchResult(u);
+            else {
+                resBox.style.display = 'block';
+                resBox.innerHTML = `<span style="color:#ef4444;">User #${id} not found in Linked List.</span>`;
             }
         }
 
-        // -------------------------------------------------------------
-        // CONSTRUCT GRAPH ADJACENCY LIST FROM OPENSTREETMAP WAYS
-        // -------------------------------------------------------------
-        function buildGraphFromOSMWays(ways) {
+        function renderSearchResult(u) {
+            const resBox = document.getElementById('searchResultBox');
+            resBox.style.display = 'block';
+            resBox.innerHTML = `
+                <div style="font-size:0.9em;">
+                    <strong style="color:var(--accent-pink);">Found User #${u.id}:</strong> ${u.name} | Phone: ${u.phone} | Gender: ${u.gender}<br>
+                    <strong>Request:</strong> ${u.hasRequest ? (`${u.source} ➔ ${u.destination} (${u.transportMode}, Rs. ${u.budget})`) : 'No active request'}
+                </div>
+            `;
+        }
+
+        async function handleDeleteUser(id) {
+            if (!confirm(`Are you sure you want to delete User #${id} from the Linked List?`)) return;
+
+            if (isBackendLive) {
+                try {
+                    let res = await fetch(`/api/users/delete?id=${id}`, { method: 'POST' });
+                    let data = await res.json();
+                    if (data.success) {
+                        showToast(`Deleted User #${id} from C++ Linked List.`);
+                        loadUsers();
+                        loadStats();
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            localUsers = localUsers.filter(u => u.id !== id);
+            showToast(`Deleted User #${id} from Linked List.`);
+            loadUsers();
+            loadStats();
+        }
+
+        // ---------------- Ride Request ----------------
+        async function populateUserDropdown() {
+            let users = [];
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/users');
+                    users = await res.json();
+                } catch (e) { users = localUsers; }
+            } else { users = localUsers; }
+
+            const sel = document.getElementById('reqUserId');
+            sel.innerHTML = '<option value="">Select registered user...</option>' + 
+                users.map(u => `<option value="${u.id}">${u.name} (ID #${u.id})</option>`).join('');
+        }
+
+        async function handleRideRequest(e) {
+            e.preventDefault();
+            const userId = parseInt(document.getElementById('reqUserId').value);
+            const mode = document.getElementById('reqMode').value;
+            const source = document.getElementById('reqSource').value.trim();
+            const destination = document.getElementById('reqDest').value.trim();
+            const preferredTime = document.getElementById('reqTime').value.trim();
+            const budget = parseFloat(document.getElementById('reqBudget').value);
+            const genderPreference = document.getElementById('reqGenderPref').value;
+            const wantsSharedCab = document.getElementById('reqWantsCab').value === 'true';
+            const boardingStation = document.getElementById('reqStation').value.trim();
+            const allowMultiple = document.getElementById('reqAllowMultiple').value === 'true';
+
+            if (!userId || !source || !destination) {
+                alert("Please fill in all required fields.");
+                return;
+            }
+
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/rides/request', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            userId, source, destination, preferredTime, transportMode: mode,
+                            budget, genderPreference, wantsSharedCab, boardingStation, allowMultiple
+                        })
+                    });
+                    let data = await res.json();
+                    if (data.success) {
+                        showToast(`Ride request submitted & pushed to C++ FIFO Queue!`);
+                        loadStats();
+                        switchTab('rides');
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            // Fallback
+            let u = localUsers.find(u => u.id === userId);
+            if (u) {
+                u.hasRequest = true;
+                u.source = source;
+                u.destination = destination;
+                u.preferredTime = preferredTime;
+                u.transportMode = mode;
+                u.budget = budget;
+                u.genderPreference = genderPreference;
+                u.wantsSharedCab = wantsSharedCab;
+                u.boardingStation = boardingStation;
+                u.allowMultiple = allowMultiple;
+            }
+            localQueue.push({
+                id: 100 + localQueue.length + 1,
+                user_id: userId,
+                initial_dest: source,
+                final_dest: destination,
+                time: 930,
+                mode: mode,
+                budget: budget
+            });
+            showToast(`Ride request pushed to FIFO Queue!`);
+            loadStats();
+            switchTab('rides');
+        }
+
+        // ---------------- Ride Matching (Priority Queue) ----------------
+        async function populateMatchDropdown() {
+            let users = [];
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/users');
+                    users = await res.json();
+                } catch (e) { users = localUsers; }
+            } else { users = localUsers; }
+
+            const sel = document.getElementById('matchUserSelect');
+            const reqUsers = users.filter(u => u.hasRequest);
+            sel.innerHTML = '<option value="">Select a user with an active ride request...</option>' + 
+                reqUsers.map(u => `<option value="${u.id}">${u.name} (ID #${u.id}) - ${u.source} ➔ ${u.destination}</option>`).join('');
+        }
+
+        async function handleFindMatches() {
+            const userId = parseInt(document.getElementById('matchUserSelect').value);
+            if (!userId) {
+                alert("Please select a user to find matches for.");
+                return;
+            }
+
+            const resultsCard = document.getElementById('matchResultsCard');
+            const container = document.getElementById('matchesContainer');
+            const badge = document.getElementById('matchCountBadge');
+            resultsCard.style.display = 'block';
+
+            if (isBackendLive) {
+                try {
+                    let res = await fetch(`/api/rides/matches?userId=${userId}`);
+                    let data = await res.json();
+                    if (data.success && data.matches) {
+                        renderMatches(userId, data.matches);
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            // Local matching simulation using identical C++ rules
+            let user = localUsers.find(u => u.id === userId);
+            if (!user) return;
+            let matches = [];
+
+            for (let c of localUsers) {
+                if (c.id === user.id || !c.hasRequest || (c.isMatched && !c.allowMultiple)) continue;
+                let score = 0, type = "";
+                if (user.transportMode.toLowerCase() === c.transportMode.toLowerCase()) {
+                    if (user.source.toLowerCase() === c.source.toLowerCase() && user.destination.toLowerCase() === c.destination.toLowerCase()) {
+                        score = 100; type = "Exact Direct Route Match";
+                    } else if (user.source.toLowerCase() === c.source.toLowerCase()) {
+                        score = 85; type = "Common Pickup Location (" + user.source + ")";
+                    } else if (user.destination.toLowerCase() === c.destination.toLowerCase()) {
+                        score = 85; type = "Common Destination (" + user.destination + ")";
+                    }
+                }
+                if (score === 0 && user.wantsSharedCab && c.wantsSharedCab && user.boardingStation && user.boardingStation.toLowerCase() === c.boardingStation.toLowerCase()) {
+                    score = 65; type = "Shared Cab to Station (" + user.boardingStation + ")";
+                }
+                if (score > 0) {
+                    matches.push({ candidate: c, score, matchType: type, timeDifference: 10, estimatedFare: 80, sharedSegments: 1 });
+                }
+            }
+            matches.sort((a,b) => b.score - a.score);
+            renderMatches(userId, matches);
+        }
+
+        function renderMatches(userId, matches) {
+            const container = document.getElementById('matchesContainer');
+            const badge = document.getElementById('matchCountBadge');
+            badge.innerText = matches.length + ' Matches Found';
+
+            if (matches.length === 0) {
+                container.innerHTML = `
+                    <div style="grid-column: 1 / -1; padding: 24px; text-align: center; color: var(--text-muted); background: #12151f; border-radius: 8px;">
+                        No compatible co-commuters currently found for User #${userId}.<br>
+                        <small>Matches require overlapping route corridor, time alignment (&plusmn;45 mins), compatible budget, and matching gender preferences.</small>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = matches.map((m, idx) => `
+                <div class="match-card ${idx === 0 ? 'best-match' : ''}">
+                    <span class="match-score-badge">${m.score}/100 Match</span>
+                    <div class="match-card-header">
+                        <div class="user-avatar-small">${m.candidate.name.charAt(0)}</div>
+                        <div>
+                            <strong style="color:var(--text-main); font-size:1em;">${m.candidate.name}</strong>
+                            <span style="display:block; font-size:0.75em; color:var(--text-muted);">User ID #${m.candidate.id} | ${m.candidate.gender}</span>
+                        </div>
+                    </div>
+
+                    <div style="font-size:0.82em; color:var(--accent-pink); font-weight:600; margin-bottom:8px;">
+                        ✓ ${m.matchType}
+                    </div>
+
+                    <div class="match-details-grid">
+                        <div><span>ROUTE</span>${m.candidate.source} ➔ ${m.candidate.destination}</div>
+                        <div><span>TRANSPORT MODE</span>${m.candidate.transportMode}</div>
+                        <div><span>DEPARTURE TIME</span>${m.candidate.preferredTime} (&plusmn;${m.timeDifference}m diff)</div>
+                        <div><span>ESTIMATED FARE</span>Rs. ${m.estimatedFare}</div>
+                    </div>
+
+                    <button class="btn btn-sm btn-blue" style="width:100%; margin-top:8px;" onclick="confirmMatch(${userId}, ${m.candidate.id})">
+                        Confirm &amp; Link Co-commute
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function confirmMatch(u1, u2) {
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/rides/confirm_match', {
+                        method: 'POST',
+                        body: JSON.stringify({ user1: u1, user2: u2 })
+                    });
+                    let data = await res.json();
+                    if (data.success) {
+                        showToast(`Match confirmed! User #${u1} linked with User #${u2}.`);
+                        loadStats();
+                        switchTab('rides');
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            let user1 = localUsers.find(u => u.id === u1);
+            let user2 = localUsers.find(u => u.id === u2);
+            if (user1) { user1.isMatched = true; user1.matchedPartnerId = u2; }
+            if (user2) { user2.isMatched = true; user2.matchedPartnerId = u1; }
+            showToast(`Match confirmed between User #${u1} and User #${u2}!`);
+            loadStats();
+            switchTab('rides');
+        }
+
+        // ---------------- Ride Management & Queue ----------------
+        async function loadQueue() {
+            let queue = [];
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/rides/queue');
+                    queue = await res.json();
+                } catch (e) { queue = localQueue; }
+            } else { queue = localQueue; }
+
+            document.getElementById('queueBadge').innerText = queue.length + ' Pending';
+            const tbody = document.getElementById('queueTableBody');
+            if (queue.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Queue is currently empty.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = queue.map(r => `
+                <tr>
+                    <td><strong>#${r.id}</strong></td>
+                    <td>User #${r.user_id}</td>
+                    <td>${r.initial_dest}</td>
+                    <td>${r.final_dest}</td>
+                    <td>${r.mode}</td>
+                    <td>${r.time}</td>
+                    <td>$${r.budget}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline" onclick="setPreset('${r.initial_dest}', '${r.final_dest}'); switchTab('routes'); executeRouting('dijkstra');">Route Map</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function handleProcessNextRide() {
+            const fare = prompt("Enter final agreed fare to complete next ride ($ / Rs.):", "180");
+            if (fare === null) return;
+            const fareVal = parseFloat(fare) || 180.0;
+
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/rides/process', {
+                        method: 'POST',
+                        body: JSON.stringify({ fare: fareVal })
+                    });
+                    let data = await res.json();
+                    if (data.success) {
+                        showToast(`Ride processed from FIFO Queue & logged into C++ History Vector!`);
+                        loadQueue();
+                        loadStats();
+                        return;
+                    } else {
+                        alert(data.message);
+                        return;
+                    }
+                } catch (e) {}
+            }
+
+            if (localQueue.length === 0) {
+                alert("Queue is currently empty!");
+                return;
+            }
+            let req = localQueue.shift();
+            let rec = {
+                id: 5000 + localHistory.length + 1,
+                user_id: req.user_id,
+                partner_id: 501,
+                initial_dest: req.initial_dest,
+                final_dest: req.final_dest,
+                mode: req.mode,
+                fare: fareVal
+            };
+            localHistory.push(rec);
+            localUndoStack.push({ type: 'COMPLETE', data: rec });
+            showToast(`Processed ride #${rec.id} into History Vector!`);
+            loadQueue();
+            loadStats();
+        }
+
+        async function handleUndoAction() {
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/rides/undo', { method: 'POST' });
+                    let data = await res.json();
+                    showToast(data.message);
+                    loadQueue();
+                    loadStats();
+                    return;
+                } catch (e) {}
+            }
+
+            if (localUndoStack.length === 0) {
+                alert("Undo Stack is empty!");
+                return;
+            }
+            let last = localUndoStack.pop();
+            if (last.type === 'COMPLETE') {
+                localHistory = localHistory.filter(h => h.id !== last.data.id);
+                showToast(`Undo successful: Popped last action from Stack!`);
+            }
+            loadQueue();
+            loadStats();
+        }
+
+        // ---------------- Ride History ----------------
+        async function loadHistory() {
+            let history = [];
+            if (isBackendLive) {
+                try {
+                    let res = await fetch('/api/rides/history');
+                    history = await res.json();
+                } catch (e) { history = localHistory; }
+            } else { history = localHistory; }
+
+            const tbody = document.getElementById('historyTableBody');
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No completed rides recorded yet.</td></tr>';
+                return;
+            }
+
+            let totalRev = history.reduce((sum, r) => sum + r.fare, 0);
+            document.getElementById('historyRevenueBadge').innerText = 'Revenue: $' + totalRev.toFixed(2);
+
+            tbody.innerHTML = history.map(h => `
+                <tr>
+                    <td><strong>#${h.id}</strong></td>
+                    <td>User #${h.user_id}</td>
+                    <td>${h.partner_id ? ('Partner #' + h.partner_id) : 'Self'}</td>
+                    <td>${h.initial_dest}</td>
+                    <td>${h.final_dest}</td>
+                    <td>${h.mode}</td>
+                    <td>$${h.fare.toFixed(2)}</td>
+                    <td><span class="badge badge-success">Completed</span></td>
+                </tr>
+            `).join('');
+        }
+
+        // ---------------- Route Navigation Planner ----------------
+        function setPreset(start, end) {
+            document.getElementById('routeStart').value = start;
+            document.getElementById('routeEnd').value = end;
+        }
+
+        function initMap() {
+            map = L.map('map').setView([28.6100, 77.3000], 11);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+            routeLayerGroup = L.layerGroup().addTo(map);
+            markerLayerGroup = L.layerGroup().addTo(map);
+
+            if (typeof PRELOADED_DELHI_NCR_WAYS !== 'undefined') {
+                buildRoadGraph();
+            }
+        }
+
+        function buildRoadGraph() {
             let nodeCounts = {};
-            let nodeCoords = {};
-
-            // 1. Count occurrences of each node ID to detect real road intersections
-            for (let w of ways) {
-                let geom = w.geom || w.geometry || [];
+            for (let w of PRELOADED_DELHI_NCR_WAYS) {
+                let geom = w.geom || [];
                 let nodes = w.nodes || [];
                 for (let i = 0; i < nodes.length; i++) {
                     let nid = String(nodes[i]);
                     nodeCounts[nid] = (nodeCounts[nid] || 0) + 1;
-                    if (i < geom.length) {
-                        let p = geom[i];
-                        let lat = p.lat !== undefined ? p.lat : p[0];
-                        let lon = p.lon !== undefined ? p.lon : p[1];
-                        nodeCoords[nid] = [lat, lon];
-                    }
+                    if (i < geom.length) roadNodeCoords[nid] = geom[i];
                 }
             }
 
-            // 2. Build Adjacency List representing intersections as vertices
-            let graph = {};
             function addEdge(u, v, dist, geom) {
-                u = String(u);
-                v = String(v);
-                if (!graph[u]) graph[u] = [];
-                graph[u].push({ target: v, distance: dist, geometry: geom });
+                u = String(u); v = String(v);
+                if (!roadGraph[u]) roadGraph[u] = [];
+                roadGraph[u].push({ target: v, distance: dist, geometry: geom });
             }
 
-            for (let w of ways) {
-                let geom = w.geom || w.geometry || [];
+            for (let w of PRELOADED_DELHI_NCR_WAYS) {
+                let geom = w.geom || [];
                 let nodes = w.nodes || [];
                 if (geom.length < 2 || nodes.length < 2) continue;
-
-                let isOneWay = false;
-                if (w.oneway === 1 || (w.tags && (w.tags.oneway === 'yes' || w.tags.oneway === '1' || w.tags.oneway === 'true'))) {
-                    isOneWay = true;
-                }
-
+                let isOneWay = (w.oneway === 1);
                 let segStart = String(nodes[0]);
-                let p0 = geom[0];
-                let lat0 = p0.lat !== undefined ? p0.lat : p0[0];
-                let lon0 = p0.lon !== undefined ? p0.lon : p0[1];
-                let segGeom = [[lat0, lon0]];
+                let segGeom = [geom[0]];
                 let segDist = 0.0;
 
                 for (let i = 1; i < nodes.length; i++) {
-                    let pPrev = geom[i - 1];
-                    let pCurr = geom[i];
-                    let latPrev = pPrev.lat !== undefined ? pPrev.lat : pPrev[0];
-                    let lonPrev = pPrev.lon !== undefined ? pPrev.lon : pPrev[1];
-                    let latCurr = pCurr.lat !== undefined ? pCurr.lat : pCurr[0];
-                    let lonCurr = pCurr.lon !== undefined ? pCurr.lon : pCurr[1];
-
-                    segDist += haversineDistance(latPrev, lonPrev, latCurr, lonCurr);
-                    segGeom.push([latCurr, lonCurr]);
-
+                    let p1 = geom[i-1], p2 = geom[i];
+                    segDist += haversine(p1[0], p1[1], p2[0], p2[1]);
+                    segGeom.push(p2);
                     let nid = String(nodes[i]);
-                    // Real road intersection: appears in multiple ways, or way terminus
                     if (nodeCounts[nid] > 1 || i === nodes.length - 1) {
                         addEdge(segStart, nid, segDist, segGeom);
-                        if (!isOneWay) {
-                            addEdge(nid, segStart, segDist, segGeom.slice().reverse());
-                        }
+                        if (!isOneWay) addEdge(nid, segStart, segDist, segGeom.slice().reverse());
                         segStart = nid;
-                        segGeom = [[latCurr, lonCurr]];
+                        segGeom = [p2];
                         segDist = 0.0;
                     }
                 }
             }
-
-            return { graph, nodeCoords };
         }
 
-        // -------------------------------------------------------------
-        // FIND NEAREST GRAPH INTERSECTION VERTEX
-        // -------------------------------------------------------------
-        function findNearestNode(targetLat, targetLon, graph, nodeCoords) {
-            let bestNode = null;
-            let minDistance = Infinity;
-            for (let nid in graph) {
-                let coord = nodeCoords[nid];
-                if (!coord) continue;
-                let d = haversineDistance(targetLat, targetLon, coord[0], coord[1]);
-                if (d < minDistance) {
-                    minDistance = d;
-                    bestNode = nid;
-                }
+        function haversine(lat1, lon1, lat2, lon2) {
+            const R = 6371.0;
+            const toRad = Math.PI / 180.0;
+            const dLat = (lat2 - lat1) * toRad;
+            const dLon = (lon2 - lon1) * toRad;
+            const a = Math.sin(dLat/2)**2 + Math.cos(lat1*toRad)*Math.cos(lat2*toRad)*Math.sin(dLon/2)**2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function findNearestNode(lat, lon) {
+            let bestNode = null, minDist = Infinity;
+            for (let nid in roadGraph) {
+                let c = roadNodeCoords[nid];
+                if (!c) continue;
+                let d = haversine(lat, lon, c[0], c[1]);
+                if (d < minDist) { minDist = d; bestNode = nid; }
             }
-            return { node: bestNode, distance: minDistance };
+            return { node: bestNode, distance: minDist };
         }
 
-        // -------------------------------------------------------------
-        // DIJKSTRA'S ALGORITHM (Genuine Min-Heap Adjacency List Routing)
-        // -------------------------------------------------------------
-        function runDijkstraRoad(graph, startVertex, endVertex) {
-            startVertex = String(startVertex);
-            endVertex = String(endVertex);
-            let distances = {};
-            let previous = {};
-            let visited = new Set();
-            let pq = new MinPriorityQueue();
+        // Geocoding helper
+        const geocodeCache = {
+            "sector 62, noida": [28.6210, 77.3640],
+            "botanical garden, noida": [28.5640, 77.3340],
+            "connaught place, delhi": [28.6304, 77.2177],
+            "india gate, delhi": [28.6129, 77.2295]
+        };
 
-            distances[startVertex] = 0;
-            pq.enqueue(startVertex, 0);
+        async function geocode(q) {
+            let clean = q.trim().toLowerCase();
+            if (geocodeCache[clean]) return { name: q, lat: geocodeCache[clean][0], lon: geocodeCache[clean][1] };
+            try {
+                let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`);
+                let data = await res.json();
+                if (data && data.length > 0) return { name: data[0].display_name.split(',')[0], lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+            } catch (e) {}
+            return null;
+        }
 
-            while (!pq.isEmpty()) {
-                let { element: u, priority: currentDist } = pq.dequeue();
+        // Min-Priority Queue for Dijkstra
+        class MinPQ {
+            constructor() { this.heap = []; }
+            push(item, p) { this.heap.push({ item, p }); this.heap.sort((a,b) => a.p - b.p); }
+            pop() { return this.heap.shift(); }
+            empty() { return this.heap.length === 0; }
+        }
+
+        function runDijkstra(startNode, endNode) {
+            let dist = {}, prev = {}, visited = new Set(), pq = new MinPQ();
+            dist[startNode] = 0;
+            pq.push(startNode, 0);
+
+            while (!pq.empty()) {
+                let { item: u, p: curDist } = pq.pop();
                 if (visited.has(u)) continue;
                 visited.add(u);
+                if (u === endNode) break;
 
-                if (u === endVertex) break;
-
-                let neighbors = graph[u] || [];
-                for (let edge of neighbors) {
-                    let v = String(edge.target);
-                    let alt = currentDist + edge.distance;
-                    if (alt < (distances[v] !== undefined ? distances[v] : Infinity)) {
-                        distances[v] = alt;
-                        previous[v] = { node: u, geometry: edge.geometry, distance: edge.distance };
-                        pq.enqueue(v, alt);
+                for (let edge of roadGraph[u] || []) {
+                    let v = edge.target;
+                    let alt = curDist + edge.distance;
+                    if (alt < (dist[v] !== undefined ? dist[v] : Infinity)) {
+                        dist[v] = alt;
+                        prev[v] = { node: u, geom: edge.geometry };
+                        pq.push(v, alt);
                     }
                 }
             }
 
-            if (distances[endVertex] === undefined || distances[endVertex] === Infinity) {
-                return null; // Disconnected or no path
+            if (dist[endNode] === undefined) return null;
+            let fullGeom = [], curr = endNode, hops = 0;
+            while (curr !== startNode) {
+                hops++;
+                let info = prev[curr];
+                fullGeom = info.geom.slice(0, -1).concat(fullGeom);
+                curr = info.node;
             }
-
-            // Path reconstruction using predecessor information
-            let pathNodes = [];
-            let fullGeometry = [];
-            let curr = endVertex;
-            while (curr !== startVertex) {
-                pathNodes.unshift(curr);
-                let prevInfo = previous[curr];
-                fullGeometry = prevInfo.geometry.slice(0, -1).concat(fullGeometry);
-                curr = prevInfo.node;
-            }
-            pathNodes.unshift(startVertex);
-            if (previous[endVertex] && previous[endVertex].geometry.length > 0) {
-                let lastPt = previous[endVertex].geometry[previous[endVertex].geometry.length - 1];
-                fullGeometry.push(lastPt);
-            }
-
-            return {
-                pathNodes,
-                totalDistance: distances[endVertex],
-                geometry: fullGeometry,
-                hops: pathNodes.length - 1
-            };
+            if (prev[endNode]) fullGeom.push(prev[endNode].geom[prev[endNode].geom.length - 1]);
+            return { dist: dist[endNode], hops, geom: fullGeom };
         }
 
-        // -------------------------------------------------------------
-        // BREADTH-FIRST SEARCH (BFS for Minimum Connections / Fewest Hops)
-        // -------------------------------------------------------------
-        function runBFSRoad(graph, startVertex, endVertex) {
-            startVertex = String(startVertex);
-            endVertex = String(endVertex);
-            let queue = [startVertex]; // FIFO Queue
-            let visited = new Set([startVertex]);
-            let parent = {};
-            let found = false;
+        function runBFS(startNode, endNode) {
+            let queue = [startNode], visited = new Set([startNode]), parent = {}, found = false;
 
             while (queue.length > 0) {
                 let u = queue.shift();
-                if (u === endVertex) {
-                    found = true;
-                    break;
-                }
-                let neighbors = graph[u] || [];
-                for (let edge of neighbors) {
-                    let v = String(edge.target);
+                if (u === endNode) { found = true; break; }
+                for (let edge of roadGraph[u] || []) {
+                    let v = edge.target;
                     if (!visited.has(v)) {
                         visited.add(v);
-                        parent[v] = { node: u, geometry: edge.geometry, distance: edge.distance };
+                        parent[v] = { node: u, geom: edge.geometry, dist: edge.distance };
                         queue.push(v);
                     }
                 }
             }
 
             if (!found) return null;
-
-            // Path reconstruction using parent pointer
-            let pathNodes = [];
-            let fullGeometry = [];
-            let totalDist = 0.0;
-            let curr = endVertex;
-            while (curr !== startVertex) {
-                pathNodes.unshift(curr);
-                let parentInfo = parent[curr];
-                totalDist += parentInfo.distance;
-                fullGeometry = parentInfo.geometry.slice(0, -1).concat(fullGeometry);
-                curr = parentInfo.node;
+            let fullGeom = [], curr = endNode, totalDist = 0, hops = 0;
+            while (curr !== startNode) {
+                hops++;
+                let info = parent[curr];
+                totalDist += info.dist;
+                fullGeom = info.geom.slice(0, -1).concat(fullGeom);
+                curr = info.node;
             }
-            pathNodes.unshift(startVertex);
-            if (parent[endVertex] && parent[endVertex].geometry.length > 0) {
-                let lastPt = parent[endVertex].geometry[parent[endVertex].geometry.length - 1];
-                fullGeometry.push(lastPt);
-            }
-
-            return {
-                pathNodes,
-                totalDistance: totalDist,
-                geometry: fullGeometry,
-                hops: pathNodes.length - 1
-            };
+            if (parent[endNode]) fullGeom.push(parent[endNode].geom[parent[endNode].geom.length - 1]);
+            return { dist: totalDist, hops, geom: fullGeom };
         }
 
-        // -------------------------------------------------------------
-        // GEOCODING: NOMINATIM API + LOCAL RECOGNITION CACHE
-        // -------------------------------------------------------------
-        async function geocodeLocation(query) {
-            if (!query || typeof query !== 'string') return null;
-            let clean = query.trim().toLowerCase();
-            
-            // 1. Check known local aliases first for instant response
-            if (knownLocations[clean]) {
-                return {
-                    name: query.trim(),
-                    lat: knownLocations[clean][0],
-                    lon: knownLocations[clean][1]
-                };
-            }
+        async function executeRouting(mode) {
+            const startStr = document.getElementById('routeStart').value.trim();
+            const endStr = document.getElementById('routeEnd').value.trim();
+            const spin = document.getElementById('routeLoadingMsg');
+            const summary = document.getElementById('routeSummaryBox');
 
-            // 2. Query OpenStreetMap Nominatim geocoding service
-            try {
-                let url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
-                let resp = await fetch(url, {
-                    headers: { 'User-Agent': 'MARK-Route-Visualizer/2.0' }
-                });
-                if (!resp.ok) return null;
-                let data = await resp.json();
-                if (data && data.length > 0) {
-                    return {
-                        name: data[0].display_name.split(',')[0],
-                        lat: parseFloat(data[0].lat),
-                        lon: parseFloat(data[0].lon)
-                    };
-                }
-            } catch (err) {
-                console.warn("Nominatim fetch failed, checking fallback:", err);
-            }
-
-            // Partial matching on known locations
-            for (let key in knownLocations) {
-                if (clean.includes(key) || key.includes(clean)) {
-                    return {
-                        name: query.trim(),
-                        lat: knownLocations[key][0],
-                        lon: knownLocations[key][1]
-                    };
-                }
-            }
-
-            return null;
-        }
-
-        // -------------------------------------------------------------
-        // DYNAMIC OVERPASS API ROAD RETRIEVAL WITH MULTI-ENDPOINT FALLBACK
-        // -------------------------------------------------------------
-        async function fetchOverpassRoadNetwork(minLat, minLon, maxLat, maxLon) {
-            let bboxKey = `${minLat.toFixed(3)},${minLon.toFixed(3)},${maxLat.toFixed(3)},${maxLon.toFixed(3)}`;
-            if (roadCache[bboxKey]) return roadCache[bboxKey];
-
-            let query = `[out:json][timeout:15];
-way["highway"~"^(motorway|trunk|primary|secondary|tertiary|motorway_link|trunk_link|primary_link|secondary_link|tertiary_link)$"](${minLat},${minLon},${maxLat},${maxLon});
-out geom;`;
-
-            const endpoints = [
-                "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
-                "https://overpass.kumi.systems/api/interpreter",
-                "https://overpass-api.de/api/interpreter"
-            ];
-
-            for (let ep of endpoints) {
-                try {
-                    const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 12000);
-                    
-                    let resp = await fetch(ep, {
-                        method: 'POST',
-                        body: 'data=' + encodeURIComponent(query),
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeoutId);
-
-                    if (resp.ok) {
-                        let result = await resp.json();
-                        let elems = result.elements || [];
-                        if (elems.length > 0) {
-                            roadCache[bboxKey] = elems;
-                            return elems;
-                        }
-                    }
-                } catch (e) {
-                    console.warn(`Overpass endpoint ${ep} timed out or failed:`, e.message);
-                }
-            }
-
-            return null;
-        }
-
-        // -------------------------------------------------------------
-        // MAP INITIALIZATION
-        // -------------------------------------------------------------
-        function initMap() {
-            // Center map on Delhi-NCR region
-            map = L.map('map', {
-                zoomControl: true,
-                attributionControl: true
-            }).setView([28.6100, 77.3000], 11);
-
-            // OpenStreetMap Standard Tiles
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-
-            routeLayerGroup = L.layerGroup().addTo(map);
-            markerLayerGroup = L.layerGroup().addTo(map);
-
-            // Build road graph from preloaded dataset if available
-            if (typeof PRELOADED_DELHI_NCR_WAYS !== 'undefined' && PRELOADED_DELHI_NCR_WAYS.length > 0) {
-                const built = buildGraphFromOSMWays(PRELOADED_DELHI_NCR_WAYS);
-                roadGraph = built.graph;
-                roadNodeCoords = built.nodeCoords;
-                isRoadGraphReady = true;
-                console.log(`Preloaded Road Graph Ready: ${Object.keys(roadGraph).length} intersections.`);
-            }
-
-            renderUI();
-        }
-
-        function createCustomPin(type, label) {
-            return L.divIcon({
-                className: 'custom-map-marker',
-                html: `<div class="map-pin ${type}"><span>${label}</span></div>`,
-                iconSize: [28, 28],
-                iconAnchor: [14, 28],
-                popupAnchor: [0, -28]
-            });
-        }
-
-        function setPreset(start, end) {
-            document.getElementById("pathStart").value = start;
-            document.getElementById("pathEnd").value = end;
-        }
-
-        // -------------------------------------------------------------
-        // MAIN ROUTING ORCHESTRATOR (Dijkstra, BFS, Both)
-        // -------------------------------------------------------------
-        async function findRoute(mode = 'dijkstra') {
-            const startInput = document.getElementById("pathStart").value.trim();
-            const endInput = document.getElementById("pathEnd").value.trim();
-            const resBox = document.getElementById("pathResult");
-            const spinner = document.getElementById("routeLoading");
-
-            if (!startInput || !endInput) {
-                alert("Please enter both starting and destination locations.");
-                return;
-            }
-
-            spinner.style.display = "block";
-            spinner.innerText = "🔍 Resolving coordinates via OpenStreetMap Nominatim...";
-            resBox.style.display = "none";
+            spin.style.display = 'block';
+            summary.style.display = 'none';
             routeLayerGroup.clearLayers();
             markerLayerGroup.clearLayers();
 
             try {
-                // 1. Geocode locations to coordinates
-                const startLocation = await geocodeLocation(startInput);
-                if (!startLocation) {
-                    throw new Error(`Location "${startInput}" could not be found. Please check spelling or add city/state context.`);
+                const sLoc = await geocode(startStr);
+                const eLoc = await geocode(endStr);
+                if (!sLoc || !eLoc) throw new Error("Could not geocode one or both locations. Please check spelling.");
+
+                const sNear = findNearestNode(sLoc.lat, sLoc.lon);
+                const eNear = findNearestNode(eLoc.lat, eLoc.lon);
+
+                // Add start & dest markers
+                L.marker([sLoc.lat, sLoc.lon]).bindPopup(`<b>Start:</b> ${sLoc.name}`).addTo(markerLayerGroup);
+                L.marker([eLoc.lat, eLoc.lon]).bindPopup(`<b>Destination:</b> ${eLoc.name}`).addTo(markerLayerGroup);
+
+                let dRes = null, bRes = null;
+                if (mode === 'dijkstra' || mode === 'both') dRes = runDijkstra(sNear.node, eNear.node);
+                if (mode === 'bfs' || mode === 'both') bRes = runBFS(sNear.node, eNear.node);
+
+                let polylineBounds = null;
+
+                if (bRes) {
+                    let polyB = L.polyline(bRes.geom, { color: '#06b6d4', weight: 5, dashArray: '8, 8' }).addTo(routeLayerGroup);
+                    polyB.bindPopup(`BFS Minimum Hops: ${bRes.hops} hops (${bRes.dist.toFixed(2)} km)`);
+                    polylineBounds = polyB.getBounds();
                 }
 
-                const endLocation = await geocodeLocation(endInput);
-                if (!endLocation) {
-                    throw new Error(`Location "${endInput}" could not be found. Please check spelling or add city/state context.`);
+                if (dRes) {
+                    let polyD = L.polyline(dRes.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
+                    polyD.bindPopup(`Dijkstra Shortest Route: ${dRes.dist.toFixed(2)} km (${dRes.hops} hops)`);
+                    polylineBounds = polyD.getBounds();
                 }
 
-                // 2. Check if locations are within preloaded Delhi-NCR bounds (Lat: 28.50 - 28.70, Lon: 77.15 - 77.45)
-                const inPreloaded = (
-                    startLocation.lat >= 28.50 && startLocation.lat <= 28.70 &&
-                    startLocation.lon >= 77.15 && startLocation.lon <= 77.45 &&
-                    endLocation.lat >= 28.50 && endLocation.lat <= 28.70 &&
-                    endLocation.lon >= 77.15 && endLocation.lon <= 77.45
-                );
-
-                let activeGraph = roadGraph;
-                let activeCoords = roadNodeCoords;
-
-                if (!inPreloaded || !isRoadGraphReady) {
-                    spinner.innerText = "🌐 Retrieving live road network data from OpenStreetMap Overpass API...";
-                    let minLat = Math.min(startLocation.lat, endLocation.lat) - 0.02;
-                    let maxLat = Math.max(startLocation.lat, endLocation.lat) + 0.02;
-                    let minLon = Math.min(startLocation.lon, endLocation.lon) - 0.02;
-                    let maxLon = Math.max(startLocation.lon, endLocation.lon) + 0.02;
-
-                    let ways = await fetchOverpassRoadNetwork(minLat, minLon, maxLat, maxLon);
-                    if (!ways || ways.length === 0) {
-                        throw new Error("Unable to retrieve road network data from OpenStreetMap. Please verify internet connection or try again.");
-                    }
-                    const dynamicBuilt = buildGraphFromOSMWays(ways);
-                    activeGraph = dynamicBuilt.graph;
-                    activeCoords = dynamicBuilt.nodeCoords;
+                if (polylineBounds && polylineBounds.isValid()) {
+                    map.fitBounds(polylineBounds, { padding: [50, 50] });
                 }
 
-                spinner.innerText = "⚙️ Executing shortest path graph algorithm...";
-
-                // 3. Find nearest road intersection vertices to start and destination
-                const sNear = findNearestNode(startLocation.lat, startLocation.lon, activeGraph, activeCoords);
-                const eNear = findNearestNode(endLocation.lat, endLocation.lon, activeGraph, activeCoords);
-
-                if (!sNear.node || !eNear.node) {
-                    throw new Error("Could not find connected road network intersections near the selected locations.");
+                summary.style.display = 'block';
+                let html = `<strong>Route Result:</strong> ${sLoc.name} ➔ ${eLoc.name}<br>`;
+                if (dRes) {
+                    html += `<strong>Dijkstra (Shortest Distance):</strong> <span style="color:var(--accent-pink); font-weight:700;">${dRes.dist.toFixed(2)} km</span> (${dRes.hops} intersections, ${dRes.geom.length} road coordinates)<br>`;
                 }
-
-                // Temporary link from exact location to nearest road intersection
-                const tempStartVertex = "__START_LOC__";
-                const tempEndVertex = "__END_LOC__";
-
-                // Clone graph adjacency entry for temporary endpoints
-                activeGraph[tempStartVertex] = [{
-                    target: sNear.node,
-                    distance: sNear.distance,
-                    geometry: [[startLocation.lat, startLocation.lon], activeCoords[sNear.node]]
-                }];
-
-                // Add arrival edge to end location
-                let targetFound = false;
-                for (let edge of activeGraph[eNear.node] || []) {
-                    if (edge.target === tempEndVertex) { targetFound = true; break; }
+                if (bRes) {
+                    html += `<strong>BFS (Minimum Hops):</strong> <span style="color:var(--accent-cyan); font-weight:700;">${bRes.hops} intersections</span> (${bRes.dist.toFixed(2)} km, ${bRes.geom.length} road coordinates)`;
                 }
-                if (!targetFound) {
-                    if (!activeGraph[eNear.node]) activeGraph[eNear.node] = [];
-                    activeGraph[eNear.node].push({
-                        target: tempEndVertex,
-                        distance: eNear.distance,
-                        geometry: [activeCoords[eNear.node], [endLocation.lat, endLocation.lon]]
-                    });
-                }
-                activeGraph[tempEndVertex] = [];
-
-                // 4. Place visual start and destination markers on Leaflet
-                const startMarker = L.marker([startLocation.lat, startLocation.lon], {
-                    icon: createCustomPin('start', 'A')
-                }).bindPopup(`
-                    <div style="font-family:'Segoe UI';">
-                        <strong style="color:#10b981;">● Start Location</strong><br>
-                        <strong>${startLocation.name}</strong><br>
-                        <small style="color:#888;">Lat: ${startLocation.lat.toFixed(4)}, Lon: ${startLocation.lon.toFixed(4)}</small>
-                    </div>
-                `).addTo(markerLayerGroup);
-
-                const endMarker = L.marker([endLocation.lat, endLocation.lon], {
-                    icon: createCustomPin('dest', 'B')
-                }).bindPopup(`
-                    <div style="font-family:'Segoe UI';">
-                        <strong style="color:#ef4444;">● Destination</strong><br>
-                        <strong>${endLocation.name}</strong><br>
-                        <small style="color:#888;">Lat: ${endLocation.lat.toFixed(4)}, Lon: ${endLocation.lon.toFixed(4)}</small>
-                    </div>
-                `).addTo(markerLayerGroup);
-
-                // 5. Run Selected Algorithm(s)
-                let dijkstraResult = null;
-                let bfsResult = null;
-
-                if (mode === 'dijkstra' || mode === 'both') {
-                    dijkstraResult = runDijkstraRoad(activeGraph, tempStartVertex, tempEndVertex);
-                }
-                if (mode === 'bfs' || mode === 'both') {
-                    bfsResult = runBFSRoad(activeGraph, tempStartVertex, tempEndVertex);
-                }
-
-                // Clean up temporary vertices from graph
-                delete activeGraph[tempStartVertex];
-                if (activeGraph[eNear.node]) {
-                    activeGraph[eNear.node] = activeGraph[eNear.node].filter(e => e.target !== tempEndVertex);
-                }
-                delete activeGraph[tempEndVertex];
-
-                if (!dijkstraResult && !bfsResult) {
-                    throw new Error(`No connected driving road route exists between "${startLocation.name}" and "${endLocation.name}".`);
-                }
-
-                // 6. Draw Routes on Leaflet Map
-                let boundsToFit = null;
-
-                // Draw BFS Route (if calculated) in dashed Cyan/Blue
-                if (bfsResult && bfsResult.geometry.length > 0) {
-                    let bfsPolyline = L.polyline(bfsResult.geometry, {
-                        color: '#00bfff',
-                        weight: 5,
-                        opacity: 0.85,
-                        dashArray: '8, 8',
-                        lineCap: 'round',
-                        lineJoin: 'round'
-                    }).addTo(routeLayerGroup);
-
-                    bfsPolyline.bindPopup(`<b>BFS Traversal:</b> Minimum ${bfsResult.hops} intersections/hops (${bfsResult.totalDistance.toFixed(2)} km)`);
-                    boundsToFit = bfsPolyline.getBounds();
-                }
-
-                // Draw Dijkstra Route (if calculated) in solid Pink/Red
-                if (dijkstraResult && dijkstraResult.geometry.length > 0) {
-                    let dijkstraPolyline = L.polyline(dijkstraResult.geometry, {
-                        color: '#e11d48',
-                        weight: 6,
-                        opacity: 0.95,
-                        lineCap: 'round',
-                        lineJoin: 'round'
-                    }).addTo(routeLayerGroup);
-
-                    dijkstraPolyline.bindPopup(`<b>Dijkstra Route:</b> Shortest ${dijkstraResult.totalDistance.toFixed(2)} km (${dijkstraResult.hops} intersections)`);
-                    boundsToFit = dijkstraPolyline.getBounds();
-                }
-
-                // Auto-zoom to fit the complete selected road route
-                if (boundsToFit && boundsToFit.isValid()) {
-                    map.fitBounds(boundsToFit, { padding: [50, 50] });
-                }
-
-                // 7. Render Detailed Results Box
-                resBox.className = "path-result-box";
-                resBox.style.display = "block";
-
-                let html = `<div><strong>From:</strong> ${startLocation.name} ➔ <strong>To:</strong> ${endLocation.name}</div>`;
-
-                if (mode === 'dijkstra' && dijkstraResult) {
-                    html += `
-                        <div style="margin-top:8px;">
-                            <span class="badge badge-dijkstra">Dijkstra Shortest Path</span>
-                        </div>
-                        <div class="metric-grid">
-                            <div class="metric-card">
-                                <span>TOTAL ROAD DISTANCE</span>
-                                <strong style="color:var(--accent-color);">${dijkstraResult.totalDistance.toFixed(2)} km</strong>
-                            </div>
-                            <div class="metric-card">
-                                <span>INTERSECTIONS TRAVERSED</span>
-                                <strong>${dijkstraResult.hops} nodes / hops</strong>
-                            </div>
-                        </div>
-                        <div style="font-size: 0.85em; color: var(--text-muted); margin-top: 6px;">
-                            ✓ <strong>Real Road Geometry:</strong> Route strictly follows OpenStreetMap road segments, turns, and highway curves (${dijkstraResult.geometry.length} points).<br>
-                            ✓ <strong>Graph Algorithm:</strong> Evaluated using custom Priority Queue Min-Heap on road intersection adjacency list.
-                        </div>
-                    `;
-                } else if (mode === 'bfs' && bfsResult) {
-                    html += `
-                        <div style="margin-top:8px;">
-                            <span class="badge badge-bfs">BFS Minimum Hops Path</span>
-                        </div>
-                        <div class="metric-grid">
-                            <div class="metric-card">
-                                <span>TOTAL CONNECTIONS / HOPS</span>
-                                <strong style="color:#00bfff;">${bfsResult.hops} intersections</strong>
-                            </div>
-                            <div class="metric-card">
-                                <span>ROAD DISTANCE</span>
-                                <strong>${bfsResult.totalDistance.toFixed(2)} km</strong>
-                            </div>
-                        </div>
-                        <div style="font-size: 0.85em; color: var(--text-muted); margin-top: 6px;">
-                            ✓ <strong>Fewest Hops Principle:</strong> BFS explores unweighted graph levels using a FIFO Queue to find the path requiring minimum turnings/intersections.<br>
-                            ✓ <em>Note:</em> BFS optimizes for minimum connections, not necessarily the shortest physical distance.
-                        </div>
-                    `;
-                } else if (mode === 'both' && dijkstraResult && bfsResult) {
-                    html += `
-                        <div style="margin-top:8px; display:flex; gap:6px;">
-                            <span class="badge badge-dijkstra">Dijkstra (${dijkstraResult.totalDistance.toFixed(2)} km)</span>
-                            <span class="badge badge-bfs">BFS (${bfsResult.hops} hops)</span>
-                        </div>
-                        <div class="metric-grid">
-                            <div class="metric-card">
-                                <span>DIJKSTRA (SHORTEST DISTANCE)</span>
-                                <strong style="color:var(--accent-color);">${dijkstraResult.totalDistance.toFixed(2)} km</strong> (${dijkstraResult.hops} hops)
-                            </div>
-                            <div class="metric-card">
-                                <span>BFS (MINIMUM HOPS)</span>
-                                <strong style="color:#00bfff;">${bfsResult.hops} hops</strong> (${bfsResult.totalDistance.toFixed(2)} km)
-                            </div>
-                        </div>
-                        <div style="font-size: 0.85em; color: var(--text-muted); margin-top: 6px;">
-                            Comparison: Dijkstra finds the path with minimal physical driving distance (${dijkstraResult.totalDistance.toFixed(2)} km vs ${bfsResult.totalDistance.toFixed(2)} km), while BFS finds the path with the fewest road intersections/hops (${bfsResult.hops} hops vs ${dijkstraResult.hops} hops).
-                        </div>
-                    `;
-                }
-
-                resBox.innerHTML = html;
+                summary.innerHTML = html;
 
             } catch (err) {
-                resBox.className = "path-result-box error";
-                resBox.style.display = "block";
-                resBox.innerHTML = `<strong>Route Error:</strong> ${err.message}`;
+                alert("Routing Error: " + err.message);
             } finally {
-                spinner.style.display = "none";
+                spin.style.display = 'none';
             }
         }
 
-        // -------------------------------------------------------------
-        // UI RENDERING: QUEUE (FIFO), HISTORY (VECTOR), ADJACENCY LIST
-        // -------------------------------------------------------------
-        function updateStats() {
-            document.getElementById("statQueueCount").innerText = pendingQueue.length;
-            document.getElementById("statHistoryCount").innerText = rideHistory.length;
-            
-            // Count nodes in active road graph
-            let roadNodesCount = Object.keys(roadGraph).length;
-            let manualNodesCount = Object.keys(manualGraph).length;
-            document.getElementById("statLocationsCount").innerText = roadNodesCount > 0 ? roadNodesCount : manualNodesCount;
-            
-            let totalRev = rideHistory.reduce((sum, item) => sum + item.fare, 0);
-            document.getElementById("statRevenue").innerText = "$" + totalRev.toFixed(2);
-        }
-
-        function renderUI() {
-            // 1. Render FIFO Queue
-            let qBox = document.getElementById("queueList");
-            if (pendingQueue.length === 0) {
-                qBox.innerHTML = '<div class="list-item">Queue is currently empty.</div>';
-            } else {
-                qBox.innerHTML = pendingQueue.map(r => `
-                    <div class="list-item">
-                        <strong>Request #${r.id}</strong> | User: ${r.user_id}<br>
-                        <strong>Route:</strong> ${r.initial_dest} ➔ ${r.final_dest}<br>
-                        <strong>Mode:</strong> ${r.mode.toUpperCase()} | <strong>Budget:</strong> $${r.budget}
-                        <button style="margin-top:6px; background:#333; color:#f472b6; border:1px solid #555; padding:4px 8px; border-radius:4px; font-size:0.8em; cursor:pointer;" onclick="setPreset('${r.initial_dest}', '${r.final_dest}'); findRoute('dijkstra');">Find Shortest Route</button>
-                    </div>
-                `).join('');
-            }
-
-            // 2. Render History Vector
-            let hBox = document.getElementById("historyList");
-            if (rideHistory.length === 0) {
-                hBox.innerHTML = '<div class="list-item history">No history recorded yet.</div>';
-            } else {
-                hBox.innerHTML = rideHistory.map(h => `
-                    <div class="list-item history">
-                        <strong>Ride #${h.id}</strong> | User: ${h.user_id} ➔ Partner: ${h.partner_id}<br>
-                        <strong>Route:</strong> ${h.initial_dest} ➔ ${h.final_dest}<br>
-                        <strong>Fare:</strong> $${h.fare}
-                    </div>
-                `).join('');
-            }
-
-            // 3. Render Adjacency List Monitor
-            let netBox = document.getElementById("adjacencyListDisplay");
-            let netHtml = `
-                <div style="font-size:0.85em; color:var(--text-muted); margin-bottom:8px;">
-                    <strong>OpenStreetMap Road Graph Status:</strong> ${Object.keys(roadGraph).length > 0 ? `<span style="color:#10b981;">● Active (${Object.keys(roadGraph).length} real intersection vertices loaded)</span>` : '<span style="color:#ffaa00;">● Standby</span>'}
-                </div>
-                <div style="font-weight:bold; color:var(--accent-color); margin-bottom:4px; font-size:0.85em;">Manual Graph Network (Adjacency List):</div>
-            `;
-            for (let u in manualGraph) {
-                let edges = manualGraph[u].map(e => `${e.target} (${e.distance}km)`).join(' ➔ ');
-                netHtml += `<div class="list-item graph"><strong>[${u}]</strong> ➔ ${edges || 'No Edges'}</div>`;
-            }
-            netBox.innerHTML = netHtml;
-
-            updateStats();
-        }
-
-        // -------------------------------------------------------------
-        // RIDE MANAGEMENT OPERATIONS (PRESERVED DATA STRUCTURES)
-        // -------------------------------------------------------------
-        function addRequest() {
-            let uInit = document.getElementById("initialDest").value.trim() || "Sector 62, Noida";
-            let uFinal = document.getElementById("finalDest").value.trim() || "Botanical Garden, Noida";
-
-            let req = {
-                id: nextReqId++,
-                user_id: parseInt(document.getElementById("userId").value) || 101,
-                initial_dest: uInit,
-                final_dest: uFinal,
-                time: parseInt(document.getElementById("reqTime").value) || 930,
-                mode: document.getElementById("mode").value,
-                budget: parseFloat(document.getElementById("budget").value) || 200
-            };
-
-            pendingQueue.push(req);
-            undoStack.push({ type: 'BOOK', data: req });
-            renderUI();
-            alert(`Success: Ride request #${req.id} pushed to FIFO queue & logged in Stack!`);
-        }
-
-        function processRide() {
-            if (pendingQueue.length === 0) {
-                alert("Error: No pending ride requests in the queue!");
-                return;
-            }
-
-            let req = pendingQueue.shift(); // FIFO Queue dequeue
-            let record = {
-                id: nextRideId++,
-                user_id: req.user_id,
-                partner_id: parseInt(document.getElementById("partnerId").value) || 501,
-                initial_dest: req.initial_dest,
-                final_dest: req.final_dest,
-                mode: req.mode,
-                fare: parseFloat(document.getElementById("fare").value) || 180
-            };
-
-            rideHistory.push(record); // Vector push_back
-            undoStack.push({ type: 'COMPLETE', data: record });
-            renderUI();
-            alert(`Success: Ride #${record.id} matched, moved to history vector, and logged in Stack!`);
-        }
-
-        function undoAction() {
-            if (undoStack.length === 0) {
-                alert("Undo Stack is empty!");
-                return;
-            }
-
-            let lastAction = undoStack.pop(); // LIFO Stack pop
-            if (lastAction.type === 'BOOK') {
-                pendingQueue = pendingQueue.filter(r => r.id !== lastAction.data.id);
-                alert("Undo successful: Removed request #" + lastAction.data.id + " from queue.");
-            } else if (lastAction.type === 'COMPLETE') {
-                rideHistory = rideHistory.filter(h => h.id !== lastAction.data.id);
-                alert("Undo successful: Removed ride record #" + lastAction.data.id + " from history vector.");
-            }
-            renderUI();
-        }
-
-        // -------------------------------------------------------------
-        // MANUAL GRAPH EDGE ADDITION (NO RANDOM COORDINATES)
-        // -------------------------------------------------------------
-        async function addGraphEdge() {
-            let u = document.getElementById("roadU").value.trim();
-            let v = document.getElementById("roadV").value.trim();
-            let dist = parseFloat(document.getElementById("roadDist").value);
-
-            if (!u || !v || isNaN(dist) || dist <= 0) {
-                alert("Please enter valid node names and a positive edge distance.");
-                return;
-            }
-
-            // Real coordinate lookup or geocoding (Zero random coordinates!)
-            if (!manualNodeCoordinates[u]) {
-                let geoU = await geocodeLocation(u);
-                manualNodeCoordinates[u] = geoU ? [geoU.lat, geoU.lon] : [28.6200, 77.3600];
-            }
-            if (!manualNodeCoordinates[v]) {
-                let geoV = await geocodeLocation(v);
-                manualNodeCoordinates[v] = geoV ? [geoV.lat, geoV.lon] : [28.5700, 77.3300];
-            }
-
-            if (!manualGraph[u]) manualGraph[u] = [];
-            if (!manualGraph[v]) manualGraph[v] = [];
-
-            manualGraph[u].push({ target: v, distance: dist });
-            manualGraph[v].push({ target: u, distance: dist }); // Undirected edge
-
-            renderUI();
-            alert(`Edge added between [${u}] and [${v}] with weight ${dist} km!`);
-        }
+        // Live Clock
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('liveClock').innerText = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+        }, 1000);
 
         window.onload = function() {
             initMap();
+            checkBackendConnection();
         };
     </script>
 </body>
