@@ -10,7 +10,29 @@ using namespace std;
 const double INF = numeric_limits<double>::infinity();
 
 RouteManager::RouteManager() {
-    // Initialize default commute road network
+    // Initialize default commute road network (both abbreviated and full landmark names)
+    addNewRoute("Sector 62, Noida", "Sector 18, Noida", 8.2);
+    addNewRoute("Sector 18, Noida", "Botanical Garden, Noida", 2.1);
+    addNewRoute("Sector 62, Noida", "Botanical Garden, Noida", 9.8);
+    addNewRoute("Sector 62, Noida", "Connaught Place, Delhi", 17.6);
+    addNewRoute("Sector 18, Noida", "Connaught Place, Delhi", 16.0);
+    addNewRoute("Botanical Garden, Noida", "Connaught Place, Delhi", 15.5);
+    addNewRoute("Connaught Place, Delhi", "India Gate, Delhi", 3.2);
+    addNewRoute("Botanical Garden, Noida", "Rajiv Chowk", 15.0);
+    addNewRoute("Dwarka Sector 21", "Rajiv Chowk", 28.4);
+
+    // Common query variants without commas
+    addNewRoute("Sector 62 Noida", "Sector 18 Noida", 8.2);
+    addNewRoute("Sector 18 Noida", "Botanical Garden Noida", 2.1);
+    addNewRoute("Sector 62 Noida", "Botanical Garden", 9.8);
+    addNewRoute("Sector 62 Noida", "Botanical Garden Noida", 9.8);
+    addNewRoute("Sector 62", "Botanical Garden", 9.8);
+    addNewRoute("Sector 62 Noida", "Connaught Place Delhi", 17.6);
+    addNewRoute("Sector 62", "Connaught Place", 17.6);
+    addNewRoute("Botanical Garden", "Connaught Place", 15.5);
+    addNewRoute("Connaught Place", "India Gate", 3.2);
+
+    // Compact names
     addNewRoute("Sector62", "TechPark", 3.5);
     addNewRoute("Sector62", "BotanicalGarden", 9.8);
     addNewRoute("TechPark", "ConnaughtPlace", 14.2);

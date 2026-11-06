@@ -160,3 +160,25 @@ std::vector<riderequest> Ride_Manager::all_pending_requests() const {
     }
     return result;
 }
+
+double Ride_Manager::get_total_revenue() const {
+    double total = 0.0;
+    for (const auto& r : ride_history) total += r.fare;
+    return total;
+}
+
+bool Ride_Manager::cancel_request(int req_id) {
+    std::queue<riderequest> temp;
+    bool found = false;
+    while (!pending_queue.empty()) {
+        riderequest r = pending_queue.front();
+        pending_queue.pop();
+        if (r.id == req_id) {
+            found = true;
+        } else {
+            temp.push(r);
+        }
+    }
+    pending_queue = temp;
+    return found;
+}

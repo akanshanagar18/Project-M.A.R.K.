@@ -25,6 +25,11 @@ public:
     void displaystats() const;
 
     std::vector<riderequest> all_pending_requests() const;
+    const std::vector<Complete_Ride>& get_history() const { return ride_history; }
+    int get_queue_size() const { return (int)pending_queue.size(); }
+    int get_history_size() const { return (int)ride_history.size(); }
+    double get_total_revenue() const;
+    bool cancel_request(int req_id);
 };
 
 #endif

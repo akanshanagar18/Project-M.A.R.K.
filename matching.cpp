@@ -1,123 +1,192 @@
+#ifndef MATCHING_H
+#define MATCHING_H
 
 #include <iostream>
+#include <vector>
 #include <queue>
 #include <cmath>
+#include <string>
+#include <algorithm>
 #include "users_management.cpp"
 
-const int MAX_TIME_DIFFERENCE = 30;
+const int MAX_TIME_DIFFERENCE = 45; // Minutes
 const int FARE_PER_STOP = 10;
 const int SHARED_CAB_FARE = 80;
 
 class match_class {
 public:
     User candidate;
-    int sharedSegments;
-    int score;
-    int timeDifference;
-    int estimatedFare;
-    string matchType;
+    int sharedSegments = 0;
+    int score = 0;
+    int timeDifference = 0;
+    int estimatedFare = 0;
+    string matchType = "";
 };
 
 struct compare {
-    bool operator()(match_class a, match_class b) {
+    bool operator()(const match_class& a, const match_class& b) {
         if (a.score != b.score)
-            return a.score < b.score;
-        return a.timeDifference > b.timeDifference;
+            return a.score < b.score; // Max-heap: higher score first
+        return a.timeDifference > b.timeDifference; // Min-heap: smaller time difference first
     }
 };
 
 typedef priority_queue<match_class, vector<match_class>, compare> MatchQueue;
 
-int findStation(string name) {
-    for (int i = 0; i < TOTAL_STATIONS; i++)
-        if (toLower(stations[i]) == toLower(name))
+inline int findStation(const string& name) {
+    string sLower = toLower(name);
+    for (int i = 0; i < TOTAL_STATIONS; i++) {
+        string stLower = toLower(stations[i]);
+        if (stLower == sLower || sLower.find(stLower) != string::npos || stLower.find(sLower) != string::npos)
             return i;
+    }
     return -1;
 }
 
-int timeDifference(string a, string b) {
-    int h1 = stoi(a.substr(0, 2));
-    int m1 = stoi(a.substr(3, 2));
-    int h2 = stoi(b.substr(0, 2));
-    int m2 = stoi(b.substr(3, 2));
+inline int parseTimeToMinutes(const string& t) {
+    string clean = "";
+    for (char c : t) if (isdigit(c) || c == ':') clean += c;
+    if (clean.empty()) return 0;
+    
+    size_t colon = clean.find(':');
+    if (colon != string::npos) {
+        int h = stoi(clean.substr(0, colon));
+        int m = (colon + 1 < clean.length()) ? stoi(clean.substr(colon + 1)) : 0;
+        return (h * 60 + m) % 1440;
+    } else {
+        int val = stoi(clean);
+        if (val >= 100) {
+            int h = val / 100;
+            int m = val % 100;
+            return (h * 60 + m) % 1440;
+        } else {
+            return (val * 60) % 1440;
+        }
+    }
+}
 
-    int diff = abs((h1 * 60 + m1) - (h2 * 60 + m2));
+inline int timeDifference(const string& a, const string& b) {
+    int m1 = parseTimeToMinutes(a);
+    int m2 = parseTimeToMinutes(b);
+    int diff = abs(m1 - m2);
     return min(diff, 1440 - diff);
 }
 
-bool same(string a, string b) {
+inline bool same(const string& a, const string& b) {
     return toLower(a) == toLower(b);
 }
 
-bool isPublic(string mode) {
+inline bool isPublic(const string& mode) {
     return mode == "Metro" || mode == "Train" || mode == "Bus";
 }
 
-bool evaluateMatch(const User &u, const User &c, match_class &m) {
+inline bool evaluateMatch(const User &u, const User &c, match_class &m) {
     int score = 0;
     int shared = 0;
-    string type;
+    string type = "";
     bool sameSrc = same(u.source, c.source);
     bool sameDst = same(u.destination, c.destination);
 
-    
-    if (u.transportMode == c.transportMode) {
-        if (u.transportMode == "Metro") {
-            
+    // 1. MATCHING ON SAME TRANSPORT MODE
+    if (toLower(u.transportMode) == toLower(c.transportMode)) {
+        if (toLower(u.transportMode) == "metro") {
             int s1 = findStation(u.source), d1 = findStation(u.destination);
             int s2 = findStation(c.source), d2 = findStation(c.destination);
+
             if (s1 >= 0 && d1 >= 0 && s2 >= 0 && d2 >= 0) {
-                shared = max(0, min(max(s1, d1), max(s2, d2)) - max(min(s1, d1), min(s2, d2)));
-                if (shared >= abs(s1 - d1) && shared > 0) {
-                    score = 100;
-                    type = "Same mode + complete route match";
+                bool dir1 = (d1 >= s1);
+                bool dir2 = (d2 >= s2);
+                
+                // Must be traveling in the same direction on the metro line
+                if (dir1 == dir2) {
+                    int minStop = max(min(s1, d1), min(s2, d2));
+                    int maxStop = min(max(s1, d1), max(s2, d2));
+                    shared = max(0, maxStop - minStop);
+
+                    if (shared > 0) {
+                        if (sameSrc && sameDst) {
+                            score = 100;
+                            type = "Same Metro Route (Identical Boarding & Alighting)";
+                        } else if (shared >= abs(s1 - d1) || shared >= abs(s2 - d2)) {
+                            score = 90;
+                            type = "Same Metro Route (Full Sub-corridor match, " + to_string(shared) + " stations)";
+                        } else {
+                            score = 75;
+                            type = "Metro Co-commute (" + to_string(shared) + " overlapping stations)";
+                        }
+                    }
                 }
-                else if (shared > 0) {
-                    score = 80;
-                    type = "Same mode + partial route match";
+            } else {
+                // Stations outside the metro array: compare string names directly
+                if (sameSrc && sameDst) {
+                    shared = 1;
+                    score = 100;
+                    type = "Identical Metro Stations Match";
+                } else if (sameSrc || sameDst) {
+                    shared = 1;
+                    score = 75;
+                    type = "Partial Metro Station Overlap";
                 }
             }
-        }
-        else {
-           
-            bool partialAllowed = (u.transportMode != "Bike" && u.transportMode != "Walking");
+        } else {
+            // Cab, Carpool, Auto, Train, Bus
+            bool partialAllowed = (toLower(u.transportMode) != "bike" && toLower(u.transportMode) != "walking");
             if (sameSrc && sameDst) {
                 shared = 1;
                 score = 100;
-                type = "Same mode + complete route match";
-            }
-            else if (partialAllowed && (sameSrc || sameDst)) {
+                type = "Exact Direct Route Match (" + u.source + " ➔ " + u.destination + ")";
+            } else if (partialAllowed && sameSrc) {
                 shared = 1;
-                score = 80;
-                type = "Same mode + partial route match";
+                score = 85;
+                type = "Common Pickup Location (" + u.source + ")";
+            } else if (partialAllowed && sameDst) {
+                shared = 1;
+                score = 85;
+                type = "Common Drop-off Destination (" + u.destination + ")";
             }
         }
     }
 
-   
+    // 2. SHARED CAB / CARPOOL TO STATION
     if (score == 0 && u.wantsSharedCab && c.wantsSharedCab) {
-        if (u.boardingStation != "" && same(u.boardingStation, c.boardingStation)) {
-            score = 60;
-            type = "Shared cab to common boarding station";
-        }
-        else if (sameDst) {
+        if (!u.boardingStation.empty() && same(u.boardingStation, c.boardingStation)) {
+            score = 65;
+            shared = 1;
+            type = "Shared Cab to Transit Hub (" + u.boardingStation + ")";
+        } else if (sameDst) {
+            score = 55;
+            shared = 1;
+            type = "Shared Cab from Transit Destination (" + u.destination + ")";
+        } else if (sameSrc) {
             score = 50;
-            type = "Shared cab from common arrival station";
+            shared = 1;
+            type = "Shared Cab from Common Origin (" + u.source + ")";
         }
     }
 
-    
-    if (score == 0 && isPublic(u.transportMode) && isPublic(c.transportMode) && (sameSrc || sameDst)) {
-        score = 20;
-        type = "Other compatible combination";
+    // 3. PUBLIC TRANSIT COMPATIBLE COMBINATIONS (Metro + Bus/Train)
+    if (score == 0 && isPublic(u.transportMode) && isPublic(c.transportMode)) {
+        if (sameSrc && sameDst) {
+            score = 70;
+            shared = 1;
+            type = "Multi-modal Same Route Commute";
+        } else if (sameSrc || sameDst) {
+            score = 40;
+            shared = 1;
+            type = "Compatible Public Transit Segment";
+        }
     }
 
     if (score == 0)
         return false;
 
-
-    bool cab = (score == 60 || score == 50);
-    int fare = cab ? SHARED_CAB_FARE : FARE_PER_STOP * max(shared, 1);
+    // 4. FARE ESTIMATION & BUDGET COMPATIBILITY
+    bool isCabType = (toLower(u.transportMode) == "cab" || toLower(u.transportMode) == "auto" || 
+                      toLower(u.transportMode) == "carpool" || score == 65 || score == 55 || score == 50);
+    
+    int fare = isCabType ? SHARED_CAB_FARE : FARE_PER_STOP * max(shared, 1);
+    
+    // Both users' budgets must cover the estimated fare
     if (fare > u.budget || fare > c.budget)
         return false;
 
@@ -129,20 +198,29 @@ bool evaluateMatch(const User &u, const User &c, match_class &m) {
     return true;
 }
 
-MatchQueue matchRides(User user, vector<User> candidates) {
+inline MatchQueue matchRides(const User& user, const vector<User>& candidates) {
     MatchQueue pq;
 
-    for (int i = 0; i < (int)candidates.size(); i++) {
-        User c = candidates[i];
+    for (const auto& c : candidates) {
+        // Skip self or users without active request
         if (c.id == user.id || !c.hasRequest)
             continue;
 
+        // Skip users that are already matched (unless both explicitly allow multiple)
+        if (c.isMatched && (!user.allowMultiple || !c.allowMultiple))
+            continue;
+        if (user.isMatched && (!user.allowMultiple || !c.allowMultiple))
+            continue;
+
+        // Time difference evaluation
         int diff = timeDifference(user.preferredTime, c.preferredTime);
         if (diff > MAX_TIME_DIFFERENCE)
             continue;
 
-     
-        if ((user.genderPreference == "Same" || c.genderPreference == "Same") && !same(user.gender, c.gender))
+        // Gender preference check: if either requests "Same", genders must match
+        bool uSame = (toLower(user.genderPreference) == "same" || toLower(user.genderPreference) == "same gender only");
+        bool cSame = (toLower(c.genderPreference) == "same" || toLower(c.genderPreference) == "same gender only");
+        if ((uSame || cSame) && !same(user.gender, c.gender))
             continue;
 
         match_class result;
@@ -155,7 +233,7 @@ MatchQueue matchRides(User user, vector<User> candidates) {
     return pq;
 }
 
-void displayResults(MatchQueue pq) {
+inline void displayResults(MatchQueue pq) {
     if (pq.empty()) {
         cout << "\nNo compatible rides found.\n";
         return;
@@ -167,21 +245,19 @@ void displayResults(MatchQueue pq) {
         match_class m = pq.top();
         pq.pop();
 
-        cout << "\nMatch Rank: " << rank++;
-        cout << "\nCandidate: " << m.candidate.name << " (ID " << m.candidate.id << ")";
-        cout << "\nTransport: " << m.candidate.transportMode;
-        cout << "\nRoute: " << m.candidate.source << " -> " << m.candidate.destination;
-        cout << "\nMatch Type: " << m.matchType;
-        cout << "\nShared Segments: " << m.sharedSegments;
-        cout << "\nMatch Score: " << m.score << "/100";
-        cout << "\nTime Difference: " << m.timeDifference << " minutes";
-        cout << "\nEstimated Fare: Rs. " << m.estimatedFare;
-        cout << "\nShared Cab: " << ((m.score == 60 || m.score == 50) ? "YES" : "NO") << "\n";
-        cout << "-----------------------------------\n";
+        cout << "\nMatch Rank      : " << rank++;
+        cout << "\nCandidate       : " << m.candidate.name << " (ID #" << m.candidate.id << ")";
+        cout << "\nTransport       : " << m.candidate.transportMode;
+        cout << "\nRoute           : " << m.candidate.source << " ➔ " << m.candidate.destination;
+        cout << "\nMatch Type      : " << m.matchType;
+        cout << "\nCompatibility   : " << m.score << " / 100";
+        cout << "\nTime Difference : " << m.timeDifference << " minutes";
+        cout << "\nEstimated Fare  : Rs. " << m.estimatedFare;
+        cout << "\n-----------------------------------\n";
     }
 }
 
-void findMatches(UserManager &manager) {
+inline void findMatchesCLI(UserManager &manager) {
     int id;
     cout << "\nEnter your User ID: ";
     cin >> id;
@@ -192,7 +268,7 @@ void findMatches(UserManager &manager) {
         return;
     }
     if (!user.hasRequest) {
-        cout << "\nYou have no active ride request. Use option 6 first.\n";
+        cout << "\nYou have no active ride request. Request a ride first.\n";
         return;
     }
 
@@ -200,36 +276,19 @@ void findMatches(UserManager &manager) {
     displayResults(pq);
 }
 
+#ifndef NO_STANDALONE_MAIN
 int main() {
     UserManager manager;
     int choice;
-
     do {
-        cout << "\n\n========================================\n";
-        cout << "       PROJECT M.A.R.K.               \n";
-        cout << "========================================\n";
-        cout << "1. Register User\n";
-        cout << "2. Display All Users\n";
-        cout << "3. Search User\n";
-        cout << "4. Update User Profile\n";
-        cout << "5. Delete User\n";
-        cout << "6. Request a Ride\n";
-        cout << "7. Find Ride Matches\n";
-        cout << "0. Exit\n";
-        cout << "========================================\n";
-        cout << "Enter your choice: ";
+        cout << "\n1. Register User\n2. Request Ride\n3. Find Matches\n0. Exit\nEnter: ";
         cin >> choice;
-
-        switch (choice) {
-            case 1: manager.registerUser(); break;
-            case 2: manager.displayUsers(); break;
-            case 3: manager.searchUser(); break;
-            case 4: manager.updateUser(); break;
-            case 5: manager.deleteUser(); break;
-            case 6: manager.requestRide(); break;
-            case 7: findMatches(manager); break;
-        }
+        if (choice == 1) manager.registerUser();
+        else if (choice == 2) manager.requestRide();
+        else if (choice == 3) findMatchesCLI(manager);
     } while (choice != 0);
-
     return 0;
 }
+#endif
+
+#endif
