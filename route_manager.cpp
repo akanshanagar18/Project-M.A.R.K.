@@ -9,6 +9,16 @@ using namespace std;
 
 const double INF = numeric_limits<double>::infinity();
 
+RouteManager::RouteManager() {
+    // Initialize default commute road network
+    addNewRoute("Sector62", "TechPark", 3.5);
+    addNewRoute("Sector62", "BotanicalGarden", 9.8);
+    addNewRoute("TechPark", "ConnaughtPlace", 14.2);
+    addNewRoute("BotanicalGarden", "ConnaughtPlace", 15.5);
+    addNewRoute("BotanicalGarden", "RajNagar", 12.0);
+    addNewRoute("ConnaughtPlace", "RajNagar", 9.5);
+}
+
 void RouteManager::addNewLocation(const string& location) {
     mapGraph.addLocation(location);
 }

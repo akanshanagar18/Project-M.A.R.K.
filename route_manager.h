@@ -11,6 +11,7 @@ private:
     Graph mapGraph;
 
 public:
+    RouteManager();
     void addNewLocation(const std::string& location);
     void addNewRoute(const std::string& u, const std::string& v, double distance);
     void showNetwork() const;
