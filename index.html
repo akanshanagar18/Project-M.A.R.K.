@@ -749,53 +749,23 @@
             font-weight: 700;
         }
 
-        .loc-item-sub {
-            font-size: 0.74em;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 2px;
-        }
-
-        .loc-item-badge {
-            background: #1e2436;
-            color: #94a3b8;
-            padding: 1px 6px;
-            border-radius: 4px;
-            font-size: 0.9em;
-            border: 1px solid #2d354b;
-        }
-
         .loc-item-city {
-            color: var(--accent-cyan);
-            font-weight: 500;
+            font-size: 0.78em;
+            color: var(--text-muted);
+            margin-top: 2px;
         }
 
         .loc-loading {
             padding: 12px 16px;
             font-size: 0.82em;
             color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 8px;
         }
 
         .loc-empty {
             padding: 12px 16px;
             font-size: 0.82em;
-            color: #94a3b8;
+            color: var(--text-muted);
             text-align: center;
-        }
-
-        .loc-selected-badge {
-            font-size: 0.74em;
-            color: #10b981;
-            margin-top: 4px;
-            display: none;
-            align-items: center;
-            gap: 4px;
-            font-weight: 500;
         }
 
         @keyframes slideUp {
@@ -1210,7 +1180,6 @@
                                 <div class="loc-input-wrapper">
                                     <input type="text" id="reqSource" placeholder="e.g. Sector 62, Noida" autocomplete="off" required>
                                     <div class="loc-dropdown" id="dropdown-reqSource"></div>
-                                    <div class="loc-selected-badge" id="badge-reqSource">✓ Verified Location Selected</div>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -1218,7 +1187,6 @@
                                 <div class="loc-input-wrapper">
                                     <input type="text" id="reqDest" placeholder="e.g. Botanical Garden, Noida" autocomplete="off" required>
                                     <div class="loc-dropdown" id="dropdown-reqDest"></div>
-                                    <div class="loc-selected-badge" id="badge-reqDest">✓ Verified Location Selected</div>
                                 </div>
                             </div>
                         </div>
@@ -1261,7 +1229,6 @@
                                 <div class="loc-input-wrapper">
                                     <input type="text" id="reqStation" placeholder="e.g. Sector 62 or Botanical Garden" autocomplete="off">
                                     <div class="loc-dropdown" id="dropdown-reqStation"></div>
-                                    <div class="loc-selected-badge" id="badge-reqStation">✓ Verified Transit Hub Selected</div>
                                 </div>
                             </div>
                         </div>
