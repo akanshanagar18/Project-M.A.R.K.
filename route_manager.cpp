@@ -67,6 +67,18 @@ RouteManager::RouteManager() {
     addNewRoute("BotanicalGarden", "ConnaughtPlace", 15.5);
     addNewRoute("BotanicalGarden", "RajNagar", 12.0);
     addNewRoute("ConnaughtPlace", "RajNagar", 9.5);
+
+    // Aliases to primary CSV nodes
+    addNewRoute("Sector 62, Noida", "Noida Sector 62", 0.001);
+    addNewRoute("Sector 62 Noida", "Noida Sector 62", 0.001);
+    addNewRoute("Sector 62", "Noida Sector 62", 0.001);
+    addNewRoute("Botanical Garden, Noida", "Botanical Garden Metro Station", 0.001);
+    addNewRoute("Botanical Garden Noida", "Botanical Garden Metro Station", 0.001);
+    addNewRoute("Botanical Garden", "Botanical Garden Metro Station", 0.001);
+    addNewRoute("Connaught Place, Delhi", "Connaught Place", 0.001);
+    addNewRoute("Connaught Place Delhi", "Connaught Place", 0.001);
+    addNewRoute("India Gate, Delhi", "India Gate", 0.001);
+    addNewRoute("India Gate Delhi", "India Gate", 0.001);
 }
 
 bool RouteManager::loadLocationsFromCSV(const string& filename) {
@@ -377,7 +389,48 @@ bool RouteManager::findLocationByName(const string& name, LocationRecord& outLoc
             return true;
         }
     }
-    // 2. Contains match
+
+    // 2. Token match (e.g. "sector 62 noida" matches "Noida Sector 62")
+    string cleanTarget = "";
+    for (char c : target) {
+        if (isalnum((unsigned char)c) || c == ' ') cleanTarget += c;
+        else cleanTarget += ' ';
+    }
+    stringstream ss(cleanTarget);
+    vector<string> qTokens;
+    string tok;
+    while (ss >> tok) {
+        if (tok != "the" && tok != "in" && tok != "at" && tok != "near") qTokens.push_back(tok);
+    }
+
+    if (!qTokens.empty()) {
+        for (const auto& loc : locations) {
+            string locClean = toLowerStr(loc.name + " " + loc.city);
+            for (char& c : locClean) {
+                if (!isalnum((unsigned char)c) && c != ' ') c = ' ';
+            }
+            stringstream ssL(locClean);
+            vector<string> locTokens;
+            string lTok;
+            while (ssL >> lTok) locTokens.push_back(lTok);
+
+            size_t matchCount = 0;
+            for (const auto& qt : qTokens) {
+                for (const auto& lt : locTokens) {
+                    if (lt == qt || lt.find(qt) != string::npos || qt.find(lt) != string::npos) {
+                        matchCount++;
+                        break;
+                    }
+                }
+            }
+            if (matchCount == qTokens.size()) {
+                outLoc = loc;
+                return true;
+            }
+        }
+    }
+
+    // 3. Contains match
     for (const auto& loc : locations) {
         string ln = toLowerStr(loc.name);
         if (ln.find(target) != string::npos || target.find(ln) != string::npos) {

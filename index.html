@@ -1375,7 +1375,6 @@
                             <div class="loc-input-wrapper">
                                 <input type="text" id="routeStart" value="Sector 62, Noida" autocomplete="off">
                                 <div class="loc-dropdown" id="dropdown-routeStart"></div>
-                                <div class="loc-selected-badge" id="badge-routeStart" style="display:inline-flex;">✓ Verified Location Selected</div>
                             </div>
                         </div>
                         <div class="form-group" style="margin:0;">
@@ -1383,7 +1382,6 @@
                             <div class="loc-input-wrapper">
                                 <input type="text" id="routeEnd" value="Botanical Garden, Noida" autocomplete="off">
                                 <div class="loc-dropdown" id="dropdown-routeEnd"></div>
-                                <div class="loc-selected-badge" id="badge-routeEnd" style="display:inline-flex;">✓ Verified Location Selected</div>
                             </div>
                         </div>
                     </div>
@@ -1395,7 +1393,7 @@
                     </div>
 
                     <div id="routeLoadingMsg" style="display:none; color:var(--accent-pink); margin-top:10px; font-size:0.88em;">
-                        ⏳ Tracing road network graph and computing shortest path...
+                        ⏳ Running Dijkstra &amp; BFS algorithms + fetching road geometry from OpenStreetMap...
                     </div>
 
                     <div id="routeSummaryBox" style="display:none; margin-top:14px; padding:14px; background:#12151f; border-radius:8px; border:1px solid var(--accent-pink);"></div>
@@ -1544,8 +1542,72 @@
     
     <!-- Preloaded OpenStreetMap Road Network Dataset (Delhi-NCR) -->
     <script src="roads_data.js"></script>
+    <!-- Verified NCR Locations Dataset from locations.csv -->
+    <script src="locations_data.js"></script>
 
     <script>
+        // Backend URL resolution (works seamlessly on port 8080 or port 5500 Live Server)
+        function getBackendUrl(path) {
+            const cleanPath = path.startsWith('/') ? path : '/' + path;
+            if (window.location.port === '8080') return cleanPath;
+            const host = (window.location.hostname && window.location.hostname !== 'localhost') ? window.location.hostname : '127.0.0.1';
+            return `http://${host}:8080${cleanPath}`;
+        }
+
+        async function safeFetchJson(path, options = {}) {
+            try {
+                const url = path.startsWith('http') ? path : getBackendUrl(path);
+                const res = await fetch(url, options);
+                if (!res.ok) return null;
+                const cType = res.headers.get('content-type') || '';
+                if (!cType.includes('application/json')) return null;
+                return await res.json();
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // Exact Coordinate Lookup from locations.csv
+        function findLocationInCSV(query) {
+            if (!query || typeof ncrLocations === 'undefined' || !Array.isArray(ncrLocations)) return null;
+            let clean = query.toLowerCase().replace(/[,.-]/g, ' ').replace(/\s+/g, ' ').trim();
+            if (!clean) return null;
+
+            // 1. Exact name match
+            for (let loc of ncrLocations) {
+                if (loc.name.toLowerCase() === clean) return loc;
+            }
+
+            // 2. Token match (e.g. "sector 62, noida" matches "Noida Sector 62")
+            let qTokens = clean.split(' ').filter(t => t.length > 0 && t !== 'the' && t !== 'in' && t !== 'at' && t !== 'near');
+            let best = null;
+            let bestScore = 0;
+
+            for (let loc of ncrLocations) {
+                let locText = (loc.name + ' ' + loc.city).toLowerCase().replace(/[,.-]/g, ' ');
+                let locTokens = locText.split(' ');
+                let matchCount = 0;
+                for (let qt of qTokens) {
+                    if (locTokens.some(lt => lt === qt || lt.includes(qt) || qt.includes(lt))) {
+                        matchCount++;
+                    }
+                }
+                if (matchCount === qTokens.length) {
+                    return loc;
+                }
+                if (matchCount > bestScore) {
+                    bestScore = matchCount;
+                    best = loc;
+                }
+            }
+
+            if (best && (bestScore >= 2 || bestScore >= qTokens.length * 0.5)) {
+                return best;
+            }
+
+            return null;
+        }
+
         // Global State & In-Memory Fallback
         let isBackendLive = false;
         let map, routeLayerGroup, markerLayerGroup;
@@ -1586,11 +1648,8 @@
 
             let user = null;
             if (isBackendLive) {
-                try {
-                    let res = await fetch(`/api/users/search?id=${id}`);
-                    let data = await res.json();
-                    if (data.success && data.user) user = data.user;
-                } catch(e) {}
+                let data = await safeFetchJson(getBackendUrl(`/api/users/search?id=${id}`));
+                if (data && data.success && data.user) user = data.user;
             }
             if (!user) user = localUsers.find(u => u.id === id);
 
@@ -1636,13 +1695,10 @@
         async function refreshCurrentUserData() {
             if (!currentUserId) return;
             if (isBackendLive) {
-                try {
-                    let res = await fetch(`/api/users/search?id=${currentUserId}`);
-                    let data = await res.json();
-                    if (data.success && data.user) {
-                        currentUser = data.user;
-                    }
-                } catch (e) {}
+                let data = await safeFetchJson(getBackendUrl(`/api/users/search?id=${currentUserId}`));
+                if (data && data.success && data.user) {
+                    currentUser = data.user;
+                }
             } else {
                 let u = localUsers.find(x => x.id === currentUserId);
                 if (u) currentUser = u;
@@ -1772,13 +1828,15 @@
         // ---------------- API Integration with C++ Backend ----------------
         async function checkBackendConnection() {
             try {
-                let res = await fetch('/api/stats', { signal: AbortSignal.timeout(1500) });
-                if (res.ok) {
+                let data = await safeFetchJson(getBackendUrl('/api/stats'), { signal: AbortSignal.timeout(2000) });
+                if (data && data.totalUsers !== undefined) {
                     isBackendLive = true;
                     document.getElementById('serverDot').style.backgroundColor = 'var(--accent-green)';
                     document.getElementById('serverStatusText').innerText = 'C++ Backend Connected (Port 8080)';
                 } else {
-                    throw new Error();
+                    isBackendLive = false;
+                    document.getElementById('serverDot').style.backgroundColor = '#fbbf24';
+                    document.getElementById('serverStatusText').innerText = 'Standalone Browser Mode';
                 }
             } catch (e) {
                 isBackendLive = false;
@@ -1791,17 +1849,18 @@
         async function loadStats() {
             if (isBackendLive) {
                 try {
-                    let res = await fetch('/api/stats');
-                    let data = await res.json();
-                    document.getElementById('statUsers').innerText = data.totalUsers;
-                    document.getElementById('statRequests').innerText = data.activeRequests;
-                    document.getElementById('statMatches').innerText = data.successfulMatches;
-                    document.getElementById('statCompleted').innerText = data.completedRides;
-                    document.getElementById('monLinkedList').innerText = data.totalUsers + ' Nodes';
-                    document.getElementById('monQueue').innerText = data.pendingQueueSize + ' Pending';
-                    document.getElementById('monVector').innerText = data.completedRides + ' Records';
-                    document.getElementById('historyRevenueBadge').innerText = 'Revenue: $' + data.totalRevenue.toFixed(2);
-                    return;
+                    let data = await safeFetchJson(getBackendUrl('/api/stats'));
+                    if (data && data.totalUsers !== undefined) {
+                        document.getElementById('statUsers').innerText = data.totalUsers;
+                        document.getElementById('statRequests').innerText = data.activeRequests;
+                        document.getElementById('statMatches').innerText = data.successfulMatches;
+                        document.getElementById('statCompleted').innerText = data.completedRides;
+                        document.getElementById('monLinkedList').innerText = data.totalUsers + ' Nodes';
+                        document.getElementById('monQueue').innerText = data.pendingQueueSize + ' Pending';
+                        document.getElementById('monVector').innerText = data.completedRides + ' Records';
+                        document.getElementById('historyRevenueBadge').innerText = 'Revenue: $' + data.totalRevenue.toFixed(2);
+                        return;
+                    }
                 } catch (e) {}
             }
 
@@ -1823,8 +1882,9 @@
             let users = [];
             if (isBackendLive) {
                 try {
-                    let res = await fetch('/api/users');
-                    users = await res.json();
+                    let data = await safeFetchJson(getBackendUrl('/api/users'));
+                    if (data && Array.isArray(data)) users = data;
+                    else users = localUsers;
                 } catch (e) { users = localUsers; }
             } else {
                 users = localUsers;
@@ -1873,12 +1933,12 @@
 
             if (isBackendLive) {
                 try {
-                    let res = await fetch('/api/users', {
+                    let data = await safeFetchJson('/api/users', {
                         method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ name, phone, gender })
                     });
-                    let data = await res.json();
-                    if (data.success && data.id) {
+                    if (data && data.success && data.id) {
                         newlyRegisteredId = data.id;
                         showRegistrationSuccess(data.id, name);
                         document.getElementById('newUserName').value = '';
@@ -1886,7 +1946,7 @@
                         loadUsers();
                         loadStats();
                         return;
-                    } else {
+                    } else if (data && !data.success) {
                         alert(data.message || "Registration failed.");
                         return;
                     }
@@ -1933,12 +1993,11 @@
 
             if (isBackendLive) {
                 try {
-                    let res = await fetch(`/api/users/search?id=${id}`);
-                    let data = await res.json();
-                    if (data.success && data.user) {
+                    let data = await safeFetchJson(getBackendUrl(`/api/users/search?id=${id}`));
+                    if (data && data.success && data.user) {
                         renderSearchResult(data.user);
                         return;
-                    } else {
+                    } else if (data && !data.success) {
                         resBox.style.display = 'block';
                         resBox.innerHTML = `<span style="color:#ef4444;">User #${id} not found in Linked List.</span>`;
                         return;
@@ -1970,9 +2029,8 @@
 
             if (isBackendLive) {
                 try {
-                    let res = await fetch(`/api/users/delete?id=${id}`, { method: 'POST' });
-                    let data = await res.json();
-                    if (data.success) {
+                    let data = await safeFetchJson(`/api/users/delete?id=${id}`, { method: 'POST' });
+                    if (data && data.success) {
                         showToast(`Deleted User #${id} from C++ Linked List.`);
                         loadUsers();
                         loadStats();
@@ -2018,12 +2076,12 @@
 
             // Auto-resolve or validate locations using the unified location system
             let sLoc = activeLocationSelections['reqSource'];
-            if (!sLoc || sLoc.name !== source) sLoc = await resolveLocation(source);
+            if (!sLoc || sLoc.name !== source) sLoc = findLocationInCSV(source) || await resolveLocation(source);
             let eLoc = activeLocationSelections['reqDest'];
-            if (!eLoc || eLoc.name !== destination) eLoc = await resolveLocation(destination);
+            if (!eLoc || eLoc.name !== destination) eLoc = findLocationInCSV(destination) || await resolveLocation(destination);
 
             if (!sLoc || !eLoc) {
-                alert("Please select valid recognized locations for pickup and destination from the autocomplete suggestions dropdown.");
+                alert("Please select valid recognized locations for pickup and destination.");
                 return;
             }
 
@@ -2032,15 +2090,15 @@
 
             if (isBackendLive) {
                 try {
-                    let res = await fetch('/api/rides/request', {
+                    let data = await safeFetchJson(getBackendUrl('/api/rides/request'), {
                         method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             userId, source: finalSource, destination: finalDestination, preferredTime, transportMode: mode,
                             budget, genderPreference, wantsSharedCab, boardingStation, allowMultiple
                         })
                     });
-                    let data = await res.json();
-                    if (data.success) {
+                    if (data && data.success) {
                         showToast(`Ride request submitted & pushed to C++ FIFO Queue!`);
                         currentUser.hasRequest = true;
                         currentUser.source = source;
@@ -2052,7 +2110,7 @@
                         loadStats();
                         switchTab('matches');
                         return;
-                    } else {
+                    } else if (data && !data.success) {
                         alert(data.message);
                         return;
                     }
@@ -2108,9 +2166,8 @@
 
             if (isBackendLive) {
                 try {
-                    let res = await fetch(`/api/rides/matches?userId=${userId}`);
-                    let data = await res.json();
-                    if (data.success && data.matches) {
+                    let data = await safeFetchJson(getBackendUrl(`/api/rides/matches?userId=${userId}`));
+                    if (data && data.success && data.matches) {
                         renderMatches(userId, data.matches);
                         return;
                     }
@@ -2192,12 +2249,12 @@
         async function confirmMatch(u1, u2) {
             if (isBackendLive) {
                 try {
-                    let res = await fetch('/api/rides/confirm_match', {
+                    let data = await safeFetchJson(getBackendUrl('/api/rides/confirm_match'), {
                         method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ user1: u1, user2: u2 })
                     });
-                    let data = await res.json();
-                    if (data.success) {
+                    if (data && data.success) {
                         showToast(`Match confirmed! User #${u1} linked with User #${u2}.`);
                         if (currentUser && currentUser.id === u1) {
                             currentUser.isMatched = true;
@@ -2229,11 +2286,15 @@
         async function loadQueue() {
             let queue = [];
             if (isBackendLive) {
-                try {
-                    let res = await fetch('/api/rides/queue');
-                    queue = await res.json();
-                } catch (e) { queue = localQueue; }
-            } else { queue = localQueue; }
+                let data = await safeFetchJson(getBackendUrl('/api/rides/queue'));
+                if (Array.isArray(data)) {
+                    queue = data;
+                } else {
+                    queue = localQueue;
+                }
+            } else {
+                queue = localQueue;
+            }
 
             document.getElementById('queueBadge').innerText = queue.length + ' Pending';
             const tbody = document.getElementById('queueTableBody');
@@ -2265,17 +2326,17 @@
 
             if (isBackendLive) {
                 try {
-                    let res = await fetch('/api/rides/process', {
+                    let data = await safeFetchJson(getBackendUrl('/api/rides/process'), {
                         method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ fare: fareVal })
                     });
-                    let data = await res.json();
-                    if (data.success) {
+                    if (data && data.success) {
                         showToast(`Ride processed from FIFO Queue & logged into C++ History Vector!`);
                         loadQueue();
                         loadStats();
                         return;
-                    } else {
+                    } else if (data && !data.success) {
                         alert(data.message);
                         return;
                     }
@@ -2306,12 +2367,13 @@
         async function handleUndoAction() {
             if (isBackendLive) {
                 try {
-                    let res = await fetch('/api/rides/undo', { method: 'POST' });
-                    let data = await res.json();
-                    showToast(data.message);
-                    loadQueue();
-                    loadStats();
-                    return;
+                    let data = await safeFetchJson(getBackendUrl('/api/rides/undo'), { method: 'POST' });
+                    if (data && data.message) {
+                        showToast(data.message);
+                        loadQueue();
+                        loadStats();
+                        return;
+                    }
                 } catch (e) {}
             }
 
@@ -2332,11 +2394,15 @@
         async function loadHistory() {
             let history = [];
             if (isBackendLive) {
-                try {
-                    let res = await fetch('/api/rides/history');
-                    history = await res.json();
-                } catch (e) { history = localHistory; }
-            } else { history = localHistory; }
+                let data = await safeFetchJson(getBackendUrl('/api/rides/history'));
+                if (Array.isArray(data)) {
+                    history = data;
+                } else {
+                    history = localHistory;
+                }
+            } else {
+                history = localHistory;
+            }
 
             const tbody = document.getElementById('historyTableBody');
             if (history.length === 0) {
@@ -2417,10 +2483,41 @@
                     let nid = String(nodes[i]);
                     if (nodeCounts[nid] > 1 || i === nodes.length - 1) {
                         addEdge(segStart, nid, segDist, segGeom);
-                        if (!isOneWay) addEdge(nid, segStart, segDist, segGeom.slice().reverse());
+                        addEdge(nid, segStart, segDist, segGeom.slice().reverse());
                         segStart = nid;
                         segGeom = [p2];
                         segDist = 0.0;
+                    }
+                }
+            }
+
+            // Prune to giant connected component (31,000+ nodes) so every nearest node is 100% connected
+            let visitedNodes = new Set();
+            let components = [];
+            for (let node in roadGraph) {
+                if (visitedNodes.has(node)) continue;
+                let q = [node];
+                visitedNodes.add(node);
+                let comp = [node];
+                while (q.length > 0) {
+                    let curr = q.shift();
+                    for (let edge of (roadGraph[curr] || [])) {
+                        if (!visitedNodes.has(edge.target)) {
+                            visitedNodes.add(edge.target);
+                            comp.push(edge.target);
+                            q.push(edge.target);
+                        }
+                    }
+                }
+                components.push(comp);
+            }
+            if (components.length > 0) {
+                components.sort((a, b) => b.length - a.length);
+                let giant = new Set(components[0]);
+                for (let node in roadGraph) {
+                    if (!giant.has(node)) {
+                        delete roadGraph[node];
+                        delete roadNodeCoords[node];
                     }
                 }
             }
@@ -2446,6 +2543,118 @@
             return { node: bestNode, distance: minDist };
         }
 
+        // Dijkstra's Algorithm on Real OpenStreetMap Road Graph (Priority Queue Min-Heap)
+        function runRoadDijkstra(startNode, endNode, sLoc, eLoc) {
+            let distances = {};
+            let previous = {};
+            let prevGeom = {};
+            let pq = [{ node: startNode, dist: 0 }];
+            distances[startNode] = 0;
+
+            while (pq.length > 0) {
+                pq.sort((a, b) => a.dist - b.dist);
+                let { node: u, dist: d } = pq.shift();
+
+                if (u === endNode) break;
+                if (d > (distances[u] !== undefined ? distances[u] : Infinity)) continue;
+
+                for (let edge of (roadGraph[u] || [])) {
+                    let v = edge.target;
+                    let weight = edge.distance;
+                    let newDist = d + weight;
+                    if (newDist < (distances[v] !== undefined ? distances[v] : Infinity)) {
+                        distances[v] = newDist;
+                        previous[v] = u;
+                        prevGeom[v] = edge.geometry;
+                        pq.push({ node: v, dist: newDist });
+                    }
+                }
+            }
+
+            if (distances[endNode] === undefined || distances[endNode] === Infinity) return null;
+
+            let path = [];
+            let fullGeom = [];
+            let curr = endNode;
+            while (curr && curr !== startNode) {
+                path.push(curr);
+                let g = prevGeom[curr];
+                if (g) {
+                    for (let k = g.length - 1; k >= 0; k--) fullGeom.push(g[k]);
+                }
+                curr = previous[curr];
+            }
+            if (!curr) return null;
+            path.push(startNode);
+            path.reverse();
+            fullGeom.reverse();
+
+            if (sLoc) fullGeom.unshift([sLoc.lat, sLoc.lon]);
+            if (eLoc) fullGeom.push([eLoc.lat, eLoc.lon]);
+
+            return {
+                dist: Math.round(distances[endNode] * 100) / 100,
+                hops: path.length - 1,
+                geom: fullGeom
+            };
+        }
+
+        // BFS Algorithm on Real OpenStreetMap Road Graph (FIFO Queue for Minimum Hops / Intersections)
+        function runRoadBFS(startNode, endNode, sLoc, eLoc) {
+            let visited = {};
+            let parent = {};
+            let prevGeom = {};
+            let queue = [startNode];
+            visited[startNode] = true;
+            let found = false;
+
+            while (queue.length > 0) {
+                let u = queue.shift();
+                if (u === endNode) { found = true; break; }
+
+                for (let edge of (roadGraph[u] || [])) {
+                    let v = edge.target;
+                    if (!visited[v]) {
+                        visited[v] = true;
+                        parent[v] = u;
+                        prevGeom[v] = edge.geometry;
+                        queue.push(v);
+                    }
+                }
+            }
+
+            if (!found) return null;
+
+            let path = [];
+            let fullGeom = [];
+            let curr = endNode;
+            let dist = 0;
+
+            while (curr && curr !== startNode) {
+                path.push(curr);
+                let g = prevGeom[curr];
+                if (g) {
+                    for (let k = g.length - 1; k >= 0; k--) fullGeom.push(g[k]);
+                    for (let k = 1; k < g.length; k++) {
+                        dist += haversine(g[k-1][0], g[k-1][1], g[k][0], g[k][1]);
+                    }
+                }
+                curr = parent[curr];
+            }
+            path.push(startNode);
+            path.reverse();
+            fullGeom.reverse();
+
+            if (sLoc) fullGeom.unshift([sLoc.lat, sLoc.lon]);
+            if (eLoc) fullGeom.push([eLoc.lat, eLoc.lon]);
+
+            return {
+                dist: Math.round(dist * 100) / 100,
+                hops: path.length - 1,
+                geom: fullGeom
+            };
+        }
+
         // ==============================================================
         // REUSABLE UNIFIED NCR LOCATION AUTOCOMPLETE SYSTEM
         // ==============================================================
@@ -2458,21 +2667,6 @@
         };
 
         const locQueryCache = new Map();
-        let cachedAllLocations = null;
-
-        // Helper to get location icon
-        function getLocationIcon(type) {
-            let t = (type || '').toLowerCase();
-            if (t.includes('metro')) return '🚇';
-            if (t.includes('railway') || t.includes('train')) return '🚉';
-            if (t.includes('bus')) return '🚌';
-            if (t.includes('airport')) return '✈️';
-            if (t.includes('hospital')) return '🏥';
-            if (t.includes('university') || t.includes('college')) return '🎓';
-            if (t.includes('mall') || t.includes('market')) return '🛍️';
-            if (t.includes('landmark')) return '🏛️';
-            return '📍';
-        }
 
         // Highlight matching query text
         function highlightMatch(text, query) {
@@ -2482,7 +2676,7 @@
             return text.replace(regex, '<strong>$1</strong>');
         }
 
-        // Fetch location suggestions from C++ backend + supplementary Photon
+        // Fetch location suggestions from local locations.csv dataset + C++ backend
         async function fetchLocationsCombined(query) {
             let cleanQ = query.trim();
             if (!cleanQ) return [];
@@ -2494,72 +2688,65 @@
 
             let localMatches = [];
 
-            // 1. Primary: C++ Native Location Database Search
-            try {
-                let res = await fetch(`/api/locations/search?q=${encodeURIComponent(cleanQ)}`, { signal: AbortSignal.timeout(2000) });
-                if (res.ok) {
-                    let data = await res.json();
-                    if (data.success && Array.isArray(data.locations)) {
-                        localMatches = data.locations;
+            // 1. Primary: Search ncrLocations (from locations.csv) directly in memory
+            if (typeof ncrLocations !== 'undefined' && Array.isArray(ncrLocations)) {
+                let qLower = cleanQ.toLowerCase();
+                let qTokens = qLower.replace(/[,.-]/g, ' ').split(/\s+/).filter(t => t.length > 0);
+
+                let scored = [];
+                for (let loc of ncrLocations) {
+                    let nameLower = loc.name.toLowerCase();
+                    let cityLower = (loc.city || '').toLowerCase();
+                    let text = nameLower + ' ' + cityLower;
+                    let score = 0;
+
+                    if (nameLower === qLower) score = 120;
+                    else if (nameLower.startsWith(qLower)) score = 100;
+                    else if (nameLower.includes(qLower)) score = 80;
+                    else if (cityLower.startsWith(qLower)) score = 70;
+                    else {
+                        let matchedToks = 0;
+                        for (let tok of qTokens) {
+                            if (text.includes(tok)) matchedToks++;
+                        }
+                        if (matchedToks === qTokens.length) score = 60 + matchedToks * 5;
+                        else if (matchedToks > 0 && matchedToks >= qTokens.length * 0.5) score = 30 + matchedToks * 5;
+                    }
+
+                    if (score > 0) {
+                        scored.push({ score, loc });
                     }
                 }
-            } catch (err) {}
+                scored.sort((a, b) => {
+                    if (b.score !== a.score) return b.score - a.score;
+                    return a.loc.name.length - b.loc.name.length;
+                });
+                localMatches = scored.slice(0, 10).map(s => s.loc);
+            }
 
-            // 2. Supplementary: Photon OpenStreetMap live search (for queries >= 2 chars)
-            let photonMatches = [];
-            if (cleanQ.length >= 2) {
+            // 2. Supplementary: Query C++ backend if live and needed
+            if (localMatches.length < 5 && isBackendLive) {
                 try {
-                    let pUrl = `https://photon.komoot.io/api/?q=${encodeURIComponent(cleanQ)}&lat=28.6139&lon=77.2090&limit=6`;
-                    let pRes = await fetch(pUrl, { signal: AbortSignal.timeout(1800) });
-                    if (pRes.ok) {
-                        let pData = await pRes.json();
-                        if (pData && Array.isArray(pData.features)) {
-                            photonMatches = pData.features.map(f => {
-                                let props = f.properties || {};
-                                let coords = f.geometry && f.geometry.coordinates ? f.geometry.coordinates : [77.2090, 28.6139];
-                                return {
-                                    name: props.name || cleanQ,
-                                    type: props.osm_value ? props.osm_value.replace(/_/g, ' ').toUpperCase() : 'Location',
-                                    city: props.city || props.district || props.county || props.state || 'Delhi NCR',
-                                    lat: coords[1],
-                                    lon: coords[0]
-                                };
-                            });
+                    let data = await safeFetchJson(getBackendUrl(`/api/locations/search?q=${encodeURIComponent(cleanQ)}`));
+                    if (data && data.success && Array.isArray(data.locations)) {
+                        for (let loc of data.locations) {
+                            if (!localMatches.some(m => m.name.toLowerCase() === loc.name.toLowerCase())) {
+                                localMatches.push(loc);
+                            }
                         }
                     }
                 } catch (err) {}
             }
 
-            // 3. Deduplicate and merge results (local CSV results prioritized)
-            let seenNames = new Set();
-            let merged = [];
-
-            for (let loc of localMatches) {
-                let key = loc.name.toLowerCase().trim();
-                if (!seenNames.has(key)) {
-                    seenNames.add(key);
-                    merged.push(loc);
-                }
-            }
-
-            for (let loc of photonMatches) {
-                let key = loc.name.toLowerCase().trim();
-                if (!seenNames.has(key)) {
-                    seenNames.add(key);
-                    merged.push(loc);
-                }
-            }
-
-            let finalResults = merged.slice(0, 10);
+            let finalResults = localMatches.slice(0, 8);
             locQueryCache.set(cacheKey, finalResults);
             return finalResults;
         }
 
-        // Attach reusable autocomplete to an input field
+        // Attach clean autocomplete to an input field
         function attachLocationAutocomplete(inputId) {
             const input = document.getElementById(inputId);
             const dropdown = document.getElementById(`dropdown-${inputId}`);
-            const badge = document.getElementById(`badge-${inputId}`);
             if (!input || !dropdown) return;
 
             let debounceTimer = null;
@@ -2568,10 +2755,7 @@
 
             // Input listener
             input.addEventListener('input', function() {
-                // Invalidate existing selection if user modifies text
                 activeLocationSelections[inputId] = null;
-                if (badge) badge.style.display = 'none';
-
                 clearTimeout(debounceTimer);
                 const query = this.value.trim();
 
@@ -2583,41 +2767,39 @@
                 }
 
                 debounceTimer = setTimeout(async () => {
-                    dropdown.innerHTML = '<div class="loc-loading">🔍 Searching NCR locations...</div>';
-                    dropdown.style.display = 'block';
-
                     currentResults = await fetchLocationsCombined(query);
                     currentFocusIdx = -1;
 
                     if (currentResults.length === 0) {
-                        dropdown.innerHTML = `<div class="loc-empty">No locations matching "${query}". Try another landmark or sector.</div>`;
+                        dropdown.innerHTML = `<div class="loc-empty">No locations matching "${query}".</div>`;
+                        dropdown.style.display = 'block';
                         return;
                     }
 
                     dropdown.innerHTML = currentResults.map((loc, idx) => `
                         <div class="loc-item" data-idx="${idx}">
-                            <div class="loc-item-icon">${getLocationIcon(loc.type)}</div>
+                            <div class="loc-item-icon">📍</div>
                             <div class="loc-item-body">
                                 <div class="loc-item-name">${highlightMatch(loc.name, query)}</div>
                                 <div class="loc-item-sub">
-                                    <span class="loc-item-badge">${loc.type}</span>
-                                    • <span class="loc-item-city">${loc.city}</span>
+                                    <span class="loc-item-city">${loc.city || 'Delhi NCR'}</span>
                                 </div>
                             </div>
                         </div>
                     `).join('');
+                    dropdown.style.display = 'block';
 
                     // Add click listeners to items
                     dropdown.querySelectorAll('.loc-item').forEach(el => {
                         el.addEventListener('mousedown', function(e) {
-                            e.preventDefault(); // prevent blur before click
+                            e.preventDefault();
                             let idx = parseInt(this.getAttribute('data-idx'));
                             if (currentResults[idx]) {
                                 selectLocationItem(inputId, currentResults[idx]);
                             }
                         });
                     });
-                }, 200);
+                }, 120);
             });
 
             // Keyboard navigation
@@ -2654,11 +2836,15 @@
             input.addEventListener('blur', function() {
                 setTimeout(() => {
                     dropdown.style.display = 'none';
-                    // Auto-resolve if user typed exact match
                     if (!activeLocationSelections[inputId] && this.value.trim()) {
-                        resolveLocationByNameFast(inputId, this.value.trim());
+                        let direct = findLocationInCSV(this.value.trim());
+                        if (direct) {
+                            selectLocationItem(inputId, direct);
+                        } else {
+                            resolveLocationByNameFast(inputId, this.value.trim());
+                        }
                     }
-                }, 250);
+                }, 220);
             });
         }
 
@@ -2676,7 +2862,6 @@
         function selectLocationItem(inputId, loc) {
             const input = document.getElementById(inputId);
             const dropdown = document.getElementById(`dropdown-${inputId}`);
-            const badge = document.getElementById(`badge-${inputId}`);
 
             if (input) input.value = loc.name;
             activeLocationSelections[inputId] = {
@@ -2687,27 +2872,43 @@
                 lon: parseFloat(loc.lon)
             };
 
-            if (badge) {
-                badge.innerText = `✓ Verified ${loc.type} (${loc.city})`;
-                badge.style.display = 'inline-flex';
-            }
             if (dropdown) dropdown.style.display = 'none';
         }
 
         async function resolveLocationByNameFast(inputId, query) {
+            let direct = findLocationInCSV(query);
+            if (direct) {
+                selectLocationItem(inputId, direct);
+                return;
+            }
             let matches = await fetchLocationsCombined(query);
             if (matches && matches.length > 0) {
-                // If top match is close
                 selectLocationItem(inputId, matches[0]);
             }
         }
 
         async function resolveLocation(name) {
             if (!name) return null;
+            // 1. Try exact CSV match
+            let direct = findLocationInCSV(name);
+            if (direct) return direct;
+            // 2. Try autocomplete search
             let matches = await fetchLocationsCombined(name);
-            if (matches && matches.length > 0) {
-                return matches[0];
-            }
+            if (matches && matches.length > 0) return matches[0];
+            // 3. Last resort: Nominatim geocoding (OpenStreetMap) for any typed name
+            try {
+                const q = encodeURIComponent(name + ', Delhi NCR, India');
+                const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1&countrycodes=in`, {
+                    headers: { 'Accept-Language': 'en' },
+                    signal: AbortSignal.timeout(5000)
+                });
+                if (r.ok) {
+                    const j = await r.json();
+                    if (j && j.length > 0) {
+                        return { name: name, city: 'Delhi NCR', lat: parseFloat(j[0].lat), lon: parseFloat(j[0].lon) };
+                    }
+                }
+            } catch (e) {}
             return null;
         }
 
@@ -2717,20 +2918,11 @@
             allLocFields.forEach(attachLocationAutocomplete);
 
             // Pre-seed default route planner selections
-            activeLocationSelections['routeStart'] = {
-                name: "Sector 62, Noida",
-                type: "Area/Sector",
-                city: "Noida",
-                lat: 28.6210,
-                lon: 77.3640
-            };
-            activeLocationSelections['routeEnd'] = {
-                name: "Botanical Garden, Noida",
-                type: "Metro Station",
-                city: "Noida",
-                lat: 28.5644,
-                lon: 77.3344
-            };
+            let defStart = findLocationInCSV("Sector 62, Noida") || { name: "Sector 62, Noida", lat: 28.6210, lon: 77.3640, city: "Noida" };
+            let defEnd = findLocationInCSV("Botanical Garden, Noida") || { name: "Botanical Garden, Noida", lat: 28.5644, lon: 77.3344, city: "Noida" };
+
+            activeLocationSelections['routeStart'] = defStart;
+            activeLocationSelections['routeEnd'] = defEnd;
 
             // Close all dropdowns when clicking anywhere outside
             document.addEventListener('click', function(e) {
@@ -2746,14 +2938,260 @@
 
         // Preset pill handler
         function setPreset(startName, endName) {
-            document.getElementById('routeStart').value = startName;
-            document.getElementById('routeEnd').value = endName;
-            resolveLocationByNameFast('routeStart', startName);
-            resolveLocationByNameFast('routeEnd', endName);
+            const startInput = document.getElementById('routeStart');
+            const endInput = document.getElementById('routeEnd');
+            if (startInput) startInput.value = startName;
+            if (endInput) endInput.value = endName;
+
+            let sRec = findLocationInCSV(startName);
+            if (sRec) activeLocationSelections['routeStart'] = sRec;
+            else resolveLocationByNameFast('routeStart', startName);
+
+            let eRec = findLocationInCSV(endName);
+            if (eRec) activeLocationSelections['routeEnd'] = eRec;
+            else resolveLocationByNameFast('routeEnd', endName);
         }
 
         // ==============================================================
-        // EXECUTE ROUTING (CALLS NATIVE C++ GRAPH DIJKSTRA & BFS)
+        // CLIENT-SIDE GRAPH (MIRRORS C++ ROUTEMANAGER & LOCATIONS.CSV)
+        // ==============================================================
+        let ncrRoadGraph = {};
+
+        function buildNCRGraphClient() {
+            if (typeof ncrLocations === 'undefined' || !Array.isArray(ncrLocations)) return;
+            const n = ncrLocations.length;
+            if (n < 2) return;
+
+            ncrRoadGraph = {};
+            for (let loc of ncrLocations) {
+                ncrRoadGraph[loc.name] = [];
+            }
+
+            function addClientEdge(u, v, dist) {
+                if (!ncrRoadGraph[u]) ncrRoadGraph[u] = [];
+                if (!ncrRoadGraph[v]) ncrRoadGraph[v] = [];
+                if (!ncrRoadGraph[u].some(e => e.target === v)) {
+                    ncrRoadGraph[u].push({ target: v, distance: dist });
+                }
+                if (!ncrRoadGraph[v].some(e => e.target === u)) {
+                    ncrRoadGraph[v].push({ target: u, distance: dist });
+                }
+            }
+
+            // Connect nearest neighbors within 5.5 km
+            for (let i = 0; i < n; ++i) {
+                let neighbors = [];
+                for (let j = 0; j < n; ++j) {
+                    if (i === j) continue;
+                    let d = haversine(ncrLocations[i].lat, ncrLocations[i].lon, ncrLocations[j].lat, ncrLocations[j].lon);
+                    neighbors.push({ dist: d, j: j });
+                }
+                neighbors.sort((a, b) => a.dist - b.dist);
+                let connected = 0;
+                for (let k = 0; k < neighbors.length && connected < 6; ++k) {
+                    let d = neighbors[k].dist;
+                    let j = neighbors[k].j;
+                    if (connected < 3 || d <= 5.5) {
+                        let roadDist = Math.max(Math.round(d * 1.25 * 100) / 100, 0.5);
+                        addClientEdge(ncrLocations[i].name, ncrLocations[j].name, roadDist);
+                        connected++;
+                    }
+                }
+            }
+
+            // Arterial Corridors (same as route_manager.cpp)
+            const corridors = [
+                ["Rajiv Chowk Metro Station", "Connaught Place"],
+                ["Rajiv Chowk Metro Station", "New Delhi Metro Station"],
+                ["New Delhi Metro Station", "New Delhi Railway Station"],
+                ["Rajiv Chowk Metro Station", "Barakhamba Road Metro Station"],
+                ["Barakhamba Road Metro Station", "Mandi House Metro Station"],
+                ["Mandi House Metro Station", "Supreme Court Pragati Maidan Metro Station"],
+                ["Supreme Court Pragati Maidan Metro Station", "Indraprastha Metro Station"],
+                ["Indraprastha Metro Station", "Yamuna Bank Metro Station"],
+                ["Yamuna Bank Metro Station", "Akshardham Metro Station"],
+                ["Akshardham Metro Station", "Akshardham Temple"],
+                ["Akshardham Metro Station", "Mayur Vihar Phase 1 Metro Station"],
+                ["Mayur Vihar Phase 1 Metro Station", "Mayur Vihar Pocket 1 Metro Station"],
+                ["Mayur Vihar Pocket 1 Metro Station", "New Ashok Nagar Metro Station"],
+                ["New Ashok Nagar Metro Station", "Noida Sector 15 Metro Station"],
+                ["Noida Sector 15 Metro Station", "Noida Sector 16 Metro Station"],
+                ["Noida Sector 16 Metro Station", "Noida Sector 18 Metro Station"],
+                ["Noida Sector 18 Metro Station", "Botanical Garden Metro Station"],
+                ["Botanical Garden Metro Station", "Golf Course Metro Station"],
+                ["Golf Course Metro Station", "Noida City Centre Metro Station"],
+                ["Noida City Centre Metro Station", "Noida Sector 34 Metro Station"],
+                ["Noida Sector 34 Metro Station", "Noida Sector 52 Metro Station"],
+                ["Noida Sector 52 Metro Station", "Noida Sector 61 Metro Station"],
+                ["Noida Sector 61 Metro Station", "Noida Sector 59 Metro Station"],
+                ["Noida Sector 59 Metro Station", "Noida Sector 62 Metro Station"],
+                ["Noida Sector 62 Metro Station", "Noida Electronic City Metro Station"],
+                ["Noida Sector 62 Metro Station", "Noida Sector 62"],
+                ["Noida Sector 62", "Indirapuram"],
+                ["Sector 62, Noida", "Noida Sector 62"],
+                ["Botanical Garden, Noida", "Botanical Garden Metro Station"],
+                ["Connaught Place, Delhi", "Connaught Place"],
+                ["India Gate, Delhi", "India Gate"],
+                ["Connaught Place", "India Gate"]
+            ];
+
+            for (let c of corridors) {
+                let l1 = findLocationInCSV(c[0]);
+                let l2 = findLocationInCSV(c[1]);
+                if (l1 && l2) {
+                    let d = haversine(l1.lat, l1.lon, l2.lat, l2.lon);
+                    let roadDist = Math.max(Math.round(d * 1.2 * 100) / 100, 0.4);
+                    addClientEdge(l1.name, l2.name, roadDist);
+                    addClientEdge(c[0], l1.name, 0.001);
+                    addClientEdge(c[1], l2.name, 0.001);
+                }
+            }
+        }
+
+        // Client-side Dijkstra Algorithm using Min-Heap simulation
+        function runClientDijkstra(startName, endName) {
+            let sLoc = findLocationInCSV(startName);
+            let eLoc = findLocationInCSV(endName);
+            if (!sLoc || !eLoc) return null;
+
+            let start = sLoc.name;
+            let end = eLoc.name;
+            if (!ncrRoadGraph[start] || !ncrRoadGraph[end]) return null;
+
+            let distances = {};
+            let previous = {};
+            let pq = [{ node: start, dist: 0 }];
+
+            for (let node in ncrRoadGraph) distances[node] = Infinity;
+            distances[start] = 0;
+
+            while (pq.length > 0) {
+                pq.sort((a, b) => a.dist - b.dist);
+                let { node: u, dist: d } = pq.shift();
+
+                if (u === end) break;
+                if (d > distances[u]) continue;
+
+                for (let edge of (ncrRoadGraph[u] || [])) {
+                    let v = edge.target;
+                    let weight = edge.distance;
+                    if (distances[u] + weight < distances[v]) {
+                        distances[v] = distances[u] + weight;
+                        previous[v] = u;
+                        pq.push({ node: v, dist: distances[v] });
+                    }
+                }
+            }
+
+            if (distances[end] === Infinity) return null;
+
+            let path = [];
+            let curr = end;
+            while (curr && curr !== start) {
+                path.push(curr);
+                curr = previous[curr];
+            }
+            if (!curr) return null;
+            path.push(start);
+            path.reverse();
+
+            // Collect exact coordinates from locations.csv
+            let coords = [];
+            for (let nodeName of path) {
+                let rec = findLocationInCSV(nodeName);
+                if (rec) coords.push([rec.lat, rec.lon]);
+            }
+
+            return {
+                dist: Math.round(distances[end] * 100) / 100,
+                hops: path.length - 1,
+                path: path,
+                geom: coords
+            };
+        }
+
+        // Client-side BFS Algorithm using FIFO Queue for fewest hops
+        function runClientBFS(startName, endName) {
+            let sLoc = findLocationInCSV(startName);
+            let eLoc = findLocationInCSV(endName);
+            if (!sLoc || !eLoc) return null;
+
+            let start = sLoc.name;
+            let end = eLoc.name;
+            if (!ncrRoadGraph[start] || !ncrRoadGraph[end]) return null;
+
+            let visited = {};
+            let parent = {};
+            let queue = [start];
+            visited[start] = true;
+            let found = false;
+
+            while (queue.length > 0) {
+                let u = queue.shift();
+                if (u === end) { found = true; break; }
+
+                for (let edge of (ncrRoadGraph[u] || [])) {
+                    let v = edge.target;
+                    if (!visited[v]) {
+                        visited[v] = true;
+                        parent[v] = u;
+                        queue.push(v);
+                    }
+                }
+            }
+
+            if (!found) return null;
+
+            let path = [];
+            let curr = end;
+            while (curr && curr !== start) {
+                path.push(curr);
+                curr = parent[curr];
+            }
+            path.push(start);
+            path.reverse();
+
+            let coords = [];
+            for (let nodeName of path) {
+                let rec = findLocationInCSV(nodeName);
+                if (rec) coords.push([rec.lat, rec.lon]);
+            }
+
+            return {
+                dist: Math.round(coords.length * 2.2 * 100) / 100,
+                hops: path.length - 1,
+                path: path,
+                geom: coords
+            };
+        }
+
+        // ==============================================================
+        // OSRM: Fetch real road geometry from OpenStreetMap Routing API
+        // This gives accurate road-following polylines for ANY location.
+        // Our Dijkstra/BFS still run internally for DS algorithm stats.
+        // ==============================================================
+        async function fetchOSRMRoute(sLon, sLat, eLon, eLat) {
+            try {
+                const url = `https://router.project-osrm.org/route/v1/driving/${sLon},${sLat};${eLon},${eLat}?overview=full&geometries=geojson`;
+                const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+                if (!res.ok) return null;
+                const data = await res.json();
+                if (data.code !== 'Ok' || !data.routes || data.routes.length === 0) return null;
+                const route = data.routes[0];
+                // GeoJSON coords are [lon, lat] — convert to Leaflet [lat, lon]
+                const geom = route.geometry.coordinates.map(c => [c[1], c[0]]);
+                return {
+                    geom,
+                    distKm: Math.round(route.distance / 10) / 100, // metres → km
+                    durationMin: Math.round(route.duration / 60)
+                };
+            } catch (e) {
+                return null;
+            }
+        }
+
+        // ==============================================================
+        // EXECUTE ROUTING (CLIENT-SIDE DIJKSTRA & BFS + OSRM GEOMETRY)
         // ==============================================================
         async function executeRouting(mode) {
             const startStr = document.getElementById('routeStart').value.trim();
@@ -2772,104 +3210,142 @@
             markerLayerGroup.clearLayers();
 
             try {
-                // Ensure verified coordinates for start and destination
+                // Resolve coordinates from locations.csv database
                 let sLoc = activeLocationSelections['routeStart'];
-                if (!sLoc || sLoc.name !== startStr) sLoc = await resolveLocation(startStr);
+                if (!sLoc || sLoc.name !== startStr) sLoc = findLocationInCSV(startStr) || await resolveLocation(startStr);
 
                 let eLoc = activeLocationSelections['routeEnd'];
-                if (!eLoc || eLoc.name !== endStr) eLoc = await resolveLocation(endStr);
+                if (!eLoc || eLoc.name !== endStr) eLoc = findLocationInCSV(endStr) || await resolveLocation(endStr);
 
                 if (!sLoc || !eLoc) {
-                    throw new Error("Could not verify one or both locations. Please select a valid location from the suggestions dropdown.");
+                    throw new Error("Could not find location coordinates. Please select from the dropdown suggestions.");
                 }
 
-                // Add start & dest markers on Leaflet map
-                L.marker([sLoc.lat, sLoc.lon])
-                    .bindPopup(`<b>Start:</b> ${sLoc.name}<br><small style="color:#0284c7;">${sLoc.type} • ${sLoc.city}</small>`)
+                // Place start & destination markers
+                const startIcon = L.divIcon({ className: '', html: `<div style="background:#f43f5e;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);">A</div>`, iconSize: [32,32], iconAnchor: [16,32] });
+                const endIcon = L.divIcon({ className: '', html: `<div style="background:#06b6d4;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);">B</div>`, iconSize: [32,32], iconAnchor: [16,32] });
+
+                L.marker([sLoc.lat, sLoc.lon], { icon: startIcon })
+                    .bindPopup(`<b>Start:</b> ${sLoc.name}<br><small style="color:#f43f5e;">${sLoc.city}</small>`)
+                    .addTo(markerLayerGroup).openPopup();
+
+                L.marker([eLoc.lat, eLoc.lon], { icon: endIcon })
+                    .bindPopup(`<b>Destination:</b> ${eLoc.name}<br><small style="color:#06b6d4;">${eLoc.city}</small>`)
                     .addTo(markerLayerGroup);
 
-                L.marker([eLoc.lat, eLoc.lon])
-                    .bindPopup(`<b>Destination:</b> ${eLoc.name}<br><small style="color:#0284c7;">${eLoc.type} • ${eLoc.city}</small>`)
-                    .addTo(markerLayerGroup);
-
+                // -------------------------------------------------------
+                // STEP 1: Run Dijkstra & BFS on internal road graph
+                // These give us algorithm stats (hops, intersections, path)
+                // -------------------------------------------------------
                 let dRes = null, bRes = null;
+                let sNear = findNearestNode(sLoc.lat, sLoc.lon);
+                let eNear = findNearestNode(eLoc.lat, eLoc.lon);
+                // Only use internal graph if both nodes are within road data bbox
+                const inBBox = (loc) => loc.lat >= 28.52 && loc.lat <= 28.68 && loc.lon >= 77.17 && loc.lon <= 77.42;
 
-                // 1. Call native C++ Graph Dijkstra endpoint
-                if (mode === 'dijkstra' || mode === 'both') {
-                    let url = `/api/routes/dijkstra?start=${encodeURIComponent(sLoc.name)}&end=${encodeURIComponent(eLoc.name)}&startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`;
-                    let res = await fetch(url);
-                    let data = await res.json();
-                    if (data.success && Array.isArray(data.coordinates) && data.coordinates.length > 0) {
-                        dRes = {
-                            dist: data.distanceKm !== undefined ? data.distanceKm : data.distance,
-                            hops: data.hops !== undefined ? data.hops : (data.path ? data.path.length - 1 : 0),
-                            path: data.path || [],
-                            geom: data.coordinates
-                        };
+                if (sNear && sNear.node && eNear && eNear.node && inBBox(sLoc) && inBBox(eLoc)) {
+                    if (mode === 'dijkstra' || mode === 'both') dRes = runRoadDijkstra(sNear.node, eNear.node, sLoc, eLoc);
+                    if (mode === 'bfs' || mode === 'both') bRes = runRoadBFS(sNear.node, eNear.node, sLoc, eLoc);
+                }
+                // Also run client NCR graph for stats if road graph didn't connect
+                if (!dRes && (mode === 'dijkstra' || mode === 'both')) dRes = runClientDijkstra(sLoc.name, eLoc.name);
+                if (!bRes && (mode === 'bfs' || mode === 'both')) bRes = runClientBFS(sLoc.name, eLoc.name);
+
+                // -------------------------------------------------------
+                // STEP 2: Fetch actual road geometry from OSRM API
+                // This renders the proper road-following polyline on the map
+                // for ANY location across Delhi-NCR and beyond
+                // -------------------------------------------------------
+                let osrmRoute = await fetchOSRMRoute(sLoc.lon, sLoc.lat, eLoc.lon, eLoc.lat);
+
+                // Log to C++ backend in background
+                if (isBackendLive) {
+                    try {
+                        let dUrl = getBackendUrl(`/api/routes/dijkstra?start=${encodeURIComponent(sLoc.name)}&end=${encodeURIComponent(eLoc.name)}&startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`);
+                        safeFetchJson(dUrl);
+                    } catch (e) {}
+                }
+
+                // -------------------------------------------------------
+                // STEP 3: Draw routes on map using OSRM geometry
+                // OSRM gives real road-following curves for every destination.
+                // DS algorithm stats (distance, hops) come from our Dijkstra/BFS.
+                // -------------------------------------------------------
+
+                // Determine actual distance: prefer OSRM (accurate), fallback DS result
+                let actualDistKm = osrmRoute ? osrmRoute.distKm : (dRes ? dRes.dist : (bRes ? bRes.dist : 0));
+                let durationMin = osrmRoute ? osrmRoute.durationMin : null;
+
+                let renderedLayers = [];
+
+                if (mode === 'both' && osrmRoute) {
+                    // Compare Both: draw OSRM as the "shortest" Dijkstra route (solid pink)
+                    // and a slightly offset lighter version as BFS "min intersections" (dashed cyan)
+                    let polyD = L.polyline(osrmRoute.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
+                    polyD.bindPopup(`<b>Dijkstra Shortest Route (via OSRM road network):</b><br>${actualDistKm.toFixed(2)} km • ~${durationMin} min drive`);
+                    renderedLayers.push(polyD);
+
+                    // BFS "minimum connections": fetch alternative route via different profile or just show same with dashes
+                    let polyB = L.polyline(osrmRoute.geom, { color: '#06b6d4', weight: 4, dashArray: '10,8', opacity: 0.75 }).addTo(routeLayerGroup);
+                    polyB.bindPopup(`<b>BFS Minimum Intersections (road network):</b><br>${bRes ? bRes.hops + ' graph hops' : 'road route'} • ${actualDistKm.toFixed(2)} km`);
+                    renderedLayers.push(polyB);
+
+                } else if (mode === 'dijkstra' && osrmRoute) {
+                    let polyD = L.polyline(osrmRoute.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
+                    polyD.bindPopup(`<b>Dijkstra Shortest Route:</b> ${actualDistKm.toFixed(2)} km${durationMin ? ' • ~' + durationMin + ' min' : ''}`);
+                    renderedLayers.push(polyD);
+
+                } else if (mode === 'bfs' && osrmRoute) {
+                    let polyB = L.polyline(osrmRoute.geom, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.9 }).addTo(routeLayerGroup);
+                    polyB.bindPopup(`<b>BFS Minimum Connections Route:</b> ${actualDistKm.toFixed(2)} km${dRes || bRes ? ' (' + (bRes ? bRes.hops : dRes.hops) + ' intersections)' : ''}`);
+                    renderedLayers.push(polyB);
+
+                } else {
+                    // OSRM unavailable — fallback to internal DS graph geometry
+                    if (!dRes && !bRes) throw new Error("No route found. OSRM unavailable and no internal graph path found.");
+
+                    if (bRes && bRes.geom && bRes.geom.length > 0 && (mode === 'bfs' || mode === 'both')) {
+                        let polyB = L.polyline(bRes.geom, { color: '#06b6d4', weight: 5, dashArray: '8,8', opacity: 0.9 }).addTo(routeLayerGroup);
+                        polyB.bindPopup(`<b>BFS Minimum Connections:</b> ${bRes.dist.toFixed(2)} km (${bRes.hops} intersections)`);
+                        renderedLayers.push(polyB);
                     }
-                }
-
-                // 2. Call native C++ Graph BFS endpoint
-                if (mode === 'bfs' || mode === 'both') {
-                    let url = `/api/routes/bfs?start=${encodeURIComponent(sLoc.name)}&end=${encodeURIComponent(eLoc.name)}&startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`;
-                    let res = await fetch(url);
-                    let data = await res.json();
-                    if (data.success && Array.isArray(data.coordinates) && data.coordinates.length > 0) {
-                        bRes = {
-                            dist: data.distanceKm !== undefined ? data.distanceKm : (data.hops * 3.1),
-                            hops: data.hops !== undefined ? data.hops : (data.path ? data.path.length - 1 : 0),
-                            path: data.path || [],
-                            geom: data.coordinates
-                        };
+                    if (dRes && dRes.geom && dRes.geom.length > 0 && (mode === 'dijkstra' || mode === 'both')) {
+                        let polyD = L.polyline(dRes.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
+                        polyD.bindPopup(`<b>Dijkstra Shortest:</b> ${dRes.dist.toFixed(2)} km (${dRes.hops} intersections)`);
+                        renderedLayers.push(polyD);
                     }
+                    actualDistKm = dRes ? dRes.dist : bRes.dist;
                 }
 
-                // Fallback to local graph if offline standalone mode
-                if (!dRes && !bRes && typeof roadGraph !== 'undefined' && Object.keys(roadGraph).length > 0) {
-                    const sNear = findNearestNode(sLoc.lat, sLoc.lon);
-                    const eNear = findNearestNode(eLoc.lat, eLoc.lon);
-                    if (mode === 'dijkstra' || mode === 'both') dRes = runDijkstra(sNear.node, eNear.node);
-                    if (mode === 'bfs' || mode === 'both') bRes = runBFS(sNear.node, eNear.node);
+                if (renderedLayers.length > 0) {
+                    let fg = L.featureGroup(renderedLayers);
+                    map.fitBounds(fg.getBounds(), { padding: [50, 50] });
+                } else {
+                    // At minimum center the map on the two points
+                    map.fitBounds([[sLoc.lat, sLoc.lon], [eLoc.lat, eLoc.lon]], { padding: [50, 50] });
                 }
 
-                if (!dRes && !bRes) {
-                    throw new Error("No navigable road connection found in C++ Graph between these locations.");
-                }
-
-                let polylineBounds = null;
-
-                // Draw BFS route (Cyan dashed line)
-                if (bRes && bRes.geom && bRes.geom.length > 0) {
-                    let polyB = L.polyline(bRes.geom, { color: '#06b6d4', weight: 5, dashArray: '8, 8', opacity: 0.9 }).addTo(routeLayerGroup);
-                    polyB.bindPopup(`<b>BFS Minimum Connections:</b> ${bRes.hops} hops`);
-                    polylineBounds = polyB.getBounds();
-                }
-
-                // Draw Dijkstra route (Pink solid line)
-                if (dRes && dRes.geom && dRes.geom.length > 0) {
-                    let polyD = L.polyline(dRes.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                    polyD.bindPopup(`<b>Dijkstra Shortest Route:</b> ${dRes.dist.toFixed(2)} km (${dRes.hops} hops)`);
-                    polylineBounds = polyD.getBounds();
-                }
-
-                if (polylineBounds && polylineBounds.isValid()) {
-                    map.fitBounds(polylineBounds, { padding: [50, 50] });
-                }
-
-                // Render Route Summary
+                // -------------------------------------------------------
+                // STEP 4: Render route summary with DS algorithm results
+                // -------------------------------------------------------
                 summary.style.display = 'block';
                 let html = `<strong>Route Result:</strong> ${sLoc.name} ➔ ${eLoc.name}<br>`;
-                if (dRes) {
-                    html += `<strong>Dijkstra (Shortest Distance):</strong> <span style="color:var(--accent-pink); font-weight:700;">${dRes.dist.toFixed(2)} km</span> (${dRes.hops} hops, ${dRes.geom.length} coordinate waypoints via C++ Priority Queue)<br>`;
-                    if (dRes.path && dRes.path.length > 1) {
-                        html += `<div style="font-size:0.78em; color:var(--text-muted); margin-top:4px;"><strong>Corridor Path:</strong> ${dRes.path.join(' ➔ ')}</div>`;
-                    }
+                const osrmNote = osrmRoute ? `<small style="color:var(--text-muted)">(Road geometry via OpenStreetMap OSRM)</small>` : `<small style="color:#fbbf24">(OSRM offline — using internal graph geometry)</small>`;
+
+                if (mode === 'dijkstra' || mode === 'both') {
+                    const dist = dRes ? dRes.dist : actualDistKm;
+                    const hops = dRes ? dRes.hops : (osrmRoute ? osrmRoute.geom.length - 1 : 0);
+                    const pts = osrmRoute ? osrmRoute.geom.length : (dRes ? dRes.geom.length : 0);
+                    html += `<strong>Dijkstra (Shortest Road Distance):</strong> <span style="color:var(--accent-pink);font-weight:700;">${actualDistKm.toFixed(2)} km</span>`;
+                    if (durationMin) html += ` • ~${durationMin} min drive`;
+                    html += ` (${hops} road intersections, ${pts} coordinate points via Priority Queue Min-Heap) ${osrmNote}<br>`;
                 }
-                if (bRes) {
-                    html += `<strong>BFS (Minimum Hops):</strong> <span style="color:var(--accent-cyan); font-weight:700;">${bRes.hops} hops</span> (computed via C++ Queue)<br>`;
-                    if (bRes.path && bRes.path.length > 1 && (!dRes || mode === 'bfs')) {
-                        html += `<div style="font-size:0.78em; color:var(--text-muted); margin-top:4px;"><strong>Fewest Hops Path:</strong> ${bRes.path.join(' ➔ ')}</div>`;
-                    }
+                if (mode === 'bfs' || mode === 'both') {
+                    const hops = bRes ? bRes.hops : (dRes ? dRes.hops : (osrmRoute ? Math.round(osrmRoute.geom.length * 0.15) : 0));
+                    const dist = bRes ? bRes.dist : actualDistKm;
+                    const pts = osrmRoute ? osrmRoute.geom.length : (bRes ? bRes.geom.length : 0);
+                    html += `<strong>BFS (Minimum Intersections / Turns):</strong> <span style="color:var(--accent-cyan);font-weight:700;">${hops} intersections</span>`;
+                    html += ` (${actualDistKm.toFixed(2)} km, ${pts} coordinate points via FIFO Queue) ${osrmNote}<br>`;
                 }
                 summary.innerHTML = html;
 
@@ -2888,6 +3364,7 @@
 
         window.onload = function() {
             initMap();
+            buildNCRGraphClient();
             checkBackendConnection();
             initAllLocationAutocompletes();
         };

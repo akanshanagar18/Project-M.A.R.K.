@@ -304,6 +304,17 @@ void handleClient(SOCKET clientSocket) {
         return;
     }
 
+    if (method == "GET" && path == "/locations_data.js") {
+        ifstream f("locations_data.js", ios::binary);
+        if (f) {
+            ostringstream ssf; ssf << f.rdbuf();
+            sendFileResponse("application/javascript; charset=utf-8", ssf.str());
+        } else {
+            sendNotFound();
+        }
+        return;
+    }
+
     if (method == "GET" && (path == "/MARK_LOGO.PNG" || path == "/MARK_LOGO.png")) {
         ifstream f("MARK_LOGO.PNG", ios::binary);
         if (f) {
@@ -690,13 +701,17 @@ void handleClient(SOCKET clientSocket) {
 
         // Coordinate-based node fallback if name not recognized directly
         LocationRecord lStart, lEnd;
-        if (!routeManager.findLocationByName(start, lStart) && !sLatStr.empty() && !sLonStr.empty()) {
+        if (routeManager.findLocationByName(start, lStart)) {
+            start = lStart.name;
+        } else if (!sLatStr.empty() && !sLonStr.empty()) {
             try {
                 double sLat = stod(sLatStr), sLon = stod(sLonStr);
                 start = routeManager.findNearestLocation(sLat, sLon).name;
             } catch (...) {}
         }
-        if (!routeManager.findLocationByName(end, lEnd) && !eLatStr.empty() && !eLonStr.empty()) {
+        if (routeManager.findLocationByName(end, lEnd)) {
+            end = lEnd.name;
+        } else if (!eLatStr.empty() && !eLonStr.empty()) {
             try {
                 double eLat = stod(eLatStr), eLon = stod(eLonStr);
                 end = routeManager.findNearestLocation(eLat, eLon).name;
@@ -745,13 +760,17 @@ void handleClient(SOCKET clientSocket) {
         string eLonStr = getQueryParam(url, "endLon");
 
         LocationRecord lStart, lEnd;
-        if (!routeManager.findLocationByName(start, lStart) && !sLatStr.empty() && !sLonStr.empty()) {
+        if (routeManager.findLocationByName(start, lStart)) {
+            start = lStart.name;
+        } else if (!sLatStr.empty() && !sLonStr.empty()) {
             try {
                 double sLat = stod(sLatStr), sLon = stod(sLonStr);
                 start = routeManager.findNearestLocation(sLat, sLon).name;
             } catch (...) {}
         }
-        if (!routeManager.findLocationByName(end, lEnd) && !eLatStr.empty() && !eLonStr.empty()) {
+        if (routeManager.findLocationByName(end, lEnd)) {
+            end = lEnd.name;
+        } else if (!eLatStr.empty() && !eLonStr.empty()) {
             try {
                 double eLat = stod(eLatStr), eLon = stod(eLonStr);
                 end = routeManager.findNearestLocation(eLat, eLon).name;
