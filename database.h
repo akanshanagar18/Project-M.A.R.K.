@@ -51,7 +51,7 @@ public:
         }
 
         // Create Tables
-        const char* schema = 
+        const char* schema =
             "CREATE TABLE IF NOT EXISTS users ("
             "    id INTEGER PRIMARY KEY,"
             "    name TEXT NOT NULL,"
@@ -289,7 +289,7 @@ public:
             const char* dst = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 5));
             const char* time = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6));
             const char* mode = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 7));
-            
+
             u.name = name ? name : "";
             u.phone = phone ? phone : "";
             u.gender = gender ? gender : "Other";
@@ -301,7 +301,7 @@ public:
             u.hasRequest = (sqlite3_column_int(stmt, 9) == 1);
             u.isMatched = (sqlite3_column_int(stmt, 10) == 1);
             u.matchedPartnerId = sqlite3_column_int(stmt, 11);
-            
+
             const char* gPref = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 12));
             u.genderPreference = gPref ? gPref : "Any";
             u.wantsSharedCab = (sqlite3_column_int(stmt, 13) == 1);
@@ -543,3 +543,4 @@ public:
 };
 
 #endif
+

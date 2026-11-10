@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M.A.R.K | Mapped Automation Route Kinematics</title>
     <link rel="icon" type="image/png" href="MARK_LOGO.PNG">
-    
+
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
+
     <style>
         :root {
             --bg-main: #0c0e14;
@@ -856,10 +856,11 @@
             <div class="top-meta" style="display:flex; align-items:center; gap:12px;">
                 <div class="live-clock" id="liveClock">--:--:--</div>
 
-                <!-- Commuter Login / Session Control -->
+                <!-- Commuter Login / Session Control with Password & Session Management -->
                 <div id="headerLoginBox" style="display: flex; align-items: center; gap: 8px;">
-                    <input type="number" id="headerLoginId" placeholder="4-Digit User ID" style="width: 130px; padding: 6px 10px; font-size: 0.85em; background: #12151f; border: 1px solid var(--border-color); color: #fff; border-radius: 6px;">
-                    <button class="btn btn-sm btn-blue" onclick="handleUserLogin(document.getElementById('headerLoginId').value)">Log In</button>
+                    <input type="number" id="headerLoginId" placeholder="User ID" style="width: 105px; padding: 6px 10px; font-size: 0.85em; background: #12151f; border: 1px solid var(--border-color); color: #fff; border-radius: 6px;">
+                    <input type="password" id="headerLoginPwd" placeholder="Password" style="width: 105px; padding: 6px 10px; font-size: 0.85em; background: #12151f; border: 1px solid var(--border-color); color: #fff; border-radius: 6px;" onkeydown="if(event.key==='Enter') handleUserLoginWithPwd()">
+                    <button class="btn btn-sm btn-blue" onclick="handleUserLoginWithPwd()">Log In</button>
                 </div>
 
                 <div id="headerSessionBox" style="display: none; align-items: center; gap: 10px; background: #12151f; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-color);">
@@ -1045,8 +1046,12 @@
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
+                            <div class="form-group">
+                                <label>Account Password</label>
+                                <input type="password" id="newUserPassword" placeholder="Create password (min 4 chars)" required>
+                            </div>
                         </div>
-                        <button type="submit" class="btn">Register User into Linked List</button>
+                        <button type="submit" class="btn">Register User into Permanent SQLite &amp; Linked List</button>
                     </form>
 
                     <!-- Registration Success Card with Auto-Generated 4-Digit ID -->
@@ -1539,7 +1544,7 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+
     <!-- Preloaded OpenStreetMap Road Network Dataset (Delhi-NCR) -->
     <script src="roads_data.js"></script>
     <!-- Verified NCR Locations Dataset from locations.csv -->
@@ -1618,43 +1623,49 @@
         let currentUser = null;
         let newlyRegisteredId = null;
 
-        // In-Memory Fallback State (if C++ server is not running)
-        let localUsers = [
-            { id: 1001, name: "Aryan Sharma", phone: "9876543210", gender: "Male", source: "Sector 62, Noida", destination: "Botanical Garden, Noida", preferredTime: "09:30", transportMode: "Metro", budget: 150, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true },
-            { id: 1002, name: "Priya Verma", phone: "9812345678", gender: "Female", source: "Sector 62, Noida", destination: "Botanical Garden, Noida", preferredTime: "09:40", transportMode: "Metro", budget: 120, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true },
-            { id: 1003, name: "Rohan Gupta", phone: "9923456789", gender: "Male", source: "Sector 62, Noida", destination: "Connaught Place, Delhi", preferredTime: "09:30", transportMode: "Cab", budget: 250, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Male", wantsSharedCab: true, boardingStation: "Sector 62", allowMultiple: true },
-            { id: 1004, name: "Kavita Rao", phone: "9734567890", gender: "Female", source: "Sector 62, Noida", destination: "Connaught Place, Delhi", preferredTime: "09:45", transportMode: "Cab", budget: 300, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: true, boardingStation: "Sector 62", allowMultiple: true },
-            { id: 1005, name: "Amit Kumar", phone: "9645678901", gender: "Male", source: "Dwarka Sector 21", destination: "Rajiv Chowk", preferredTime: "10:00", transportMode: "Metro", budget: 80, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: false }
-        ];
-
-        let localQueue = [
-            { id: 1001, user_id: 1001, initial_dest: "Sector 62, Noida", final_dest: "Botanical Garden, Noida", time: 930, mode: "Metro", budget: 150 },
-            { id: 1002, user_id: 1002, initial_dest: "Sector 62, Noida", final_dest: "Botanical Garden, Noida", time: 940, mode: "Metro", budget: 120 },
-            { id: 1003, user_id: 1003, initial_dest: "Sector 62, Noida", final_dest: "Connaught Place, Delhi", time: 930, mode: "Cab", budget: 250 },
-            { id: 1004, user_id: 1004, initial_dest: "Sector 62, Noida", final_dest: "Connaught Place, Delhi", time: 945, mode: "Cab", budget: 300 },
-            { id: 1005, user_id: 1005, initial_dest: "Dwarka Sector 21", final_dest: "Rajiv Chowk", time: 1000, mode: "Metro", budget: 80 }
-        ];
-
+        // Persistent SQLite Data State (Hydrated dynamically from C++ mark.db)
+        let localUsers = [];
+        let localQueue = [];
         let localHistory = [];
         let localUndoStack = [];
+        let currentSessionToken = localStorage.getItem('mark_session_token') || null;
 
         // ---------------- User Session Management ----------------
-        async function handleUserLogin(inputVal) {
-            let id = parseInt(inputVal);
+        async function handleUserLoginWithPwd() {
+            let id = parseInt(document.getElementById('headerLoginId').value);
+            let pwd = document.getElementById('headerLoginPwd') ? document.getElementById('headerLoginPwd').value : '';
             if (!id || isNaN(id)) {
                 alert("Please enter a valid 4-digit User ID.");
                 return;
             }
 
-            let user = null;
             if (isBackendLive) {
-                let data = await safeFetchJson(getBackendUrl(`/api/users/search?id=${id}`));
-                if (data && data.success && data.user) user = data.user;
-            }
-            if (!user) user = localUsers.find(u => u.id === id);
+                let data = await safeFetchJson(getBackendUrl('/api/login'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, password: pwd })
+                });
 
+                if (data && data.success && data.user) {
+                    currentUserId = id;
+                    currentUser = data.user;
+                    currentSessionToken = data.token;
+                    localStorage.setItem('mark_session_token', currentSessionToken);
+                    localStorage.setItem('mark_session_user_id', id);
+                    updateSessionUI();
+                    renderRideAccess();
+                    showToast(`Logged in successfully as ${currentUser.name} (ID #${id})`);
+                    return;
+                } else if (data && !data.success) {
+                    alert(data.message || "Invalid User ID or Password.");
+                    return;
+                }
+            }
+
+            // Fallback for offline mode
+            let user = localUsers.find(u => u.id === id);
             if (!user) {
-                alert(`User ID #${id} not found in the Linked List!\nPlease check the 4-digit ID or register a new commuter account.`);
+                alert(`User ID #${id} not found in SQLite mark.db or Linked List!\nPlease register a new commuter account.`);
                 return;
             }
 
@@ -1665,9 +1676,27 @@
             showToast(`Logged in successfully as ${user.name} (ID #${id})`);
         }
 
-        function handleUserLogout() {
+        async function handleUserLogin(inputVal) {
+            let inp = document.getElementById('headerLoginId');
+            if (inp) inp.value = inputVal;
+            await handleUserLoginWithPwd();
+        }
+
+        async function handleUserLogout() {
+            if (currentSessionToken && isBackendLive) {
+                try {
+                    await safeFetchJson(getBackendUrl('/api/logout'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: currentSessionToken })
+                    });
+                } catch(e) {}
+            }
             currentUserId = null;
             currentUser = null;
+            currentSessionToken = null;
+            localStorage.removeItem('mark_session_token');
+            localStorage.removeItem('mark_session_user_id');
             updateSessionUI();
             renderRideAccess();
             showToast("Logged out of commuter session.");
@@ -1689,6 +1718,8 @@
                 if (sessionBox) sessionBox.style.display = 'none';
                 let inp = document.getElementById('headerLoginId');
                 if (inp) inp.value = '';
+                let pwd = document.getElementById('headerLoginPwd');
+                if (pwd) pwd.value = '';
             }
         }
 
@@ -1728,7 +1759,7 @@
                 if (currentUser.hasRequest) {
                     if (alreadyHasReqNotice) {
                         alreadyHasReqNotice.style.display = 'block';
-                        document.getElementById('existingReqDetails').innerHTML = 
+                        document.getElementById('existingReqDetails').innerHTML =
                             `You already have an active ride request in progress: <strong>${currentUser.source} ➔ ${currentUser.destination}</strong> (${currentUser.transportMode} at ${currentUser.preferredTime}, Rs. ${currentUser.budget}).`;
                     }
                     if (actualRideForm) actualRideForm.style.display = 'none';
@@ -1826,6 +1857,34 @@
         }
 
         // ---------------- API Integration with C++ Backend ----------------
+        async function checkSavedSession() {
+            let savedToken = localStorage.getItem('mark_session_token');
+            let savedUid = localStorage.getItem('mark_session_user_id');
+            if (savedToken && isBackendLive) {
+                let data = await safeFetchJson(getBackendUrl(`/api/session?token=${savedToken}`));
+                if (data && data.success && data.user) {
+                    currentUserId = data.user.id;
+                    currentUser = data.user;
+                    currentSessionToken = savedToken;
+                    updateSessionUI();
+                    renderRideAccess();
+                    return;
+                }
+            }
+            if (savedUid && isBackendLive) {
+                let uId = parseInt(savedUid);
+                if (uId) {
+                    let data = await safeFetchJson(getBackendUrl(`/api/users/search?id=${uId}`));
+                    if (data && data.success && data.user) {
+                        currentUserId = uId;
+                        currentUser = data.user;
+                        updateSessionUI();
+                        renderRideAccess();
+                    }
+                }
+            }
+        }
+
         async function checkBackendConnection() {
             try {
                 let data = await safeFetchJson(getBackendUrl('/api/stats'), { signal: AbortSignal.timeout(2000) });
@@ -1844,6 +1903,7 @@
                 document.getElementById('serverStatusText').innerText = 'Standalone Browser Mode';
             }
             loadStats();
+            checkSavedSession();
         }
 
         async function loadStats() {
@@ -1925,6 +1985,7 @@
             const name = document.getElementById('newUserName').value.trim();
             const phone = document.getElementById('newUserPhone').value.trim();
             const gender = document.getElementById('newUserGender').value;
+            const password = document.getElementById('newUserPassword') ? document.getElementById('newUserPassword').value : '';
 
             if (!name || !phone) {
                 alert("Please enter Name and Phone Number.");
@@ -1936,13 +1997,22 @@
                     let data = await safeFetchJson('/api/users', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, phone, gender })
+                        body: JSON.stringify({ name, phone, gender, password })
                     });
                     if (data && data.success && data.id) {
                         newlyRegisteredId = data.id;
+                        currentUserId = data.id;
+                        currentUser = data.user;
+                        currentSessionToken = data.token;
+                        localStorage.setItem('mark_session_token', currentSessionToken);
+                        localStorage.setItem('mark_session_user_id', data.id);
+
                         showRegistrationSuccess(data.id, name);
                         document.getElementById('newUserName').value = '';
                         document.getElementById('newUserPhone').value = '';
+                        if (document.getElementById('newUserPassword')) document.getElementById('newUserPassword').value = '';
+                        updateSessionUI();
+                        renderRideAccess();
                         loadUsers();
                         loadStats();
                         return;
@@ -1954,16 +2024,18 @@
             }
 
             // Local fallback: generate unique 4-digit ID
-            let newId;
-            do {
-                newId = Math.floor(1000 + Math.random() * 9000);
-            } while (localUsers.find(u => u.id === newId));
-
-            localUsers.push({ id: newId, name, phone, gender, hasRequest: false, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true });
+            let newId = Math.floor(1000 + Math.random() * 9000);
+            let fallbackUser = { id: newId, name, phone, gender, hasRequest: false, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true };
+            localUsers.push(fallbackUser);
             newlyRegisteredId = newId;
+            currentUserId = newId;
+            currentUser = fallbackUser;
             showRegistrationSuccess(newId, name);
             document.getElementById('newUserName').value = '';
             document.getElementById('newUserPhone').value = '';
+            if (document.getElementById('newUserPassword')) document.getElementById('newUserPassword').value = '';
+            updateSessionUI();
+            renderRideAccess();
             loadUsers();
             loadStats();
         }
@@ -2428,10 +2500,6 @@
         }
 
         // ---------------- Route Navigation Planner ----------------
-        function setPreset(start, end) {
-            document.getElementById('routeStart').value = start;
-            document.getElementById('routeEnd').value = end;
-        }
 
         function initMap() {
             map = L.map('map').setView([28.6100, 77.3000], 11);
@@ -3258,23 +3326,32 @@
                 // -------------------------------------------------------
                 let osrmRoute = await fetchOSRMRoute(sLoc.lon, sLoc.lat, eLoc.lon, eLoc.lat);
 
-                // Log to C++ backend in background
+                // Determine actual distance: prefer OSRM (accurate), fallback DS result
+                let actualDistKm = osrmRoute ? osrmRoute.distKm : (dRes ? dRes.dist : (bRes ? bRes.dist : 0));
+                let durationMin = osrmRoute ? osrmRoute.durationMin : null;
+
+                // Log to C++ backend & save permanently in SQLite mark.db
                 if (isBackendLive) {
                     try {
                         let dUrl = getBackendUrl(`/api/routes/dijkstra?start=${encodeURIComponent(sLoc.name)}&end=${encodeURIComponent(eLoc.name)}&startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`);
                         safeFetchJson(dUrl);
+                        safeFetchJson(getBackendUrl('/api/routes/save'), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: `${sLoc.name} ➔ ${eLoc.name}`,
+                                source: sLoc.name,
+                                destination: eLoc.name,
+                                distance: actualDistKm,
+                                hops: (bRes ? bRes.hops : (dRes ? dRes.hops : 0))
+                            })
+                        });
                     } catch (e) {}
                 }
 
                 // -------------------------------------------------------
                 // STEP 3: Draw routes on map using OSRM geometry
-                // OSRM gives real road-following curves for every destination.
-                // DS algorithm stats (distance, hops) come from our Dijkstra/BFS.
                 // -------------------------------------------------------
-
-                // Determine actual distance: prefer OSRM (accurate), fallback DS result
-                let actualDistKm = osrmRoute ? osrmRoute.distKm : (dRes ? dRes.dist : (bRes ? bRes.dist : 0));
-                let durationMin = osrmRoute ? osrmRoute.durationMin : null;
 
                 let renderedLayers = [];
 

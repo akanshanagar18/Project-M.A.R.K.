@@ -1,8 +1,8 @@
 #include "ride_manager.h"
 #include <iostream>
-using namespace std; 
+using namespace std;
 
-void Ride_Manager::add_ride_req(int user_id, std::string initial_dest, std::string final_dest, int time, std::string mode, double budget) {
+int Ride_Manager::add_ride_req(int user_id, std::string initial_dest, std::string final_dest, int time, std::string mode, double budget) {
     riderequest new_req;
     new_req.id = next_request_id++;
     new_req.user_id = user_id;
@@ -20,52 +20,65 @@ void Ride_Manager::add_ride_req(int user_id, std::string initial_dest, std::stri
     undo_stack.push(action);
 
     cout << "Ride request added successfully"<< endl<<" RIDE Request ID: " << new_req.id << endl;
+    return new_req.id;
 }
 
-
-
-void Ride_Manager::process_nextride(double fare) {
+bool Ride_Manager::process_nextride_record(double fare, Complete_Ride& outRecord, riderequest& outReq) {
     if (pending_queue.empty()) {
         cout << "No pending ride requests to process." << endl;
-        return;
+        return false;
     }
 
-    // take the first ride from queue for the next matching and remove it from the queue for processing
-    riderequest req = pending_queue.front();
+    outReq = pending_queue.front();
     pending_queue.pop();
 
-    Complete_Ride record;
-    record.id = next_ride_id++;
-    record.user_ids.push_back(req.user_id);
-    record.initial_destination = req.initial_destination;
-    record.final_destination = req.final_destination;
-    record.mode = req.mode;
-    record.fare = fare;
+    outRecord.id = next_ride_id++;
+    outRecord.user_ids.push_back(outReq.user_id);
+    outRecord.initial_destination = outReq.initial_destination;
+    outRecord.final_destination = outReq.final_destination;
+    outRecord.mode = outReq.mode;
+    outRecord.fare = fare;
 
-    // Store int the vector
-    ride_history.push_back(record);
+    ride_history.push_back(outRecord);
 
     RideAction action;
     action.type = COMPLETE;
-    action.rec = record;
+    action.rec = outRecord;
     undo_stack.push(action);
 
-    cout << "Ride processed successfully! Ride ID: " << record.id <<endl;
+    cout << "Ride processed successfully! Ride ID: " << outRecord.id <<endl;
+    return true;
 }
 
+void Ride_Manager::process_nextride(double fare) {
+    Complete_Ride rec;
+    riderequest req;
+    process_nextride_record(fare, rec, req);
+}
 
+void Ride_Manager::restore_state(const std::vector<riderequest>& reqs, const std::vector<Complete_Ride>& hist, int maxReqId, int maxRideId) {
+    while (!pending_queue.empty()) pending_queue.pop();
+    for (const auto& r : reqs) {
+        pending_queue.push(r);
+    }
+    ride_history = hist;
+    if (maxReqId >= next_request_id) next_request_id = maxReqId + 1;
+    if (maxRideId >= next_ride_id) next_ride_id = maxRideId + 1;
+    cout << "[Ride Manager] Restored " << reqs.size() << " pending requests & "
+         << hist.size() << " history records from SQLite.\n";
+}
 
-bool Ride_Manager::undo() {
+bool Ride_Manager::undo_action(RideAction& poppedAction) {
     if (undo_stack.empty()) {
         cout << "no ride to undo." << endl;
         return false;
     }
-    
-    RideAction last_action = undo_stack.top();
+
+    poppedAction = undo_stack.top();
     undo_stack.pop();
 
-    if (last_action.type == BOOK) {
-        int target_id = last_action.req.id;
+    if (poppedAction.type == BOOK) {
+        int target_id = poppedAction.req.id;
         std::queue<riderequest> temp_queue;
         bool found = false;
 
@@ -84,9 +97,9 @@ bool Ride_Manager::undo() {
             cout << "RIDE CANCELLED , request ID " << target_id << endl;
             return true;
         }
-    } 
-    else if (last_action.type == COMPLETE) {
-        int target_id = last_action.rec.id;
+    }
+    else if (poppedAction.type == COMPLETE) {
+        int target_id = poppedAction.rec.id;
         for (auto it = ride_history.begin(); it != ride_history.end(); ++it) {
             if (it->id == target_id) {
                 ride_history.erase(it);
@@ -99,7 +112,10 @@ bool Ride_Manager::undo() {
     return false;
 }
 
-
+bool Ride_Manager::undo() {
+    RideAction a;
+    return undo_action(a);
+}
 
 void Ride_Manager::displaypending_queue() const {
     if (pending_queue.empty()) {
@@ -111,14 +127,12 @@ void Ride_Manager::displaypending_queue() const {
     while (!temp.empty()) {
         riderequest r = temp.front();
         temp.pop();
-        cout << "ID: " << r.id << " | User: " << r.user_id 
-             << " | From: " << r.initial_destination << " To: " << r.final_destination 
+        cout << "ID: " << r.id << " | User: " << r.user_id
+             << " | From: " << r.initial_destination << " To: " << r.final_destination
              << " | Mode: " << r.mode << " | Budget(in rupees): " << r.budget << endl;
     }
     cout<< endl;
 }
-
-
 
 void Ride_Manager::display_ride_history() const {
     if (ride_history.empty()) {
@@ -134,8 +148,6 @@ void Ride_Manager::display_ride_history() const {
     }
     cout<< endl;
 }
-
-
 
 void Ride_Manager::displaystats() const {
     double total_revenue = 0.0;

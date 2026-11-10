@@ -495,9 +495,9 @@ pair<vector<string>, double> RouteManager::getShortestPath(const string& startIn
 
     unordered_map<string, double> distances;
     unordered_map<string, string> previous;
-    
-    priority_queue<pair<double, string>, 
-                   vector<pair<double, string>>, 
+
+    priority_queue<pair<double, string>,
+                   vector<pair<double, string>>,
                    greater<pair<double, string>>> pq;
 
     for (const auto& pair : adjList) {
@@ -622,3 +622,4 @@ vector<string> RouteManager::getBFSPath(const string& startIn, const string& end
 
     return path;
 }
+

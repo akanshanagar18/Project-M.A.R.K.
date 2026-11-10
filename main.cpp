@@ -11,14 +11,15 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
-#include "users_management.cpp"
+#include "database.h"
 #include "matching.cpp"
 #include "ride_manager.h"
 #include "route_manager.h"
 
 using namespace std;
 
-// Global Data Structures
+// Global Data Structures & Persistent SQLite Database
+DatabaseManager db;
 UserManager userManager;
 Ride_Manager rideManager;
 RouteManager routeManager;
@@ -242,7 +243,7 @@ void handleClient(SOCKET clientSocket) {
     }
 
     // CORS & JSON Headers with persistent Connection: close
-    string corsHeaders = 
+    string corsHeaders =
         "Access-Control-Allow-Origin: *\r\n"
         "Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS\r\n"
         "Access-Control-Allow-Headers: Content-Type\r\n"
@@ -258,7 +259,7 @@ void handleClient(SOCKET clientSocket) {
     };
 
     auto sendFileResponse = [&](const string& contentType, const string& content) {
-        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders + 
+        string res = "HTTP/1.1 200 OK\r\n" + corsHeaders +
                      "Content-Type: " + contentType + "\r\n" +
                      "Content-Length: " + to_string(content.length()) + "\r\n\r\n" + content;
         send(clientSocket, res.c_str(), (int)res.length(), 0);
@@ -376,11 +377,12 @@ void handleClient(SOCKET clientSocket) {
         return;
     }
 
-    // 3. POST /api/users (Register User with Automatic Unique 4-Digit ID)
-    if (method == "POST" && path == "/api/users") {
+    // 3. POST /api/users or POST /api/register (Register User with Password & Permanent SQLite Storage)
+    if (method == "POST" && (path == "/api/users" || path == "/api/register")) {
         string name = getJsonString(body, "name");
         string phone = getJsonString(body, "phone");
         string gender = getJsonString(body, "gender");
+        string password = getJsonString(body, "password");
 
         if (name.empty()) {
             sendJsonResponse("400 Bad Request", "{\"success\":false,\"message\":\"Name cannot be empty.\"}");
@@ -389,6 +391,9 @@ void handleClient(SOCKET clientSocket) {
 
         // Automatic unique 4-digit ID generation (1000 - 9999)
         int newId = userManager.generateUniqueId();
+        if (newId <= db.getMaxUserId() && db.getMaxUserId() >= 1000) {
+            newId = db.getMaxUserId() + 1;
+        }
 
         User u;
         u.id = newId;
@@ -396,17 +401,89 @@ void handleClient(SOCKET clientSocket) {
         u.phone = phone;
         u.gender = gender.empty() ? "Other" : gender;
 
-        bool ok = userManager.registerUserDirect(u);
-        cout << "[Linked List] Automatically generated ID #" << newId 
-             << " -> Registered user: " << name << " (Phone: " << phone << ")\n";
+        // 1. Insert into Permanent SQLite Database
+        bool dbOk = db.registerUser(u, password.empty() ? to_string(newId) : password);
+
+        // 2. Insert into existing C++ Linked List
+        bool listOk = userManager.registerUserDirect(u);
+
+        // 3. Create authenticated session token
+        string token = SHA256::generateToken();
+        db.createSession(token, newId);
+
+        cout << "[Permanent Storage] Registered user #" << newId << " (" << name << ") in SQLite & Linked List.\n";
 
         ostringstream json;
-        json << "{\"success\":" << (ok ? "true" : "false") << ","
+        json << "{\"success\":" << (dbOk && listOk ? "true" : "false") << ","
              << "\"id\":" << newId << ","
+             << "\"token\":\"" << token << "\","
              << "\"user\":" << userToJson(u) << ","
-             << "\"message\":\"User registered successfully! Your unique 4-digit User ID is " << newId << ". Please remember this ID to log in and access your account.\"}";
+             << "\"message\":\"User registered successfully! Your unique 4-digit User ID is " << newId << ". Saved in SQLite mark.db and loaded into Linked List.\"}";
 
         sendJsonResponse("200 OK", json.str());
+        return;
+    }
+
+    // 3.1 POST /api/login (Secure Commuter Login via SQLite with Session Management)
+    if (method == "POST" && path == "/api/login") {
+        int id = getJsonInt(body, "id");
+        string password = getJsonString(body, "password");
+
+        if (id <= 0) {
+            sendJsonResponse("400 Bad Request", "{\"success\":false,\"message\":\"Please provide a valid 4-digit User ID.\"}");
+            return;
+        }
+
+        string token;
+        User authUser;
+        bool authOk = db.authenticateUser(id, password.empty() ? to_string(id) : password, token, authUser);
+
+        // Fallback: If user registered with default ID as password or no password
+        if (!authOk && password.empty()) {
+            authOk = db.authenticateUser(id, to_string(id), token, authUser);
+        }
+
+        if (authOk) {
+            // Also ensure it is present in memory Linked List
+            if (!userManager.userExists(id)) {
+                userManager.registerUserDirect(authUser);
+            } else {
+                User listUser;
+                if (userManager.getUserById(id, listUser)) {
+                    authUser = listUser;
+                }
+            }
+            cout << "[Auth] User #" << id << " (" << authUser.name << ") successfully authenticated via SQLite.\n";
+            ostringstream json;
+            json << "{\"success\":true,\"token\":\"" << token << "\",\"user\":" << userToJson(authUser) << ",\"message\":\"Login successful!\"}";
+            sendJsonResponse("200 OK", json.str());
+        } else {
+            cout << "[Auth] Authentication failed for User #" << id << "\n";
+            sendJsonResponse("401 Unauthorized", "{\"success\":false,\"message\":\"Invalid User ID or Password.\"}");
+        }
+        return;
+    }
+
+    // 3.2 POST /api/logout
+    if (method == "POST" && path == "/api/logout") {
+        string token = getJsonString(body, "token");
+        if (!token.empty()) db.deleteSession(token);
+        sendJsonResponse("200 OK", "{\"success\":true,\"message\":\"Logged out successfully.\"}");
+        return;
+    }
+
+    // 3.3 GET /api/session
+    if (method == "GET" && path == "/api/session") {
+        string token = getQueryParam(url, "token");
+        int uid = 0;
+        if (db.validateSession(token, uid)) {
+            User u;
+            if (userManager.getUserById(uid, u)) {
+                sendJsonResponse("200 OK", "{\"success\":true,\"user\":" + userToJson(u) + "}");
+                return;
+            }
+        }
+        sendJsonResponse("401 Unauthorized", "{\"success\":false,\"message\":\"Invalid or expired session.\"}");
         return;
     }
 
@@ -437,12 +514,13 @@ void handleClient(SOCKET clientSocket) {
         string phone = getJsonString(body, "phone");
         string gender = getJsonString(body, "gender");
 
-        bool ok = userManager.updateUserDirect(id, name, phone, gender);
-        cout << "[Linked List] " << (ok ? "Updated user #" : "Failed update for user #") << id << "\n";
+        bool okList = userManager.updateUserDirect(id, name, phone, gender);
+        bool okDb = db.updateUserProfile(id, name, phone, gender);
+        cout << "[Linked List & SQLite] Updated user #" << id << " (List: " << okList << ", SQLite: " << okDb << ")\n";
 
         ostringstream json;
-        json << "{\"success\":" << (ok ? "true" : "false") << ","
-             << "\"message\":\"" << (ok ? "User updated successfully in Linked List!" : "User not found") << "\"}";
+        json << "{\"success\":" << (okList || okDb ? "true" : "false") << ","
+             << "\"message\":\"" << (okList || okDb ? "User profile updated permanently in SQLite & Linked List!" : "User not found") << "\"}";
 
         sendJsonResponse("200 OK", json.str());
         return;
@@ -455,18 +533,19 @@ void handleClient(SOCKET clientSocket) {
         try { if (!idStr.empty()) id = stoi(idStr); } catch (...) {}
         if (id == 0) id = getJsonInt(body, "id");
 
-        bool ok = (id > 0) && userManager.deleteUser(id);
-        cout << "[Linked List] " << (ok ? "Deleted user node #" : "Could not delete user #") << id << "\n";
+        bool okList = (id > 0) && userManager.deleteUser(id);
+        bool okDb = (id > 0) && db.deleteUser(id);
+        cout << "[Linked List & SQLite] Deleted user #" << id << " (List: " << okList << ", SQLite: " << okDb << ")\n";
 
         ostringstream json;
-        json << "{\"success\":" << (ok ? "true" : "false") << ","
-             << "\"message\":\"" << (ok ? "User deleted successfully from Linked List!" : "User not found") << "\"}";
+        json << "{\"success\":" << (okList || okDb ? "true" : "false") << ","
+             << "\"message\":\"" << (okList || okDb ? "User deleted permanently from SQLite & Linked List!" : "User not found") << "\"}";
 
         sendJsonResponse("200 OK", json.str());
         return;
     }
 
-    // 7. POST /api/rides/request (Request a Ride for Logged-in User)
+    // 7. POST /api/rides/request (Request a Ride for Logged-in User with Permanent SQLite & Queue Storage)
     if (method == "POST" && path == "/api/rides/request") {
         int userId = getJsonInt(body, "userId");
         string src = getJsonString(body, "source");
@@ -493,6 +572,9 @@ void handleClient(SOCKET clientSocket) {
 
         // Set request in Linked List
         userManager.setRideRequestDirect(userId, src, dst, time, mode, budget, genderPref, wantsCab, station, allowMultiple);
+        if (userManager.getUserById(userId, u)) {
+            db.updateUserRideState(u);
+        }
 
         // Convert time to numeric (e.g. 930) for Ride_Manager
         int numericTime = 930;
@@ -501,11 +583,23 @@ void handleClient(SOCKET clientSocket) {
         } catch (...) {}
 
         // Push to FIFO Queue & Undo Stack
-        rideManager.add_ride_req(userId, src, dst, numericTime, mode, budget);
-        cout << "[Queue FIFO] Enqueued ride request for User #" << userId << " (" << src << " -> " << dst << ")\n";
+        int reqId = rideManager.add_ride_req(userId, src, dst, numericTime, mode, budget);
+
+        // Save to SQLite ride_requests table
+        riderequest req;
+        req.id = reqId;
+        req.user_id = userId;
+        req.initial_destination = src;
+        req.final_destination = dst;
+        req.time = numericTime;
+        req.mode = mode;
+        req.budget = budget;
+        db.saveRideRequest(req);
+
+        cout << "[Queue FIFO & SQLite] Enqueued ride request #" << reqId << " for User #" << userId << " (" << src << " -> " << dst << ")\n";
 
         ostringstream json;
-        json << "{\"success\":true,\"message\":\"Ride request saved & pushed to FIFO Queue!\"}";
+        json << "{\"success\":true,\"requestId\":" << reqId << ",\"message\":\"Ride request saved permanently in SQLite mark.db & pushed to FIFO Queue!\"}";
 
         sendJsonResponse("200 OK", json.str());
         return;
@@ -537,7 +631,7 @@ void handleClient(SOCKET clientSocket) {
 
         // Run Priority Queue Matching Engine in C++
         MatchQueue pq = matchRides(user, userManager.getAllUsers());
-        cout << "[Priority Queue] Evaluated ride matches for Logged-in User #" << userId 
+        cout << "[Priority Queue] Evaluated ride matches for Logged-in User #" << userId
              << " -> Found " << pq.size() << " compatible matches.\n";
 
         ostringstream json;
@@ -571,7 +665,12 @@ void handleClient(SOCKET clientSocket) {
 
         userManager.markMatched(u1, u2);
         userManager.markMatched(u2, u1);
-        cout << "[Matching Engine] Confirmed match between User #" << u1 << " and User #" << u2 << "\n";
+
+        User usr1, usr2;
+        if (userManager.getUserById(u1, usr1)) db.updateUserRideState(usr1);
+        if (userManager.getUserById(u2, usr2)) db.updateUserRideState(usr2);
+
+        cout << "[Matching Engine & SQLite] Confirmed match between User #" << u1 << " and User #" << u2 << "\n";
 
         ostringstream json;
         json << "{\"success\":true,\"message\":\"Match confirmed successfully between User #" << u1 << " and User #" << u2 << "!\"}";
@@ -579,7 +678,7 @@ void handleClient(SOCKET clientSocket) {
         return;
     }
 
-    // 10. POST /api/rides/process (Process next ride from FIFO Queue)
+    // 10. POST /api/rides/process (Process next ride from FIFO Queue & Save to SQLite)
     if (method == "POST" && path == "/api/rides/process") {
         double fare = getJsonDouble(body, "fare", 180.0);
         if (rideManager.get_queue_size() == 0) {
@@ -587,23 +686,48 @@ void handleClient(SOCKET clientSocket) {
             return;
         }
 
-        rideManager.process_nextride(fare);
-        cout << "[Ride Manager] Processed next ride from FIFO Queue with fare $" << fare << " -> Stored in History Vector & Logged in Stack\n";
+        Complete_Ride rec;
+        riderequest req;
+        bool ok = rideManager.process_nextride_record(fare, rec, req);
+        if (ok) {
+            db.updateRideRequestStatus(req.id, "COMPLETED");
+            db.saveCompletedRide(rec);
+
+            // Clear request from user's active state
+            userManager.clearRequest(req.user_id);
+            User u;
+            if (userManager.getUserById(req.user_id, u)) {
+                db.updateUserRideState(u);
+            }
+            cout << "[Ride Manager & SQLite] Processed ride #" << rec.id << " (Fare: Rs." << fare
+                 << ") -> Saved to SQLite rides table and History Vector\n";
+        }
 
         ostringstream json;
-        json << "{\"success\":true,\"message\":\"Ride processed, stored in History Vector, and logged to Undo Stack!\"}";
+        json << "{\"success\":true,\"message\":\"Ride processed, stored permanently in SQLite & History Vector, and logged to Undo Stack!\"}";
         sendJsonResponse("200 OK", json.str());
         return;
     }
 
-    // 11. POST /api/rides/undo (Undo Last Action via Stack)
+    // 11. POST /api/rides/undo (Undo Last Action via Stack & Sync with SQLite)
     if (method == "POST" && path == "/api/rides/undo") {
-        bool ok = rideManager.undo();
-        cout << "[Stack LIFO] Undo action triggered: " << (ok ? "Success (Restored state)" : "Stack is empty") << "\n";
+        RideAction action;
+        bool ok = rideManager.undo_action(action);
+        if (ok) {
+            if (action.type == BOOK) {
+                db.updateRideRequestStatus(action.req.id, "CANCELLED");
+                userManager.clearRequest(action.req.user_id);
+                User u;
+                if (userManager.getUserById(action.req.user_id, u)) {
+                    db.updateUserRideState(u);
+                }
+            }
+        }
+        cout << "[Stack LIFO & SQLite] Undo action triggered: " << (ok ? "Success (Restored state)" : "Stack is empty") << "\n";
 
         ostringstream json;
         json << "{\"success\":" << (ok ? "true" : "false") << ","
-             << "\"message\":\"" << (ok ? "Undo successful: Popped last action from Stack!" : "Undo Stack is empty!") << "\"}";
+             << "\"message\":\"" << (ok ? "Undo successful: Popped last action from Stack & synced with SQLite!" : "Undo Stack is empty!") << "\"}";
         sendJsonResponse("200 OK", json.str());
         return;
     }
@@ -720,7 +844,7 @@ void handleClient(SOCKET clientSocket) {
 
         auto result = routeManager.getShortestPath(start, end);
         auto coords = routeManager.getPathCoordinates(result.first);
-        cout << "[Graph Dijkstra] Evaluated shortest path between " << start << " and " << end 
+        cout << "[Graph Dijkstra] Evaluated shortest path between " << start << " and " << end
              << " -> Distance: " << result.second << " km (" << result.first.size() << " nodes)\n";
 
         ostringstream json;
@@ -779,7 +903,7 @@ void handleClient(SOCKET clientSocket) {
 
         vector<string> pathNodes = routeManager.getBFSPath(start, end);
         auto coords = routeManager.getPathCoordinates(pathNodes);
-        cout << "[Graph BFS] Evaluated minimum connections between " << start << " and " << end 
+        cout << "[Graph BFS] Evaluated minimum connections between " << start << " and " << end
              << " -> Hops: " << (pathNodes.empty() ? 0 : pathNodes.size() - 1) << "\n";
 
         ostringstream json;
@@ -800,6 +924,23 @@ void handleClient(SOCKET clientSocket) {
         }
         json << "]}";
 
+        sendJsonResponse("200 OK", json.str());
+        return;
+    }
+
+    // 16. POST /api/routes/save (Save route persistently to SQLite)
+    if (method == "POST" && path == "/api/routes/save") {
+        string name = getJsonString(body, "name");
+        string src = getJsonString(body, "source");
+        string dst = getJsonString(body, "destination");
+        double dist = getJsonDouble(body, "distance");
+        int hops = getJsonInt(body, "hops");
+
+        bool ok = db.saveRoute(name, src, dst, dist, hops);
+        cout << "[Routes SQLite] " << (ok ? "Saved route " : "Failed saving route ") << src << " -> " << dst << "\n";
+
+        ostringstream json;
+        json << "{\"success\":" << (ok ? "true" : "false") << ",\"message\":\"Route saved permanently in SQLite mark.db\"}";
         sendJsonResponse("200 OK", json.str());
         return;
     }
@@ -852,7 +993,32 @@ int main(int argc, char* argv[]) {
     cout << "   - Graph & BFS     : Minimum Hops Route Navigation             \n";
     cout << "=================================================================\n";
 
-    initializeSampleData();
+    // -------------------------------------------------------------
+    // SQLite Permanent Database Initialization
+    // Reconstruct C++ Linked List, FIFO Queue, and Vector from mark.db
+    // -------------------------------------------------------------
+    if (!db.init("mark.db")) {
+        cerr << "[Database Error] Could not initialize SQLite permanent storage mark.db\n";
+    } else {
+        // Load persistent registered users into C++ Linked List
+        vector<User> savedUsers = db.loadAllUsers();
+        for (const auto& u : savedUsers) {
+            userManager.registerUserDirect(u);
+        }
+        cout << "[Database -> Linked List] Loaded " << savedUsers.size() << " registered commuters into Linked List.\n";
+
+        // Load persistent pending ride requests into FIFO Queue and history into Vector
+        vector<riderequest> savedReqs = db.loadAllPendingRequests();
+        vector<Complete_Ride> savedRides = db.loadAllCompletedRides();
+        rideManager.restore_state(savedReqs, savedRides, db.getMaxRequestId(), db.getMaxRideId());
+        cout << "[Database -> Queue/Vector] Loaded " << savedReqs.size() << " pending requests and "
+             << savedRides.size() << " completed rides from SQLite mark.db.\n";
+    }
+
+    // Optional demo seed only if explicitly requested via CLI flag: ./mark_system.exe -demo
+    if (argc > 1 && string(argv[1]) == "-demo") {
+        initializeSampleData();
+    }
 
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2,2), &wsa) != 0) {
@@ -912,3 +1078,4 @@ int main(int argc, char* argv[]) {
     WSACleanup();
     return 0;
 }
+

@@ -1,3 +1,4 @@
+#define NO_STANDALONE_MAIN
 #ifndef USERS_MANAGEMENT_H
 #define USERS_MANAGEMENT_H
 
@@ -5,17 +6,18 @@
 #include <string>
 #include <vector>
 #include <limits>
-#include <algorithm>
+
 #include <sstream>
 #include <cstdlib>
 #include <ctime>
+#include <algorithm>
 
 using namespace std;
 
 const int TOTAL_STATIONS = 12;
 static string stations[] = {
-    "Dwarka Sector 21", "Dwarka", "Janakpuri West", "Rajouri Garden", 
-    "Kirti Nagar", "Karol Bagh", "Rajiv Chowk", "Mandi House", 
+    "Dwarka Sector 21", "Dwarka", "Janakpuri West", "Rajouri Garden",
+    "Kirti Nagar", "Karol Bagh", "Rajiv Chowk", "Mandi House",
     "Yamuna Bank", "Mayur Vihar-I", "Noida Sector 18", "Botanical Garden"
 };
 
@@ -30,19 +32,19 @@ public:
     string name;
     string phone;
     string gender;
-    
+
     // Ride request properties
     string source;
     string destination;
     string preferredTime;
     string transportMode;
     double budget = 0.0;
-    
+
     bool hasRequest = false;
     bool isMatched = false;
     int matchedPartnerId = 0;
     int requestId = 0;
-    
+
     bool wantsSharedCab = false;
     bool allowMultiple = true;
     string genderPreference = "Any";
@@ -184,12 +186,12 @@ public:
         return true;
     }
 
-    bool setRideRequestDirect(int id, const string& src, const string& dst, const string& time, 
-                             const string& mode, double budget, const string& genderPref, 
+    bool setRideRequestDirect(int id, const string& src, const string& dst, const string& time,
+                             const string& mode, double budget, const string& genderPref,
                              bool wantsCab, const string& station, bool allowMultiple) {
         Node* n = find(id);
         if (n == nullptr) return false;
-        
+
         n->data.source = src;
         n->data.destination = dst;
         n->data.preferredTime = time;
@@ -409,3 +411,4 @@ int main() {
 #endif
 
 #endif
+
