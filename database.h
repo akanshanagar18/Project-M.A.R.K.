@@ -6,10 +6,32 @@
 #include <vector>
 #include <sstream>
 #include <cstring>
+#include <cstdlib>
 #include "sqlite3.h"
 #include "sha256.h"
 #include "users_management.cpp"
 #include "ride.h"
+
+#ifdef _WIN32
+#include <windows.h>
+inline std::string getExecutableDir() {
+    char buffer[MAX_PATH];
+    DWORD len = GetModuleFileNameA(NULL, buffer, MAX_PATH);
+    if (len > 0 && len < MAX_PATH) {
+        std::string path(buffer);
+        size_t pos = path.find_last_of("\\/");
+        if (pos != std::string::npos) {
+            return path.substr(0, pos);
+        }
+    }
+    return ".";
+}
+#else
+#include <unistd.h>
+inline std::string getExecutableDir() {
+    return ".";
+}
+#endif
 
 class DatabaseManager {
 private:
@@ -33,14 +55,82 @@ public:
 
     bool isOpen() const { return is_open; }
 
-    bool init(const std::string& dbPath = "mark.db") {
-        int rc = sqlite3_open(dbPath.c_str(), &db);
+    std::string getDatabasePath() {
+        if (!is_open || !db) return "";
+        sqlite3_stmt* stmt = nullptr;
+        std::string path = "";
+        if (sqlite3_prepare_v2(db, "PRAGMA database_list;", -1, &stmt, nullptr) == SQLITE_OK) {
+            while (sqlite3_step(stmt) == SQLITE_ROW) {
+                const char* name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+                const char* file = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2));
+                if (name && std::string(name) == "main" && file) {
+                    path = file;
+                    break;
+                }
+            }
+            sqlite3_finalize(stmt);
+        }
+        return path;
+    }
+
+    bool init(const std::string& inputPath = "") {
+        std::string resolvedPath = inputPath;
+
+        if (resolvedPath.empty() || resolvedPath == "mark.db") {
+#ifdef _WIN32
+            const char* localAppData = std::getenv("LOCALAPPDATA");
+            if (localAppData && *localAppData) {
+                std::string dataDir = std::string(localAppData) + "\\MARK";
+                if (!CreateDirectoryA(dataDir.c_str(), nullptr) &&
+                    GetLastError() != ERROR_ALREADY_EXISTS) {
+                    std::cerr << "[Database] Cannot create data directory: " << dataDir << "\n";
+                    return false;
+                }
+
+                resolvedPath = dataDir + "\\mark.db";
+
+                // Migrate the old executable-folder database once, without overwriting
+                // an existing database in the permanent application-data directory.
+                std::string legacyPath = getExecutableDir() + "\\mark.db";
+                DWORD newFile = GetFileAttributesA(resolvedPath.c_str());
+                DWORD oldFile = GetFileAttributesA(legacyPath.c_str());
+                if (newFile == INVALID_FILE_ATTRIBUTES &&
+                    oldFile != INVALID_FILE_ATTRIBUTES &&
+                    _stricmp(legacyPath.c_str(), resolvedPath.c_str()) != 0) {
+                    if (!CopyFileA(legacyPath.c_str(), resolvedPath.c_str(), TRUE)) {
+                        std::cerr << "[Database] Could not migrate existing database from "
+                                  << legacyPath << " to " << resolvedPath
+                                  << ". Windows error: " << GetLastError() << "\n";
+                        return false;
+                    }
+                    std::cout << "[Database] Migrated existing database from "
+                              << legacyPath << "\n";
+                }
+            } else {
+                resolvedPath = getExecutableDir() + "\\mark.db";
+            }
+#else
+            resolvedPath = getExecutableDir() + "/mark.db";
+#endif
+        }
+
+        std::cout << "[Database] Connecting to persistent database at: " << resolvedPath << "\n";
+        int rc = sqlite3_open(resolvedPath.c_str(), &db);
         if (rc != SQLITE_OK) {
-            std::cerr << "[Database] Cannot open database " << dbPath << ": " << sqlite3_errmsg(db) << "\n";
+            std::cerr << "[Database] Cannot open database " << resolvedPath << ": " << sqlite3_errmsg(db) << "\n";
             is_open = false;
             return false;
         }
         is_open = true;
+        sqlite3_busy_timeout(db, 5000);
+
+        std::string actualPhysicalPath = getDatabasePath();
+        if (actualPhysicalPath.empty()) {
+            std::cerr << "[Database] SQLite did not report a physical database file path.\n";
+            close();
+            return false;
+        }
+        std::cout << "[Database] Verified PRAGMA database_list physical path: " << actualPhysicalPath << "\n";
 
         // Enable Foreign Keys
         char* errMsg = nullptr;
@@ -118,7 +208,7 @@ public:
             return false;
         }
 
-        std::cout << "[Database] SQLite initialized successfully with persistent database: " << dbPath << "\n";
+        std::cout << "[Database] SQLite initialized successfully with persistent database: " << resolvedPath << "\n";
         return true;
     }
 

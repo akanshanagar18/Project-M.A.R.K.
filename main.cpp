@@ -340,6 +340,21 @@ void handleClient(SOCKET clientSocket) {
 
     // API ENDPOINTS
 
+    // 0. GET /api/database/info (Inspect physical SQLite DB path and status)
+    if (method == "GET" && path == "/api/database/info") {
+        ostringstream json;
+        json << "{"
+             << "\"success\":true,"
+             << "\"databasePath\":\"" << escapeJson(db.getDatabasePath()) << "\","
+             << "\"isOpen\":" << (db.isOpen() ? "true" : "false") << ","
+             << "\"totalUsers\":" << userManager.getUserCount() << ","
+             << "\"activeRequests\":" << userManager.getActiveRequestCount() << ","
+             << "\"completedRides\":" << rideManager.get_history_size()
+             << "}";
+        sendJsonResponse("200 OK", json.str());
+        return;
+    }
+
     // 1. GET /api/stats
     if (method == "GET" && path == "/api/stats") {
         int totalUsers = userManager.getUserCount();
@@ -401,24 +416,48 @@ void handleClient(SOCKET clientSocket) {
         u.phone = phone;
         u.gender = gender.empty() ? "Other" : gender;
 
-        // 1. Insert into Permanent SQLite Database
-        bool dbOk = db.registerUser(u, password.empty() ? to_string(newId) : password);
+        // SQLite is the source of truth. Do not update the Linked List
+        // or report success unless the permanent database insert succeeds.
+        if (!db.isOpen()) {
+            sendJsonResponse("503 Service Unavailable",
+                "{\"success\":false,\"message\":\"Database is unavailable. No user was saved.\"}");
+            return;
+        }
 
-        // 2. Insert into existing C++ Linked List
-        bool listOk = userManager.registerUserDirect(u);
+        if (!db.registerUser(u, password.empty() ? to_string(newId) : password)) {
+            cerr << "[Registration] SQLite INSERT failed for user #" << newId << ".\n";
+            sendJsonResponse("500 Internal Server Error",
+                "{\"success\":false,\"message\":\"Could not save the user to the permanent database. Please try again.\"}");
+            return;
+        }
 
-        // 3. Create authenticated session token
+        if (!userManager.registerUserDirect(u)) {
+            db.deleteUser(newId);
+            cerr << "[Registration] Linked List insert failed; rolled back user #" << newId << " from SQLite.\n";
+            sendJsonResponse("500 Internal Server Error",
+                "{\"success\":false,\"message\":\"Could not add the user to the application. No account was created.\"}");
+            return;
+        }
+
         string token = SHA256::generateToken();
-        db.createSession(token, newId);
+        if (!db.createSession(token, newId)) {
+            userManager.deleteUser(newId);
+            db.deleteUser(newId);
+            cerr << "[Registration] Session creation failed; rolled back user #" << newId << ".\n";
+            sendJsonResponse("500 Internal Server Error",
+                "{\"success\":false,\"message\":\"Could not create the login session. No account was created.\"}");
+            return;
+        }
 
-        cout << "[Permanent Storage] Registered user #" << newId << " (" << name << ") in SQLite & Linked List.\n";
+        cout << "[Permanent Storage] Registered user #" << newId << " (" << name
+             << ") in SQLite at " << db.getDatabasePath() << ".\n";
 
         ostringstream json;
-        json << "{\"success\":" << (dbOk && listOk ? "true" : "false") << ","
+        json << "{\"success\":true,"
              << "\"id\":" << newId << ","
              << "\"token\":\"" << token << "\","
              << "\"user\":" << userToJson(u) << ","
-             << "\"message\":\"User registered successfully! Your unique 4-digit User ID is " << newId << ". Saved in SQLite mark.db and loaded into Linked List.\"}";
+             << "\"message\":\"User registered and saved permanently.\"}";
 
         sendJsonResponse("200 OK", json.str());
         return;
@@ -997,8 +1036,10 @@ int main(int argc, char* argv[]) {
     // SQLite Permanent Database Initialization
     // Reconstruct C++ Linked List, FIFO Queue, and Vector from mark.db
     // -------------------------------------------------------------
-    if (!db.init("mark.db")) {
-        cerr << "[Database Error] Could not initialize SQLite permanent storage mark.db\n";
+    if (!db.init()) {
+        cerr << "[Database Error] SQLite could not open its permanent database.\n";
+        cerr << "[Database Error] Server startup cancelled to prevent temporary-only registrations.\n";
+        return 1;
     } else {
         // Load persistent registered users into C++ Linked List
         vector<User> savedUsers = db.loadAllUsers();
