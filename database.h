@@ -78,36 +78,20 @@ public:
 
         if (resolvedPath.empty() || resolvedPath == "mark.db") {
 #ifdef _WIN32
+            // Always use the physical directory containing mark_system.exe
+            // so mark.db is in a fixed, permanent location right next to the application.
+            resolvedPath = getExecutableDir() + "\\mark.db";
+
+            // If an older database exists in %LOCALAPPDATA%\MARK\mark.db and none exists here, migrate it
             const char* localAppData = std::getenv("LOCALAPPDATA");
             if (localAppData && *localAppData) {
-                std::string dataDir = std::string(localAppData) + "\\MARK";
-                if (!CreateDirectoryA(dataDir.c_str(), nullptr) &&
-                    GetLastError() != ERROR_ALREADY_EXISTS) {
-                    std::cerr << "[Database] Cannot create data directory: " << dataDir << "\n";
-                    return false;
-                }
-
-                resolvedPath = dataDir + "\\mark.db";
-
-                // Migrate the old executable-folder database once, without overwriting
-                // an existing database in the permanent application-data directory.
-                std::string legacyPath = getExecutableDir() + "\\mark.db";
+                std::string appDataDb = std::string(localAppData) + "\\MARK\\mark.db";
                 DWORD newFile = GetFileAttributesA(resolvedPath.c_str());
-                DWORD oldFile = GetFileAttributesA(legacyPath.c_str());
-                if (newFile == INVALID_FILE_ATTRIBUTES &&
-                    oldFile != INVALID_FILE_ATTRIBUTES &&
-                    _stricmp(legacyPath.c_str(), resolvedPath.c_str()) != 0) {
-                    if (!CopyFileA(legacyPath.c_str(), resolvedPath.c_str(), TRUE)) {
-                        std::cerr << "[Database] Could not migrate existing database from "
-                                  << legacyPath << " to " << resolvedPath
-                                  << ". Windows error: " << GetLastError() << "\n";
-                        return false;
-                    }
-                    std::cout << "[Database] Migrated existing database from "
-                              << legacyPath << "\n";
+                DWORD appDataFile = GetFileAttributesA(appDataDb.c_str());
+                if (newFile == INVALID_FILE_ATTRIBUTES && appDataFile != INVALID_FILE_ATTRIBUTES) {
+                    CopyFileA(appDataDb.c_str(), resolvedPath.c_str(), TRUE);
+                    std::cout << "[Database] Restored existing database from " << appDataDb << " to " << resolvedPath << "\n";
                 }
-            } else {
-                resolvedPath = getExecutableDir() + "\\mark.db";
             }
 #else
             resolvedPath = getExecutableDir() + "/mark.db";
@@ -131,6 +115,9 @@ public:
             return false;
         }
         std::cout << "[Database] Verified PRAGMA database_list physical path: " << actualPhysicalPath << "\n";
+
+        // Enable immediate disk synchronization so data is flushed immediately to physical disk
+        sqlite3_exec(db, "PRAGMA synchronous = FULL;", nullptr, nullptr, nullptr);
 
         // Enable Foreign Keys
         char* errMsg = nullptr;

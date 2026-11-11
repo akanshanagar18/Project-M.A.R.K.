@@ -283,8 +283,15 @@ void handleClient(SOCKET clientSocket) {
     }
 
     // Static Files
+    auto openStaticFile = [](const string& fname) -> ifstream {
+        string exePath = getExecutableDir() + "\\" + fname;
+        ifstream f(exePath, ios::binary);
+        if (!f) f.open(fname, ios::binary);
+        return f;
+    };
+
     if (method == "GET" && (path == "/" || path == "/index.html")) {
-        ifstream f("index.html", ios::binary);
+        ifstream f = openStaticFile("index.html");
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
             sendFileResponse("text/html; charset=utf-8", ssf.str());
@@ -295,7 +302,7 @@ void handleClient(SOCKET clientSocket) {
     }
 
     if (method == "GET" && path == "/roads_data.js") {
-        ifstream f("roads_data.js", ios::binary);
+        ifstream f = openStaticFile("roads_data.js");
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
             sendFileResponse("application/javascript; charset=utf-8", ssf.str());
@@ -306,7 +313,7 @@ void handleClient(SOCKET clientSocket) {
     }
 
     if (method == "GET" && path == "/locations_data.js") {
-        ifstream f("locations_data.js", ios::binary);
+        ifstream f = openStaticFile("locations_data.js");
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
             sendFileResponse("application/javascript; charset=utf-8", ssf.str());
@@ -317,7 +324,7 @@ void handleClient(SOCKET clientSocket) {
     }
 
     if (method == "GET" && (path == "/MARK_LOGO.PNG" || path == "/MARK_LOGO.png")) {
-        ifstream f("MARK_LOGO.PNG", ios::binary);
+        ifstream f = openStaticFile("MARK_LOGO.PNG");
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
             sendFileResponse("image/png", ssf.str());
@@ -328,7 +335,7 @@ void handleClient(SOCKET clientSocket) {
     }
 
     if (method == "GET" && path == "/locations.csv") {
-        ifstream f("locations.csv", ios::binary);
+        ifstream f = openStaticFile("locations.csv");
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
             sendFileResponse("text/csv; charset=utf-8", ssf.str());
