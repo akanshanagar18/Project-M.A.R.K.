@@ -123,34 +123,10 @@
             font-weight: 600;
         }
 
-        .sidebar-section-title {
-            font-size: 0.72em;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #8892b0;
-            padding: 12px 16px 6px 16px;
-        }
-
-        .nav-bullet {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            border: 2px solid #64748b;
-            display: inline-block;
-            transition: all 0.2s ease;
-            box-sizing: border-box;
-            margin-right: 2px;
-        }
-
-        .nav-link.active .nav-bullet {
-            border-color: var(--accent-pink);
-            background-color: var(--accent-pink);
-            box-shadow: 0 0 8px rgba(244, 63, 94, 0.7);
-        }
-
         .nav-icon {
-            display: none;
+            font-size: 1.15em;
+            width: 22px;
+            text-align: center;
         }
 
         .sidebar-footer {
@@ -292,36 +268,46 @@
         .stat-card {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 18px 22px;
+            border-radius: 12px;
+            padding: 20px;
             display: flex;
-            flex-direction: column;
-            justify-content: center;
-            transition: border-color 0.2s;
+            align-items: center;
+            gap: 18px;
+            transition: transform 0.2s, border-color 0.2s;
         }
 
         .stat-card:hover {
+            transform: translateY(-2px);
             border-color: rgba(244, 63, 94, 0.4);
         }
 
         .stat-icon-wrapper {
-            display: none;
+            width: 52px;
+            height: 52px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.45em;
         }
 
+        .stat-icon-users { background: rgba(14, 165, 233, 0.15); color: #38bdf8; }
+        .stat-icon-requests { background: rgba(244, 63, 94, 0.15); color: var(--accent-pink); }
+        .stat-icon-matches { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
+        .stat-icon-rides { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+
         .stat-info h4 {
-            font-size: 0.78em;
-            color: #8892b0;
-            text-transform: capitalize;
-            letter-spacing: 0.3px;
-            margin-bottom: 8px;
-            font-weight: 500;
+            font-size: 0.8em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
         }
 
         .stat-info .stat-value {
-            font-size: 2.1em;
+            font-size: 1.85em;
             font-weight: 700;
-            color: #ffffff;
-            line-height: 1.1;
+            color: var(--text-main);
         }
 
         /* ---------------- Quick Access Modules ---------------- */
@@ -367,42 +353,28 @@
 
         .module-card p {
             font-size: 0.85em;
-            color: #94a3b8;
+            color: var(--text-muted);
             line-height: 1.5;
-            margin-bottom: 18px;
-            flex-grow: 1;
-        }
-
-        .quick-access-title {
-            color: #ff4d6d;
-            font-size: 1.28em;
-            font-weight: 600;
             margin-bottom: 16px;
-            letter-spacing: 0.3px;
         }
 
         .btn-module {
-            width: 100%;
-            background-color: #ff4d6d;
-            color: #ffffff;
-            border: none;
-            padding: 10px 18px;
+            align-self: flex-start;
+            background: transparent;
+            color: var(--accent-pink);
+            border: 1px solid rgba(244, 63, 94, 0.4);
+            padding: 8px 16px;
             border-radius: 6px;
-            font-size: 0.88em;
+            font-size: 0.82em;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s ease, transform 0.1s ease;
-            text-align: center;
-            display: block;
+            transition: all 0.2s ease;
         }
 
         .btn-module:hover {
-            background-color: #f43f5e;
-            transform: translateY(-1px);
-        }
-
-        .btn-module:active {
-            transform: translateY(0);
+            background: var(--accent-pink);
+            color: #fff;
+            border-color: var(--accent-pink);
         }
 
         /* ---------------- Forms & Inputs ---------------- */
@@ -814,53 +786,52 @@
             </div>
         </div>
 
-        <div class="sidebar-section-title">Navigation</div>
         <ul class="nav-menu">
             <li class="nav-item">
                 <a class="nav-link active" onclick="switchTab('dashboard')">
-                    <span class="nav-bullet"></span>
-                    <span>Home</span>
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('users')">
-                    <span class="nav-bullet"></span>
+                    <span class="nav-icon">👥</span>
                     <span>User Management</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('request')">
-                    <span class="nav-bullet"></span>
+                    <span class="nav-icon">📝</span>
                     <span>Request a Ride</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('matches')">
-                    <span class="nav-bullet"></span>
+                    <span class="nav-icon">🔍</span>
                     <span>Find Ride Matches</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('rides')">
-                    <span class="nav-bullet"></span>
+                    <span class="nav-icon">🚖</span>
                     <span>Ride Management</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('routes')">
-                    <span class="nav-bullet"></span>
+                    <span class="nav-icon">🗺️</span>
                     <span>Route Planner</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('history')">
-                    <span class="nav-bullet"></span>
+                    <span class="nav-icon">📜</span>
                     <span>Ride History</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('ds-overview')">
-                    <span class="nav-bullet"></span>
+                    <span class="nav-icon">🧠</span>
                     <span>Data Structures</span>
                 </a>
             </li>
@@ -911,27 +882,31 @@
             <!-- TAB 1: DASHBOARD                                               -->
             <!-- ============================================================== -->
             <section id="tab-dashboard" class="tab-section active">
-                <!-- Statistics Overview Cards (CRIMAI Style) -->
+                <!-- Statistics Overview Cards -->
                 <div class="stats-grid">
                     <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-icon-users">👥</div>
                         <div class="stat-info">
                             <h4>Total Registered Users</h4>
                             <div class="stat-value" id="statUsers">0</div>
                         </div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-icon-requests">📋</div>
                         <div class="stat-info">
                             <h4>Active Ride Requests</h4>
                             <div class="stat-value" id="statRequests">0</div>
                         </div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-icon-matches">🤝</div>
                         <div class="stat-info">
                             <h4>Successful Matches</h4>
                             <div class="stat-value" id="statMatches">0</div>
                         </div>
                     </div>
                     <div class="stat-card">
+                        <div class="stat-icon-wrapper stat-icon-rides">🏁</div>
                         <div class="stat-info">
                             <h4>Completed Rides</h4>
                             <div class="stat-value" id="statCompleted">0</div>
@@ -939,69 +914,78 @@
                     </div>
                 </div>
 
-                <!-- Quick Access Modules (CRIMAI Style) -->
-                <div style="margin-bottom: 28px;">
-                    <h3 class="quick-access-title">Quick Access Modules</h3>
+                <!-- Quick Access Modules -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3>⚡ Quick Access Modules</h3>
+                        <span style="font-size: 0.8em; color: var(--text-muted);">Core System Workflows</span>
+                    </div>
 
                     <div class="modules-grid">
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
-                                    <h4>User Management</h4>
+                                    <span class="module-icon">👤</span>
+                                    <h4>Register a User</h4>
                                 </div>
-                                <p>Onboard new commuters dynamically using the C++ Linked List data structure with permanent SQLite storage.</p>
+                                <p>Onboard new commuters dynamically using the C++ Linked List data structure with zero fragmentation.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('users')">Open Commuter Directory</button>
+                            <button class="btn-module" onclick="switchTab('users')">Register User &rarr;</button>
                         </div>
 
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
+                                    <span class="module-icon">📝</span>
                                     <h4>Request a Ride</h4>
                                 </div>
-                                <p>Submit commute preferences (route, transit mode, time, budget) and enqueue into the FIFO queue.</p>
+                                <p>Submit detailed commute preferences (route, transit mode, time, budget) and enqueue into the FIFO queue.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('request')">Open Ride Request</button>
+                            <button class="btn-module" onclick="switchTab('request')">Request Ride &rarr;</button>
                         </div>
 
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
+                                    <span class="module-icon">🎯</span>
                                     <h4>Find Ride Matches</h4>
                                 </div>
                                 <p>Evaluate co-commuter compatibility with our C++ Priority Queue matching engine based on route and time.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('matches')">Open Matching Engine</button>
+                            <button class="btn-module" onclick="switchTab('matches')">Find Matches &rarr;</button>
                         </div>
 
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
-                                    <h4>Ride Management &amp; Queue</h4>
+                                    <span class="module-icon">🚖</span>
+                                    <h4>Manage Rides &amp; Stack</h4>
                                 </div>
                                 <p>Dispatch rides from the FIFO queue, log completed trips to Vector, and undo actions using the LIFO Stack.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('rides')">Open Ride Dispatcher</button>
+                            <button class="btn-module" onclick="switchTab('rides')">Manage Queue &rarr;</button>
                         </div>
 
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
-                                    <h4>Safest Route Planner</h4>
+                                    <span class="module-icon">🗺️</span>
+                                    <h4>Explore Routes</h4>
                                 </div>
                                 <p>Compute true road-following shortest routes using Dijkstra &amp; BFS on real OpenStreetMap road graphs.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('routes')">Open Route Planner</button>
+                            <button class="btn-module" onclick="switchTab('routes')">Open Map &rarr;</button>
                         </div>
 
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
-                                    <h4>Ride History &amp; Analytics</h4>
+                                    <span class="module-icon">📜</span>
+                                    <h4>View Ride History</h4>
                                 </div>
-                                <p>Review completed commutes and revenue analytics recorded across the system in SQLite &amp; Vector.</p>
+                                <p>Inspect historical trip records and total system fare revenue stored in the C++ Vector data structure.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('history')">Open Ride History</button>
+                            <button class="btn-module" onclick="switchTab('history')">View History &rarr;</button>
                         </div>
                     </div>
                 </div>
@@ -1009,7 +993,7 @@
                 <!-- Live System Data Structure Monitor -->
                 <div class="card">
                     <div class="card-header">
-                        <h3>Live Data Structure State Monitor</h3>
+                        <h3>🧠 Live Data Structure State Monitor</h3>
                         <span class="badge badge-success">C++ Native Memory</span>
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; font-size: 0.88em;">
@@ -1040,7 +1024,7 @@
                 <!-- Registration Form Card -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>Register New User</span> <span class="badge-ds">Linked List Insert</span></h3>
+                        <h3><span>👤 Register New User</span> <span class="badge-ds">Linked List Insert</span></h3>
                         <span style="font-size: 0.8em; color: var(--text-muted);">Unique 4-Digit ID Auto-Generated</span>
                     </div>
 
@@ -1073,7 +1057,7 @@
                     <!-- Registration Success Card with Auto-Generated 4-Digit ID -->
                     <div id="regSuccessCard" style="display: none; margin-top: 18px; padding: 18px; background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; border-radius: 8px;">
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                            
+                            <span style="font-size: 1.8em;">🎉</span>
                             <div>
                                 <h4 style="margin: 0; color: #10b981; font-size: 1.05em;">User Registered Successfully!</h4>
                                 <span style="font-size: 0.82em; color: var(--text-muted);">Stored dynamically in C++ Linked List</span>
@@ -1083,16 +1067,16 @@
                             Your Automatically Assigned 4-Digit User ID is: <strong style="color: var(--accent-pink); font-size: 1.3em; letter-spacing: 1px;" id="regSuccessId">----</strong>
                         </div>
                         <p style="margin: 0 0 12px 0; font-size: 0.88em; color: #f59e0b; font-weight: 500;">
-                            Important: Please remember your 4-digit User ID! You will need it to access your account, create ride requests, and find matches.
+                            ⚠️ Please remember your 4-digit User ID! You will need it to access your account, create ride requests, and find matches.
                         </p>
-                        <button class="btn btn-sm btn-blue" id="regLoginBtn" onclick="loginNewlyRegisteredUser()">Access Account with this User ID</button>
+                        <button class="btn btn-sm btn-blue" id="regLoginBtn" onclick="loginNewlyRegisteredUser()">🔑 Access Account with this User ID</button>
                     </div>
                 </div>
 
                 <!-- Search & Filter Card -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>Search User</span> <span class="badge-ds">O(N) Traversal</span></h3>
+                        <h3><span>🔍 Search User</span> <span class="badge-ds">O(N) Traversal</span></h3>
                     </div>
                     <div style="display: flex; gap: 12px; max-width: 500px;">
                         <input type="number" id="searchUserId" placeholder="Enter User ID to search...">
@@ -1105,7 +1089,7 @@
                 <!-- All Registered Users Table -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>Registered Commuters Directory</span></h3>
+                        <h3><span>📋 Registered Commuters Directory</span></h3>
                         <button class="btn btn-outline btn-sm" onclick="loadUsers()">↻ Refresh</button>
                     </div>
                     <div class="table-responsive">
@@ -1135,7 +1119,7 @@
             <section id="tab-request" class="tab-section">
                 <!-- Login Prompt if Not Logged In -->
                 <div class="card" id="reqLoginPromptCard" style="display: block; text-align: center; padding: 40px 20px;">
-                    
+                    <div style="font-size: 2.8em; margin-bottom: 10px;">🔒</div>
                     <h3 style="color: var(--text-main); margin-bottom: 8px;">Commuter Login Required</h3>
                     <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 20px; font-size: 0.92em;">
                         To submit a ride request, please log in with your registered 4-digit User ID. Only the logged-in commuter can create a ride request for their account.
@@ -1149,7 +1133,7 @@
                 <!-- Ride Request Card (Displayed when Logged In) -->
                 <div class="card" id="reqFormCard" style="display: none;">
                     <div class="card-header">
-                        <h3><span>Submit Ride Request</span> <span class="badge-ds">Queue Push (FIFO)</span></h3>
+                        <h3><span>📝 Submit Ride Request</span> <span class="badge-ds">Queue Push (FIFO)</span></h3>
                         <span style="font-size: 0.8em; color: var(--text-muted);">Enqueued into C++ Memory</span>
                     </div>
 
@@ -1169,7 +1153,7 @@
                     <!-- Notice if User Already Has an Active Request -->
                     <div id="alreadyHasRequestNotice" style="display: none; padding: 18px; background: rgba(244, 63, 94, 0.1); border: 1px solid var(--accent-pink); border-radius: 8px; margin-bottom: 18px;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                            
+                            <span style="font-size: 1.5em;">⚠️</span>
                             <h4 style="margin: 0; color: var(--accent-pink);">Active Ride Request Already Exists</h4>
                         </div>
                         <p style="margin: 0 0 10px 0; color: var(--text-main); font-size: 0.92em;" id="existingReqDetails">
@@ -1178,7 +1162,7 @@
                         <p style="margin: 0; font-size: 0.85em; color: var(--text-muted);">
                             M.A.R.K. allows one active ride request per commuter. You can search for compatible co-commuters in the matching engine.
                         </p>
-                        <button class="btn btn-sm btn-blue" style="margin-top: 14px;" onclick="switchTab('matches')">Find Matches for this Ride &rarr;</button>
+                        <button class="btn btn-sm btn-blue" style="margin-top: 14px;" onclick="switchTab('matches')">🔍 Find Matches for this Ride &rarr;</button>
                     </div>
 
                     <!-- Actual Ride Request Form -->
@@ -1265,7 +1249,7 @@
             <section id="tab-matches" class="tab-section">
                 <!-- Login Prompt if Not Logged In -->
                 <div class="card" id="matchLoginPromptCard" style="display: block; text-align: center; padding: 40px 20px;">
-                    
+                    <div style="font-size: 2.8em; margin-bottom: 10px;">🔒</div>
                     <h3 style="color: var(--text-main); margin-bottom: 8px;">Commuter Login Required</h3>
                     <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 20px; font-size: 0.92em;">
                         Please log in with your registered 4-digit User ID to find compatible co-commuters for your commute.
@@ -1279,7 +1263,7 @@
                 <!-- Match Engine Card (Displayed when Logged In) -->
                 <div class="card" id="matchEngineCard" style="display: none;">
                     <div class="card-header">
-                        <h3><span>Ride Matching Engine</span> <span class="badge-ds">Priority Queue (Max-Heap)</span></h3>
+                        <h3><span>🎯 Ride Matching Engine</span> <span class="badge-ds">Priority Queue (Max-Heap)</span></h3>
                         <span style="font-size: 0.8em; color: var(--text-muted);">Evaluates Route, Time, Gender &amp; Budget</span>
                     </div>
 
@@ -1300,7 +1284,7 @@
                     <div id="matchActiveRouteDetails" style="display: none; background: #151926; padding: 14px 16px; border-radius: 8px; border: 1px solid rgba(244, 63, 94, 0.3); margin-bottom: 18px;">
                         <div style="font-size: 0.78em; color: var(--accent-pink); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">YOUR ACTIVE COMMUTE CORRIDOR</div>
                         <div style="font-size: 1.05em; color: var(--text-main); font-weight: 600;" id="matchActiveRouteText">
-                            Sector 62, Noida -> Botanical Garden, Noida
+                            Sector 62, Noida ➔ Botanical Garden, Noida
                         </div>
                         <div style="font-size: 0.85em; color: var(--text-muted); margin-top: 4px;" id="matchActiveMetaText">
                             Mode: Metro | Departure: 09:30 | Budget: Rs. 150
@@ -1310,7 +1294,7 @@
                     <!-- Notice if User Has No Request -->
                     <div id="matchNoRequestNotice" style="display: none; padding: 18px; background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 8px; margin-bottom: 18px;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-                            
+                            <span style="font-size: 1.4em;">⚠️</span>
                             <h4 style="margin: 0; color: #f59e0b;">No Active Ride Request</h4>
                         </div>
                         <p style="margin: 0 0 12px 0; color: var(--text-main); font-size: 0.9em;">
@@ -1320,7 +1304,7 @@
                     </div>
 
                     <button class="btn btn-blue" id="btnRunMatchEngine" style="display: none; width: 100%;" onclick="handleFindMatches()">
-                        Evaluate Co-Commuter Compatibility (C++ Priority Queue)
+                        🎯 Evaluate Co-Commuter Compatibility (C++ Priority Queue)
                     </button>
                 </div>
 
@@ -1349,7 +1333,7 @@
                 <!-- Active Pending Queue -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>Active Pending Ride Queue</span> <span class="badge-ds">FIFO Queue</span></h3>
+                        <h3><span>📥 Active Pending Ride Queue</span> <span class="badge-ds">FIFO Queue</span></h3>
                         <span id="queueBadge" class="badge badge-warning">0 Pending</span>
                     </div>
                     <div class="table-responsive">
@@ -1380,14 +1364,14 @@
             <section id="tab-routes" class="tab-section">
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>Interactive Route Navigation Visualizer</span> <span class="badge-ds">Graph / Dijkstra / BFS</span></h3>
+                        <h3><span>🗺️ Interactive Route Navigation Visualizer</span> <span class="badge-ds">Graph / Dijkstra / BFS</span></h3>
                     </div>
 
                     <div class="preset-pills">
                         <span style="font-size: 0.82em; color: var(--text-muted); align-self: center;">Presets:</span>
-                        <button class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Botanical Garden, Noida')">Sec 62 -&gt; Botanical Garden</button>
-                        <button class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Connaught Place, Delhi')">Sec 62 -&gt; Connaught Place</button>
-                        <button class="pill-btn" onclick="setPreset('India Gate, Delhi', 'Connaught Place, Delhi')">India Gate -&gt; Connaught Place</button>
+                        <button class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Botanical Garden, Noida')">Sec 62 ➔ Botanical Garden</button>
+                        <button class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Connaught Place, Delhi')">Sec 62 ➔ Connaught Place</button>
+                        <button class="pill-btn" onclick="setPreset('India Gate, Delhi', 'Connaught Place, Delhi')">India Gate ➔ Connaught Place</button>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
@@ -1414,7 +1398,7 @@
                     </div>
 
                     <div id="routeLoadingMsg" style="display:none; color:var(--accent-pink); margin-top:10px; font-size:0.88em;">
-                        Running Dijkstra &amp; BFS algorithms and computing road geometry...
+                        ⏳ Running Dijkstra &amp; BFS algorithms + fetching road geometry from OpenStreetMap...
                     </div>
 
                     <div id="routeSummaryBox" style="display:none; margin-top:14px; padding:14px; background:#12151f; border-radius:8px; border:1px solid var(--accent-pink);"></div>
@@ -1441,7 +1425,7 @@
             <section id="tab-history" class="tab-section">
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>Completed Ride History</span> <span class="badge-ds">Vector Storage</span></h3>
+                        <h3><span>📜 Completed Ride History</span> <span class="badge-ds">Vector Storage</span></h3>
                         <span id="historyRevenueBadge" class="badge badge-success">Revenue: $0.00</span>
                     </div>
                     <div class="table-responsive">
@@ -1472,14 +1456,14 @@
             <section id="tab-ds-overview" class="tab-section">
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>Data Structure Architecture &amp; Rationale</span></h3>
+                        <h3><span>🧠 Data Structure Architecture &amp; Rationale</span></h3>
                         <span class="badge badge-info">College Evaluation Reference</span>
                     </div>
 
                     <div class="modules-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
                         <div class="module-card">
                             <div class="module-header">
-                                
+                                <span class="module-icon">🔗</span>
                                 <h4>Linked List</h4>
                             </div>
                             <p><strong>Used in:</strong> User Management<br>
@@ -1488,7 +1472,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                
+                                <span class="module-icon">📥</span>
                                 <h4>Queue (FIFO)</h4>
                             </div>
                             <p><strong>Used in:</strong> Pending Ride Dispatch<br>
@@ -1497,7 +1481,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                
+                                <span class="module-icon">⭐</span>
                                 <h4>Priority Queue (Heap)</h4>
                             </div>
                             <p><strong>Used in:</strong> Smart Ride Matching<br>
@@ -1515,7 +1499,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                
+                                <span class="module-icon">📦</span>
                                 <h4>Vector (Dynamic Array)</h4>
                             </div>
                             <p><strong>Used in:</strong> Completed Ride History<br>
@@ -1524,7 +1508,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                
+                                <span class="module-icon">🕸️</span>
                                 <h4>Graph (Adjacency List)</h4>
                             </div>
                             <p><strong>Used in:</strong> Road Transport Network<br>
@@ -1533,7 +1517,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                
+                                <span class="module-icon">🛣️</span>
                                 <h4>Dijkstra's Algorithm</h4>
                             </div>
                             <p><strong>Used in:</strong> Shortest Road Distance<br>
@@ -1542,7 +1526,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                
+                                <span class="module-icon">🔄</span>
                                 <h4>Breadth-First Search (BFS)</h4>
                             </div>
                             <p><strong>Used in:</strong> Minimum Hops Route<br>
@@ -1571,7 +1555,7 @@
         function getBackendUrl(path) {
             const cleanPath = path.startsWith('/') ? path : '/' + path;
             if (window.location.port === '8080') return cleanPath;
-            const host = window.location.hostname || 'localhost';
+            const host = (window.location.hostname && window.location.hostname !== 'localhost') ? window.location.hostname : '127.0.0.1';
             return `http://${host}:8080${cleanPath}`;
         }
 
@@ -1776,7 +1760,7 @@
                     if (alreadyHasReqNotice) {
                         alreadyHasReqNotice.style.display = 'block';
                         document.getElementById('existingReqDetails').innerHTML =
-                            `You already have an active ride request in progress: <strong>${currentUser.source} -> ${currentUser.destination}</strong> (${currentUser.transportMode} at ${currentUser.preferredTime}, Rs. ${currentUser.budget}).`;
+                            `You already have an active ride request in progress: <strong>${currentUser.source} ➔ ${currentUser.destination}</strong> (${currentUser.transportMode} at ${currentUser.preferredTime}, Rs. ${currentUser.budget}).`;
                     }
                     if (actualRideForm) actualRideForm.style.display = 'none';
                 } else {
@@ -1808,7 +1792,7 @@
                 if (currentUser.hasRequest) {
                     if (matchRouteDetails) {
                         matchRouteDetails.style.display = 'block';
-                        document.getElementById('matchActiveRouteText').innerText = `${currentUser.source} -> ${currentUser.destination}`;
+                        document.getElementById('matchActiveRouteText').innerText = `${currentUser.source} ➔ ${currentUser.destination}`;
                         document.getElementById('matchActiveMetaText').innerText = `Mode: ${currentUser.transportMode} | Departure: ${currentUser.preferredTime} | Budget: Rs. ${currentUser.budget}`;
                     }
                     if (btnRunMatch) btnRunMatch.style.display = 'block';
@@ -1989,7 +1973,7 @@
                         <td>${u.name}</td>
                         <td>${u.phone}</td>
                         <td>${u.gender}</td>
-                        <td>${u.hasRequest ? (u.source + ' -> ' + u.destination) : '<span style="color:#666;">None</span>'}</td>
+                        <td>${u.hasRequest ? (u.source + ' ➔ ' + u.destination) : '<span style="color:#666;">None</span>'}</td>
                         <td>${statusBadge}</td>
                         <td>
                             <button class="btn btn-sm btn-danger" onclick="handleDeleteUser(${u.id})">Delete</button>
@@ -2111,7 +2095,7 @@
             resBox.innerHTML = `
                 <div style="font-size:0.9em;">
                     <strong style="color:var(--accent-pink);">Found User #${u.id}:</strong> ${u.name} | Phone: ${u.phone} | Gender: ${u.gender}<br>
-                    <strong>Request:</strong> ${u.hasRequest ? (`${u.source} -&gt; ${u.destination} (${u.transportMode}, Rs. ${u.budget})`) : 'No active request'}
+                    <strong>Request:</strong> ${u.hasRequest ? (`${u.source} ➔ ${u.destination} (${u.transportMode}, Rs. ${u.budget})`) : 'No active request'}
                 </div>
             `;
         }
@@ -2321,11 +2305,11 @@
                     </div>
 
                     <div style="font-size:0.82em; color:var(--accent-pink); font-weight:600; margin-bottom:8px;">
-                        ${m.matchType}
+                        ✓ ${m.matchType}
                     </div>
 
                     <div class="match-details-grid">
-                        <div><span>ROUTE</span>${m.candidate.source} -> ${m.candidate.destination}</div>
+                        <div><span>ROUTE</span>${m.candidate.source} ➔ ${m.candidate.destination}</div>
                         <div><span>TRANSPORT MODE</span>${m.candidate.transportMode}</div>
                         <div><span>DEPARTURE TIME</span>${m.candidate.preferredTime} (&plusmn;${m.timeDifference}m diff)</div>
                         <div><span>ESTIMATED FARE</span>Rs. ${m.estimatedFare}</div>
@@ -2866,7 +2850,7 @@
 
                     dropdown.innerHTML = currentResults.map((loc, idx) => `
                         <div class="loc-item" data-idx="${idx}">
-                            <div class="loc-item-icon">&bull;</div>
+                            <div class="loc-item-icon">📍</div>
                             <div class="loc-item-body">
                                 <div class="loc-item-name">${highlightMatch(loc.name, query)}</div>
                                 <div class="loc-item-sub">
@@ -3298,147 +3282,78 @@
             markerLayerGroup.clearLayers();
 
             try {
-                // Resolve coordinates from locations.csv database
                 let sLoc = activeLocationSelections['routeStart'];
                 if (!sLoc || sLoc.name !== startStr) sLoc = findLocationInCSV(startStr) || await resolveLocation(startStr);
-
                 let eLoc = activeLocationSelections['routeEnd'];
                 if (!eLoc || eLoc.name !== endStr) eLoc = findLocationInCSV(endStr) || await resolveLocation(endStr);
 
-                if (!sLoc || !eLoc) {
-                    throw new Error("Could not find location coordinates. Please select from the dropdown suggestions.");
+                if (!sLoc || !eLoc || !Number.isFinite(Number(sLoc.lat)) || !Number.isFinite(Number(sLoc.lon)) ||
+                    !Number.isFinite(Number(eLoc.lat)) || !Number.isFinite(Number(eLoc.lon))) {
+                    throw new Error("Could not resolve valid coordinates for both locations. Select locations from the suggestions.");
                 }
 
-                // Place start & destination markers
-                const startIcon = L.divIcon({ className: '', html: `<div style="background:#f43f5e;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);">A</div>`, iconSize: [32,32], iconAnchor: [16,32] });
-                const endIcon = L.divIcon({ className: '', html: `<div style="background:#06b6d4;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);">B</div>`, iconSize: [32,32], iconAnchor: [16,32] });
-
-                L.marker([sLoc.lat, sLoc.lon], { icon: startIcon })
-                    .bindPopup(`<b>Start:</b> ${sLoc.name}<br><small style="color:#f43f5e;">${sLoc.city}</small>`)
-                    .addTo(markerLayerGroup).openPopup();
-
-                L.marker([eLoc.lat, eLoc.lon], { icon: endIcon })
-                    .bindPopup(`<b>Destination:</b> ${eLoc.name}<br><small style="color:#06b6d4;">${eLoc.city}</small>`)
-                    .addTo(markerLayerGroup);
-
-                // -------------------------------------------------------
-                // STEP 1: Run Dijkstra & BFS on internal road graph
-                // These give us algorithm stats (hops, intersections, path)
-                // -------------------------------------------------------
-                let dRes = null, bRes = null;
-                let sNear = findNearestNode(sLoc.lat, sLoc.lon);
-                let eNear = findNearestNode(eLoc.lat, eLoc.lon);
-                // Only use internal graph if both nodes are within road data bbox
-                const inBBox = (loc) => loc.lat >= 28.52 && loc.lat <= 28.68 && loc.lon >= 77.17 && loc.lon <= 77.42;
-
-                if (sNear && sNear.node && eNear && eNear.node && inBBox(sLoc) && inBBox(eLoc)) {
-                    if (mode === 'dijkstra' || mode === 'both') dRes = runRoadDijkstra(sNear.node, eNear.node, sLoc, eLoc);
-                    if (mode === 'bfs' || mode === 'both') bRes = runRoadBFS(sNear.node, eNear.node, sLoc, eLoc);
-                }
-                // Also run client NCR graph for stats if road graph didn't connect
-                if (!dRes && (mode === 'dijkstra' || mode === 'both')) dRes = runClientDijkstra(sLoc.name, eLoc.name);
-                if (!bRes && (mode === 'bfs' || mode === 'both')) bRes = runClientBFS(sLoc.name, eLoc.name);
-
-                // -------------------------------------------------------
-                // STEP 2: Fetch actual road geometry from OSRM API
-                // This renders the proper road-following polyline on the map
-                // for ANY location across Delhi-NCR and beyond
-                // -------------------------------------------------------
-                let osrmRoute = await fetchOSRMRoute(sLoc.lon, sLoc.lat, eLoc.lon, eLoc.lat);
-
-                // Determine actual distance: prefer OSRM (accurate), fallback DS result
-                let actualDistKm = osrmRoute ? osrmRoute.distKm : (dRes ? dRes.dist : (bRes ? bRes.dist : 0));
-                let durationMin = osrmRoute ? osrmRoute.durationMin : null;
-
-                // Log to C++ backend & save permanently in SQLite mark.db
-                if (isBackendLive) {
-                    try {
-                        let dUrl = getBackendUrl(`/api/routes/dijkstra?start=${encodeURIComponent(sLoc.name)}&end=${encodeURIComponent(eLoc.name)}&startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`);
-                        safeFetchJson(dUrl);
-                        safeFetchJson(getBackendUrl('/api/routes/save'), {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                name: `${sLoc.name} -> ${eLoc.name}`,
-                                source: sLoc.name,
-                                destination: eLoc.name,
-                                distance: actualDistKm,
-                                hops: (bRes ? bRes.hops : (dRes ? dRes.hops : 0))
-                            })
-                        });
-                    } catch (e) {}
-                }
-
-                // -------------------------------------------------------
-                // STEP 3: Draw routes on map
-                // Dijkstra (Min-Heap Priority Queue) = shortest physical distance
-                // BFS (FIFO Queue) = minimum intersections / hops
-                // -------------------------------------------------------
-
-                let renderedLayers = [];
-
-                const dijkstraGeom = (dRes && dRes.geom && dRes.geom.length > 0) ? dRes.geom : (osrmRoute ? osrmRoute.geom : null);
-                const bfsGeom = (bRes && bRes.geom && bRes.geom.length > 0) ? bRes.geom : (osrmRoute ? osrmRoute.geom : null);
-
-                const dijkstraDist = dRes ? dRes.dist : actualDistKm;
-                const bfsDist = bRes ? bRes.dist : (dRes ? Math.round(dRes.dist * 1.12 * 100) / 100 : actualDistKm);
-                const dijkstraHops = dRes ? dRes.hops : (osrmRoute ? Math.round(osrmRoute.geom.length * 0.25) : 0);
-                const bfsHops = bRes ? bRes.hops : (dRes ? Math.max(1, Math.round(dRes.hops * 0.7)) : 0);
-
-                if (mode === 'both') {
-                    if (dijkstraGeom) {
-                        let polyD = L.polyline(dijkstraGeom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                        polyD.bindPopup(`<b>Dijkstra Shortest Road Distance:</b><br>${dijkstraDist.toFixed(2)} km • ${dijkstraHops} intersections`);
-                        renderedLayers.push(polyD);
-                    }
-                    if (bfsGeom) {
-                        let polyB = L.polyline(bfsGeom, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.85 }).addTo(routeLayerGroup);
-                        polyB.bindPopup(`<b>BFS Minimum Intersections (Turns):</b><br>${bfsDist.toFixed(2)} km • ${bfsHops} intersections`);
-                        renderedLayers.push(polyB);
-                    }
-                } else if (mode === 'dijkstra') {
-                    if (dijkstraGeom) {
-                        let polyD = L.polyline(dijkstraGeom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                        polyD.bindPopup(`<b>Dijkstra Shortest Route:</b><br>${dijkstraDist.toFixed(2)} km • ${dijkstraHops} intersections`);
-                        renderedLayers.push(polyD);
-                    }
-                } else if (mode === 'bfs') {
-                    if (bfsGeom) {
-                        let polyB = L.polyline(bfsGeom, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.9 }).addTo(routeLayerGroup);
-                        polyB.bindPopup(`<b>BFS Minimum Intersections Route:</b><br>${bfsDist.toFixed(2)} km • ${bfsHops} intersections`);
-                        renderedLayers.push(polyB);
-                    }
-                } else {
-                    if (!dijkstraGeom && !bfsGeom) throw new Error("No route found. Internal graph path not found.");
-                }
-
-                if (renderedLayers.length > 0) {
-                    let fg = L.featureGroup(renderedLayers);
-                    map.fitBounds(fg.getBounds(), { padding: [50, 50] });
-                } else {
-                    map.fitBounds([[sLoc.lat, sLoc.lon], [eLoc.lat, eLoc.lon]], { padding: [50, 50] });
-                }
-
-                // -------------------------------------------------------
-                // STEP 4: Render route summary with DS algorithm results
-                // -------------------------------------------------------
-                summary.style.display = 'block';
-                let html = `<strong>Route Result:</strong> ${sLoc.name} -> ${eLoc.name}<br>`;
-                const osrmNote = osrmRoute ? `<small style="color:var(--text-muted)">(NCR Road Network Topology)</small>` : `<small style="color:#fbbf24">(Internal graph geometry)</small>`;
+                const backendBase = getBackendUrl('/api/routes/');
+                const query = `startLat=${encodeURIComponent(sLoc.lat)}&startLon=${encodeURIComponent(sLoc.lon)}&endLat=${encodeURIComponent(eLoc.lat)}&endLon=${encodeURIComponent(eLoc.lon)}`;
+                let dRes = null;
+                let bRes = null;
 
                 if (mode === 'dijkstra' || mode === 'both') {
-                    const pts = dijkstraGeom ? dijkstraGeom.length : 0;
-                    html += `<strong>Dijkstra (Shortest Road Distance):</strong> <span style="color:var(--accent-pink);font-weight:700;">${dijkstraDist.toFixed(2)} km</span>`;
-                    if (durationMin && mode !== 'bfs') html += ` • ~${durationMin} min drive`;
-                    html += ` (${dijkstraHops} road intersections / hops, ${pts} coordinate points via Priority Queue Min-Heap) ${osrmNote}<br>`;
+                    dRes = await safeFetchJson(`${backendBase}dijkstra?${query}`);
+                    if (!dRes || !dRes.success || !Array.isArray(dRes.coordinates) || dRes.coordinates.length < 2) {
+                        throw new Error(dRes && dRes.error ? dRes.error : "C++ Dijkstra could not find a connected road route. Check that roads_network.csv is beside mark_system.exe.");
+                    }
                 }
                 if (mode === 'bfs' || mode === 'both') {
-                    const pts = bfsGeom ? bfsGeom.length : 0;
-                    html += `<strong>BFS (Minimum Intersections / Turns):</strong> <span style="color:var(--accent-cyan);font-weight:700;">${bfsHops} intersections / hops</span>`;
-                    html += ` (${bfsDist.toFixed(2)} km, ${pts} coordinate points via FIFO Queue) ${osrmNote}<br>`;
+                    bRes = await safeFetchJson(`${backendBase}bfs?${query}`);
+                    if (!bRes || !bRes.success || !Array.isArray(bRes.coordinates) || bRes.coordinates.length < 2) {
+                        throw new Error(bRes && bRes.error ? bRes.error : "C++ BFS could not find a connected road route. Check that roads_network.csv is beside mark_system.exe.");
+                    }
                 }
-                summary.innerHTML = html;
 
+                const startIcon = L.divIcon({ className: '', html: `<div style="background:#f43f5e;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;">A</div>`, iconSize: [32,32], iconAnchor: [16,32] });
+                const endIcon = L.divIcon({ className: '', html: `<div style="background:#06b6d4;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;">B</div>`, iconSize: [32,32], iconAnchor: [16,32] });
+                L.marker([Number(sLoc.lat), Number(sLoc.lon)], { icon: startIcon }).bindPopup(`<b>Start:</b> ${sLoc.name}`).addTo(markerLayerGroup);
+                L.marker([Number(eLoc.lat), Number(eLoc.lon)], { icon: endIcon }).bindPopup(`<b>Destination:</b> ${eLoc.name}`).addTo(markerLayerGroup);
+
+                const renderedLayers = [];
+                if (dRes) {
+                    const line = L.polyline(dRes.coordinates, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
+                    line.bindPopup(`<b>Dijkstra shortest road route</b><br>${Number(dRes.distanceKm).toFixed(2)} km`);
+                    renderedLayers.push(line);
+                }
+                if (bRes) {
+                    const line = L.polyline(bRes.coordinates, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.9 }).addTo(routeLayerGroup);
+                    line.bindPopup(`<b>BFS minimum-hop route</b><br>${Number(bRes.distanceKm).toFixed(2)} km`);
+                    renderedLayers.push(line);
+                }
+                if (!renderedLayers.length) throw new Error("No valid route was returned by the C++ backend.");
+
+                const bounds = L.featureGroup(renderedLayers).getBounds();
+                map.fitBounds(bounds, { padding: [45, 45] });
+
+                const saveResult = dRes || bRes;
+                safeFetchJson('/api/routes/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: `${sLoc.name} -> ${eLoc.name}`,
+                        source: sLoc.name,
+                        destination: eLoc.name,
+                        distance: Number(saveResult.distanceKm),
+                        hops: Number(saveResult.hops)
+                    })
+                });
+
+                let html = `<strong>Route Result:</strong> ${sLoc.name} ➜ ${eLoc.name}<br>`;
+                if (dRes) {
+                    html += `<strong>Dijkstra (Shortest Road Distance):</strong> <span style="color:var(--accent-pink);font-weight:700;">${Number(dRes.distanceKm).toFixed(2)} km</span> (${dRes.hops} road segments, ${dRes.coordinates.length} coordinate points via C++ Priority Queue)<br>`;
+                }
+                if (bRes) {
+                    html += `<strong>BFS (Minimum Intersections / Hops):</strong> <span style="color:var(--accent-cyan);font-weight:700;">${bRes.hops} hops</span> (${Number(bRes.distanceKm).toFixed(2)} km, ${bRes.coordinates.length} coordinate points via C++ FIFO Queue)<br>`;
+                }
+                html += `<small style="color:var(--text-muted);">Route calculated from the preloaded OpenStreetMap road graph by the C++ backend.</small>`;
+                summary.innerHTML = html;
+                summary.style.display = 'block';
             } catch (err) {
                 alert("Routing Error: " + err.message);
             } finally {

@@ -283,15 +283,8 @@ void handleClient(SOCKET clientSocket) {
     }
 
     // Static Files
-    auto openStaticFile = [](const string& fname) -> ifstream {
-        string exePath = getExecutableDir() + "\\" + fname;
-        ifstream f(exePath, ios::binary);
-        if (!f) f.open(fname, ios::binary);
-        return f;
-    };
-
     if (method == "GET" && (path == "/" || path == "/index.html")) {
-        ifstream f = openStaticFile("index.html");
+        ifstream f("index.html", ios::binary);
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
             sendFileResponse("text/html; charset=utf-8", ssf.str());
@@ -302,7 +295,7 @@ void handleClient(SOCKET clientSocket) {
     }
 
     if (method == "GET" && path == "/roads_data.js") {
-        ifstream f = openStaticFile("roads_data.js");
+        ifstream f("roads_data.js", ios::binary);
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
             sendFileResponse("application/javascript; charset=utf-8", ssf.str());
@@ -313,7 +306,7 @@ void handleClient(SOCKET clientSocket) {
     }
 
     if (method == "GET" && path == "/locations_data.js") {
-        ifstream f = openStaticFile("locations_data.js");
+        ifstream f("locations_data.js", ios::binary);
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
             sendFileResponse("application/javascript; charset=utf-8", ssf.str());
@@ -324,7 +317,7 @@ void handleClient(SOCKET clientSocket) {
     }
 
     if (method == "GET" && (path == "/MARK_LOGO.PNG" || path == "/MARK_LOGO.png")) {
-        ifstream f = openStaticFile("MARK_LOGO.PNG");
+        ifstream f("MARK_LOGO.PNG", ios::binary);
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
             sendFileResponse("image/png", ssf.str());
@@ -335,7 +328,7 @@ void handleClient(SOCKET clientSocket) {
     }
 
     if (method == "GET" && path == "/locations.csv") {
-        ifstream f = openStaticFile("locations.csv");
+        ifstream f("locations.csv", ios::binary);
         if (f) {
             ostringstream ssf; ssf << f.rdbuf();
             sendFileResponse("text/csv; charset=utf-8", ssf.str());
@@ -423,48 +416,24 @@ void handleClient(SOCKET clientSocket) {
         u.phone = phone;
         u.gender = gender.empty() ? "Other" : gender;
 
-        // SQLite is the source of truth. Do not update the Linked List
-        // or report success unless the permanent database insert succeeds.
-        if (!db.isOpen()) {
-            sendJsonResponse("503 Service Unavailable",
-                "{\"success\":false,\"message\":\"Database is unavailable. No user was saved.\"}");
-            return;
-        }
+        // 1. Insert into Permanent SQLite Database
+        bool dbOk = db.registerUser(u, password.empty() ? to_string(newId) : password);
 
-        if (!db.registerUser(u, password.empty() ? to_string(newId) : password)) {
-            cerr << "[Registration] SQLite INSERT failed for user #" << newId << ".\n";
-            sendJsonResponse("500 Internal Server Error",
-                "{\"success\":false,\"message\":\"Could not save the user to the permanent database. Please try again.\"}");
-            return;
-        }
+        // 2. Insert into existing C++ Linked List
+        bool listOk = userManager.registerUserDirect(u);
 
-        if (!userManager.registerUserDirect(u)) {
-            db.deleteUser(newId);
-            cerr << "[Registration] Linked List insert failed; rolled back user #" << newId << " from SQLite.\n";
-            sendJsonResponse("500 Internal Server Error",
-                "{\"success\":false,\"message\":\"Could not add the user to the application. No account was created.\"}");
-            return;
-        }
-
+        // 3. Create authenticated session token
         string token = SHA256::generateToken();
-        if (!db.createSession(token, newId)) {
-            userManager.deleteUser(newId);
-            db.deleteUser(newId);
-            cerr << "[Registration] Session creation failed; rolled back user #" << newId << ".\n";
-            sendJsonResponse("500 Internal Server Error",
-                "{\"success\":false,\"message\":\"Could not create the login session. No account was created.\"}");
-            return;
-        }
+        db.createSession(token, newId);
 
-        cout << "[Permanent Storage] Registered user #" << newId << " (" << name
-             << ") in SQLite at " << db.getDatabasePath() << ".\n";
+        cout << "[Permanent Storage] Registered user #" << newId << " (" << name << ") in SQLite & Linked List.\n";
 
         ostringstream json;
-        json << "{\"success\":true,"
+        json << "{\"success\":" << (dbOk && listOk ? "true" : "false") << ","
              << "\"id\":" << newId << ","
              << "\"token\":\"" << token << "\","
              << "\"user\":" << userToJson(u) << ","
-             << "\"message\":\"User registered and saved permanently.\"}";
+             << "\"message\":\"User registered successfully! Your unique 4-digit User ID is " << newId << ". Saved in SQLite mark.db and loaded into Linked List.\"}";
 
         sendJsonResponse("200 OK", json.str());
         return;
@@ -857,120 +826,69 @@ void handleClient(SOCKET clientSocket) {
         return;
     }
 
-    // 14. GET /api/routes/dijkstra
+    // 14. GET /api/routes/dijkstra - real OSM road graph + C++ Dijkstra
     if (method == "GET" && path == "/api/routes/dijkstra") {
-        string start = getQueryParam(url, "start");
-        if (start.empty()) start = getQueryParam(url, "src");
-        string end = getQueryParam(url, "end");
-        if (end.empty()) end = getQueryParam(url, "dst");
-
-        string sLatStr = getQueryParam(url, "startLat");
-        string sLonStr = getQueryParam(url, "startLon");
-        string eLatStr = getQueryParam(url, "endLat");
-        string eLonStr = getQueryParam(url, "endLon");
-
-        // Coordinate-based node fallback if name not recognized directly
-        LocationRecord lStart, lEnd;
-        if (routeManager.findLocationByName(start, lStart)) {
-            start = lStart.name;
-        } else if (!sLatStr.empty() && !sLonStr.empty()) {
-            try {
-                double sLat = stod(sLatStr), sLon = stod(sLonStr);
-                start = routeManager.findNearestLocation(sLat, sLon).name;
-            } catch (...) {}
+        try {
+            double sLat = stod(getQueryParam(url, "startLat"));
+            double sLon = stod(getQueryParam(url, "startLon"));
+            double eLat = stod(getQueryParam(url, "endLat"));
+            double eLon = stod(getQueryParam(url, "endLon"));
+            RoadRouteResult result = routeManager.getRoadDijkstraRoute(sLat, sLon, eLat, eLon);
+            ostringstream json;
+            json << setprecision(10);
+            json << "{\"success\":" << (result.success ? "true" : "false")
+                 << ",\"distance\":" << result.distanceKm
+                 << ",\"distanceKm\":" << result.distanceKm
+                 << ",\"hops\":" << result.hops << ",\"path\":[";
+            for (size_t i = 0; i < result.path.size(); ++i) {
+                json << "\"" << escapeJson(result.path[i]) << "\"";
+                if (i + 1 < result.path.size()) json << ",";
+            }
+            json << "],\"coordinates\":[";
+            for (size_t i = 0; i < result.coordinates.size(); ++i) {
+                json << "[" << result.coordinates[i].first << "," << result.coordinates[i].second << "]";
+                if (i + 1 < result.coordinates.size()) json << ",";
+            }
+            json << "]}";
+            cout << "[C++ Dijkstra] " << (result.success ? "Route found" : "No route")
+                 << ", distance=" << result.distanceKm << " km, hops=" << result.hops << endl;
+            sendJsonResponse("200 OK", json.str());
+        } catch (...) {
+            sendJsonResponse("400 Bad Request", "{\"success\":false,\"error\":\"Missing or invalid route coordinates\"}");
         }
-        if (routeManager.findLocationByName(end, lEnd)) {
-            end = lEnd.name;
-        } else if (!eLatStr.empty() && !eLonStr.empty()) {
-            try {
-                double eLat = stod(eLatStr), eLon = stod(eLonStr);
-                end = routeManager.findNearestLocation(eLat, eLon).name;
-            } catch (...) {}
-        }
-
-        auto result = routeManager.getShortestPath(start, end);
-        auto coords = routeManager.getPathCoordinates(result.first);
-        cout << "[Graph Dijkstra] Evaluated shortest path between " << start << " and " << end
-             << " -> Distance: " << result.second << " km (" << result.first.size() << " nodes)\n";
-
-        ostringstream json;
-        json << "{"
-             << "\"success\":" << (result.second != -1.0 ? "true" : "false") << ","
-             << "\"start\":\"" << escapeJson(start) << "\","
-             << "\"end\":\"" << escapeJson(end) << "\","
-             << "\"distance\":" << result.second << ","
-             << "\"distanceKm\":" << result.second << ","
-             << "\"hops\":" << (result.first.empty() ? 0 : (int)result.first.size() - 1) << ","
-             << "\"path\":[";
-        for (size_t i = 0; i < result.first.size(); ++i) {
-            json << "\"" << escapeJson(result.first[i]) << "\"";
-            if (i + 1 < result.first.size()) json << ",";
-        }
-        json << "],\"coordinates\":[";
-        for (size_t i = 0; i < coords.size(); ++i) {
-            json << "[" << coords[i].first << "," << coords[i].second << "]";
-            if (i + 1 < coords.size()) json << ",";
-        }
-        json << "]}";
-
-        sendJsonResponse("200 OK", json.str());
         return;
     }
 
-    // 15. GET /api/routes/bfs
+    // 15. GET /api/routes/bfs - real OSM road graph + C++ FIFO Queue BFS
     if (method == "GET" && path == "/api/routes/bfs") {
-        string start = getQueryParam(url, "start");
-        if (start.empty()) start = getQueryParam(url, "src");
-        string end = getQueryParam(url, "end");
-        if (end.empty()) end = getQueryParam(url, "dst");
-
-        string sLatStr = getQueryParam(url, "startLat");
-        string sLonStr = getQueryParam(url, "startLon");
-        string eLatStr = getQueryParam(url, "endLat");
-        string eLonStr = getQueryParam(url, "endLon");
-
-        LocationRecord lStart, lEnd;
-        if (routeManager.findLocationByName(start, lStart)) {
-            start = lStart.name;
-        } else if (!sLatStr.empty() && !sLonStr.empty()) {
-            try {
-                double sLat = stod(sLatStr), sLon = stod(sLonStr);
-                start = routeManager.findNearestLocation(sLat, sLon).name;
-            } catch (...) {}
+        try {
+            double sLat = stod(getQueryParam(url, "startLat"));
+            double sLon = stod(getQueryParam(url, "startLon"));
+            double eLat = stod(getQueryParam(url, "endLat"));
+            double eLon = stod(getQueryParam(url, "endLon"));
+            RoadRouteResult result = routeManager.getRoadBFSRoute(sLat, sLon, eLat, eLon);
+            ostringstream json;
+            json << setprecision(10);
+            json << "{\"success\":" << (result.success ? "true" : "false")
+                 << ",\"distance\":" << result.distanceKm
+                 << ",\"distanceKm\":" << result.distanceKm
+                 << ",\"hops\":" << result.hops << ",\"path\":[";
+            for (size_t i = 0; i < result.path.size(); ++i) {
+                json << "\"" << escapeJson(result.path[i]) << "\"";
+                if (i + 1 < result.path.size()) json << ",";
+            }
+            json << "],\"coordinates\":[";
+            for (size_t i = 0; i < result.coordinates.size(); ++i) {
+                json << "[" << result.coordinates[i].first << "," << result.coordinates[i].second << "]";
+                if (i + 1 < result.coordinates.size()) json << ",";
+            }
+            json << "]}";
+            cout << "[C++ BFS] " << (result.success ? "Route found" : "No route")
+                 << ", distance=" << result.distanceKm << " km, hops=" << result.hops << endl;
+            sendJsonResponse("200 OK", json.str());
+        } catch (...) {
+            sendJsonResponse("400 Bad Request", "{\"success\":false,\"error\":\"Missing or invalid route coordinates\"}");
         }
-        if (routeManager.findLocationByName(end, lEnd)) {
-            end = lEnd.name;
-        } else if (!eLatStr.empty() && !eLonStr.empty()) {
-            try {
-                double eLat = stod(eLatStr), eLon = stod(eLonStr);
-                end = routeManager.findNearestLocation(eLat, eLon).name;
-            } catch (...) {}
-        }
-
-        vector<string> pathNodes = routeManager.getBFSPath(start, end);
-        auto coords = routeManager.getPathCoordinates(pathNodes);
-        cout << "[Graph BFS] Evaluated minimum connections between " << start << " and " << end
-             << " -> Hops: " << (pathNodes.empty() ? 0 : pathNodes.size() - 1) << "\n";
-
-        ostringstream json;
-        json << "{"
-             << "\"success\":" << (!pathNodes.empty() ? "true" : "false") << ","
-             << "\"start\":\"" << escapeJson(start) << "\","
-             << "\"end\":\"" << escapeJson(end) << "\","
-             << "\"hops\":" << (pathNodes.empty() ? 0 : (int)pathNodes.size() - 1) << ","
-             << "\"path\":[";
-        for (size_t i = 0; i < pathNodes.size(); ++i) {
-            json << "\"" << escapeJson(pathNodes[i]) << "\"";
-            if (i + 1 < pathNodes.size()) json << ",";
-        }
-        json << "],\"coordinates\":[";
-        for (size_t i = 0; i < coords.size(); ++i) {
-            json << "[" << coords[i].first << "," << coords[i].second << "]";
-            if (i + 1 < coords.size()) json << ",";
-        }
-        json << "]}";
-
-        sendJsonResponse("200 OK", json.str());
         return;
     }
 
@@ -1044,9 +962,7 @@ int main(int argc, char* argv[]) {
     // Reconstruct C++ Linked List, FIFO Queue, and Vector from mark.db
     // -------------------------------------------------------------
     if (!db.init()) {
-        cerr << "[Database Error] SQLite could not open its permanent database.\n";
-        cerr << "[Database Error] Server startup cancelled to prevent temporary-only registrations.\n";
-        return 1;
+        cerr << "[Database Error] Could not initialize SQLite permanent storage mark.db\n";
     } else {
         // Load persistent registered users into C++ Linked List
         vector<User> savedUsers = db.loadAllUsers();

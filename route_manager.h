@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <unordered_map>
 
 struct LocationRecord {
     std::string name;
@@ -18,12 +19,32 @@ struct LocationRecord {
         : name(n), type(t), city(c), lat(la), lon(lo) {}
 };
 
+struct RoadRouteResult {
+    bool success = false;
+    double distanceKm = 0.0;
+    int hops = 0;
+    std::vector<std::string> path;
+    std::vector<std::pair<double, double>> coordinates;
+};
+
 class RouteManager {
+public:
+    struct RoadEdge {
+        std::string target;
+        double distanceKm;
+        std::vector<std::pair<double, double>> geometry;
+    };
+
 private:
     Graph mapGraph;
+    std::unordered_map<std::string, std::vector<RoadEdge>> roadAdjacency;
+    std::unordered_map<std::string, std::pair<double, double>> roadNodeCoordinates;
+    bool roadNetworkLoaded = false;
     std::vector<LocationRecord> locations;
 
     void buildNCRRoadConnections();
+    bool loadRoadNetworkCSV(const std::string& filename);
+    std::pair<std::string, double> findNearestRoadNode(double lat, double lon) const;
 
 public:
     RouteManager();
@@ -43,6 +64,10 @@ public:
 
     // BFS algorithm for minimum connections / fewest hops path
     std::vector<std::string> getBFSPath(const std::string& start, const std::string& end) const;
+
+    RoadRouteResult getRoadDijkstraRoute(double startLat, double startLon, double endLat, double endLon) const;
+    RoadRouteResult getRoadBFSRoute(double startLat, double startLon, double endLat, double endLon) const;
+    bool isRoadNetworkLoaded() const;
 };
 
 #endif
