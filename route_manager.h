@@ -42,7 +42,6 @@ private:
     bool roadNetworkLoaded = false;
     std::vector<LocationRecord> locations;
 
-    void buildNCRRoadConnections();
     bool loadRoadNetworkCSV(const std::string& filename);
     std::pair<std::string, double> findNearestRoadNode(double lat, double lon) const;
 
