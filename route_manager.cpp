@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
+#include <iomanip>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -35,50 +36,11 @@ static string toLowerStr(const string& s) {
 }
 
 RouteManager::RouteManager() {
-    // 1. Load comprehensive NCR location database from locations.csv
     loadLocationsFromCSV("locations.csv");
-
-    // 2. Add fallback classic routes
-    addNewRoute("Sector 62, Noida", "Sector 18, Noida", 8.2);
-    addNewRoute("Sector 18, Noida", "Botanical Garden, Noida", 2.1);
-    addNewRoute("Sector 62, Noida", "Botanical Garden, Noida", 9.8);
-    addNewRoute("Sector 62, Noida", "Connaught Place, Delhi", 17.6);
-    addNewRoute("Sector 18, Noida", "Connaught Place, Delhi", 16.0);
-    addNewRoute("Botanical Garden, Noida", "Connaught Place, Delhi", 15.5);
-    addNewRoute("Connaught Place, Delhi", "India Gate, Delhi", 3.2);
-    addNewRoute("Botanical Garden, Noida", "Rajiv Chowk", 15.0);
-    addNewRoute("Dwarka Sector 21", "Rajiv Chowk", 28.4);
-
-    // Common query variants without commas
-    addNewRoute("Sector 62 Noida", "Sector 18 Noida", 8.2);
-    addNewRoute("Sector 18 Noida", "Botanical Garden Noida", 2.1);
-    addNewRoute("Sector 62 Noida", "Botanical Garden", 9.8);
-    addNewRoute("Sector 62 Noida", "Botanical Garden Noida", 9.8);
-    addNewRoute("Sector 62", "Botanical Garden", 9.8);
-    addNewRoute("Sector 62 Noida", "Connaught Place Delhi", 17.6);
-    addNewRoute("Sector 62", "Connaught Place", 17.6);
-    addNewRoute("Botanical Garden", "Connaught Place", 15.5);
-    addNewRoute("Connaught Place", "India Gate", 3.2);
-
-    // Compact names
-    addNewRoute("Sector62", "TechPark", 3.5);
-    addNewRoute("Sector62", "BotanicalGarden", 9.8);
-    addNewRoute("TechPark", "ConnaughtPlace", 14.2);
-    addNewRoute("BotanicalGarden", "ConnaughtPlace", 15.5);
-    addNewRoute("BotanicalGarden", "RajNagar", 12.0);
-    addNewRoute("ConnaughtPlace", "RajNagar", 9.5);
-
-    // Aliases to primary CSV nodes
-    addNewRoute("Sector 62, Noida", "Noida Sector 62", 0.001);
-    addNewRoute("Sector 62 Noida", "Noida Sector 62", 0.001);
-    addNewRoute("Sector 62", "Noida Sector 62", 0.001);
-    addNewRoute("Botanical Garden, Noida", "Botanical Garden Metro Station", 0.001);
-    addNewRoute("Botanical Garden Noida", "Botanical Garden Metro Station", 0.001);
-    addNewRoute("Botanical Garden", "Botanical Garden Metro Station", 0.001);
-    addNewRoute("Connaught Place, Delhi", "Connaught Place", 0.001);
-    addNewRoute("Connaught Place Delhi", "Connaught Place", 0.001);
-    addNewRoute("India Gate, Delhi", "India Gate", 0.001);
-    addNewRoute("India Gate Delhi", "India Gate", 0.001);
+    roadNetworkLoaded = loadRoadNetworkCSV("roads_network.csv");
+    if (!roadNetworkLoaded) {
+        cerr << "[RouteManager] ERROR: roads_network.csv could not be loaded. Real-road routing is unavailable." << endl;
+    }
 }
 
 bool RouteManager::loadLocationsFromCSV(const string& filename) {
@@ -139,8 +101,6 @@ bool RouteManager::loadLocationsFromCSV(const string& filename) {
     file.close();
     cout << "[RouteManager] Loaded " << locations.size() << " verified NCR locations from " << filename << endl;
 
-    // Build connected road network in C++ Graph
-    buildNCRRoadConnections();
     return true;
 }
 
@@ -267,6 +227,215 @@ void RouteManager::buildNCRRoadConnections() {
         }
     }
 }
+
+// Parse road geometry string "lat:lon;lat:lon;..." into coordinate pairs
+static vector<pair<double, double>> parseRoadGeometry(const string& raw) {
+    vector<pair<double, double>> points;
+    stringstream ss(raw);
+    string token;
+    while (getline(ss, token, ';')) {
+        size_t sep = token.find(':');
+        if (sep == string::npos) continue;
+        try {
+            double lat = stod(token.substr(0, sep));
+            double lon = stod(token.substr(sep + 1));
+            points.push_back({lat, lon});
+        } catch (...) {}
+    }
+    return points;
+}
+
+// Load OSM road network from CSV into adjacency list
+bool RouteManager::loadRoadNetworkCSV(const string& filename) {
+    ifstream file(filename);
+    if (!file.is_open()) file.open("./" + filename);
+    if (!file.is_open()) file.open("../" + filename);
+    if (!file.is_open()) file.open("data/" + filename);
+    if (!file.is_open()) return false;
+
+    roadAdjacency.clear();
+    roadNodeCoordinates.clear();
+    string line;
+    getline(file, line); // skip header
+    size_t loadedSegments = 0;
+
+    while (getline(file, line)) {
+        if (line.empty()) continue;
+        stringstream ss(line);
+        string from, to, distanceText, onewayText, geometryText;
+        if (!getline(ss, from, ',') || !getline(ss, to, ',') ||
+            !getline(ss, distanceText, ',') || !getline(ss, onewayText, ',') ||
+            !getline(ss, geometryText)) continue;
+        try {
+            double distance = stod(distanceText);
+            bool oneway = (onewayText == "1");
+            vector<pair<double, double>> geometry = parseRoadGeometry(geometryText);
+            if (from.empty() || to.empty() || geometry.size() < 2 || distance <= 0.0) continue;
+
+            // Store node coordinates from geometry endpoints
+            roadNodeCoordinates[from] = geometry.front();
+            roadNodeCoordinates[to] = geometry.back();
+            // Add forward edge
+            roadAdjacency[from].push_back({to, distance, geometry});
+            // Add reverse edge if not one-way
+            if (!oneway) {
+                reverse(geometry.begin(), geometry.end());
+                roadAdjacency[to].push_back({from, distance, geometry});
+            }
+            ++loadedSegments;
+        } catch (...) {}
+    }
+
+    cout << "[RouteManager] Loaded " << loadedSegments << " OSM road segments, "
+         << roadNodeCoordinates.size() << " road nodes from " << filename << endl;
+    return loadedSegments > 0 && roadAdjacency.size() > 0;
+}
+
+// Find nearest road node to given lat/lon using haversine distance
+pair<string, double> RouteManager::findNearestRoadNode(double lat, double lon) const {
+    string bestNode;
+    double bestDistance = INF;
+    for (const auto& item : roadNodeCoordinates) {
+        double d = haversineKm(lat, lon, item.second.first, item.second.second);
+        if (d < bestDistance) {
+            bestDistance = d;
+            bestNode = item.first;
+        }
+    }
+    return {bestNode, bestDistance};
+}
+
+// Shared function to build route result using Dijkstra or BFS on road graph
+static RoadRouteResult buildRoadRouteResult(
+    const string& startNode, const string& endNode,
+    double startLat, double startLon, double endLat, double endLon,
+    const unordered_map<string, pair<double, double>>& nodeCoords,
+    const unordered_map<string, vector<RouteManager::RoadEdge>>& adjacency,
+    bool useBfs) {
+
+    RoadRouteResult result;
+    if (startNode.empty() || endNode.empty()) return result;
+
+    // Parent tracking for path reconstruction
+    unordered_map<string, string> parent;
+    unordered_map<string, vector<pair<double, double>>> parentGeometry;
+    unordered_map<string, double> parentDistance;
+
+    if (useBfs) {
+        // BFS using FIFO Queue - finds minimum hops path
+        queue<string> q;
+        unordered_map<string, bool> visited;
+        q.push(startNode);
+        visited[startNode] = true;
+        while (!q.empty() && !visited[endNode]) {
+            string u = q.front(); q.pop();
+            auto it = adjacency.find(u);
+            if (it == adjacency.end()) continue;
+            for (const auto& edge : it->second) {
+                if (!visited[edge.target]) {
+                    visited[edge.target] = true;
+                    parent[edge.target] = u;
+                    parentGeometry[edge.target] = edge.geometry;
+                    parentDistance[edge.target] = edge.distanceKm;
+                    q.push(edge.target);
+                }
+            }
+        }
+        if (!visited[endNode]) return result;
+    } else {
+        // Dijkstra using Priority Queue (Min-Heap) - finds shortest distance path
+        unordered_map<string, double> distances;
+        priority_queue<pair<double, string>, vector<pair<double, string>>, greater<pair<double, string>>> pq;
+        distances[startNode] = 0.0;
+        pq.push({0.0, startNode});
+        while (!pq.empty()) {
+            auto current = pq.top(); pq.pop();
+            double d = current.first;
+            const string& u = current.second;
+            if (d > distances[u]) continue;
+            if (u == endNode) break;
+            auto it = adjacency.find(u);
+            if (it == adjacency.end()) continue;
+            for (const auto& edge : it->second) {
+                double candidate = d + edge.distanceKm;
+                auto dit = distances.find(edge.target);
+                if (dit == distances.end() || candidate < dit->second) {
+                    distances[edge.target] = candidate;
+                    parent[edge.target] = u;
+                    parentGeometry[edge.target] = edge.geometry;
+                    parentDistance[edge.target] = edge.distanceKm;
+                    pq.push({candidate, edge.target});
+                }
+            }
+        }
+        if (distances.find(endNode) == distances.end()) return result;
+    }
+
+    // Reconstruct path from parent pointers
+    vector<string> reversedPath;
+    string current = endNode;
+    reversedPath.push_back(current);
+    while (current != startNode) {
+        auto it = parent.find(current);
+        if (it == parent.end()) return RoadRouteResult();
+        current = it->second;
+        reversedPath.push_back(current);
+    }
+    reverse(reversedPath.begin(), reversedPath.end());
+    result.path = reversedPath;
+    result.hops = static_cast<int>(reversedPath.size()) - 1;
+
+    auto startIt = nodeCoords.find(startNode);
+    auto endIt = nodeCoords.find(endNode);
+    if (startIt == nodeCoords.end() || endIt == nodeCoords.end()) return RoadRouteResult();
+
+    // Build coordinate list from road geometry
+    result.coordinates.push_back({startLat, startLon});
+    if (haversineKm(startLat, startLon, startIt->second.first, startIt->second.second) > 0.001)
+        result.coordinates.push_back(startIt->second);
+
+    for (size_t i = 1; i < reversedPath.size(); ++i) {
+        const string& child = reversedPath[i];
+        const auto& geom = parentGeometry[child];
+        for (const auto& point : geom) {
+            if (result.coordinates.empty() ||
+                haversineKm(result.coordinates.back().first, result.coordinates.back().second, point.first, point.second) > 0.00001)
+                result.coordinates.push_back(point);
+        }
+        result.distanceKm += parentDistance[child];
+    }
+
+    if (haversineKm(result.coordinates.back().first, result.coordinates.back().second, endLat, endLon) > 0.001)
+        result.coordinates.push_back({endLat, endLon});
+
+    // Add walking distance from user location to nearest road node
+    result.distanceKm += haversineKm(startLat, startLon, startIt->second.first, startIt->second.second);
+    result.distanceKm += haversineKm(endLat, endLon, endIt->second.first, endIt->second.second);
+    result.success = result.coordinates.size() >= 2;
+    return result;
+}
+
+// Dijkstra on OSM road network - shortest distance route
+RoadRouteResult RouteManager::getRoadDijkstraRoute(double startLat, double startLon, double endLat, double endLon) const {
+    if (!roadNetworkLoaded) return RoadRouteResult();
+    auto start = findNearestRoadNode(startLat, startLon);
+    auto end = findNearestRoadNode(endLat, endLon);
+    if (start.first.empty() || end.first.empty() || start.second > 2.0 || end.second > 2.0) return RoadRouteResult();
+    return buildRoadRouteResult(start.first, end.first, startLat, startLon, endLat, endLon,
+                                roadNodeCoordinates, roadAdjacency, false);
+}
+
+// BFS on OSM road network - minimum connections route
+RoadRouteResult RouteManager::getRoadBFSRoute(double startLat, double startLon, double endLat, double endLon) const {
+    if (!roadNetworkLoaded) return RoadRouteResult();
+    auto start = findNearestRoadNode(startLat, startLon);
+    auto end = findNearestRoadNode(endLat, endLon);
+    if (start.first.empty() || end.first.empty() || start.second > 2.0 || end.second > 2.0) return RoadRouteResult();
+    return buildRoadRouteResult(start.first, end.first, startLat, startLon, endLat, endLon,
+                                roadNodeCoordinates, roadAdjacency, true);
+}
+
+bool RouteManager::isRoadNetworkLoaded() const { return roadNetworkLoaded; }
 
 const vector<LocationRecord>& RouteManager::getAllLocations() const {
     return locations;

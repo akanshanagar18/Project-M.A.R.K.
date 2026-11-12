@@ -3191,7 +3191,7 @@
         }
 
         // ==============================================================
-        // EXECUTE ROUTING (CLIENT-SIDE DIJKSTRA & BFS + OSRM GEOMETRY)
+        // EXECUTE ROUTING (C++ BACKEND DIJKSTRA & BFS ON OSM ROAD GRAPH)
         // ==============================================================
         async function executeRouting(mode) {
             const startStr = document.getElementById('routeStart').value.trim();
@@ -3221,6 +3221,10 @@
                     throw new Error("Could not find location coordinates. Please select from the dropdown suggestions.");
                 }
 
+                if (!Number.isFinite(sLoc.lat) || !Number.isFinite(sLoc.lon) || !Number.isFinite(eLoc.lat) || !Number.isFinite(eLoc.lon)) {
+                    throw new Error("Invalid coordinates for selected locations.");
+                }
+
                 // Place start & destination markers
                 const startIcon = L.divIcon({ className: '', html: `<div style="background:#f43f5e;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);">A</div>`, iconSize: [32,32], iconAnchor: [16,32] });
                 const endIcon = L.divIcon({ className: '', html: `<div style="background:#06b6d4;color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.4);">B</div>`, iconSize: [32,32], iconAnchor: [16,32] });
@@ -3233,119 +3237,73 @@
                     .bindPopup(`<b>Destination:</b> ${eLoc.name}<br><small style="color:#06b6d4;">${eLoc.city}</small>`)
                     .addTo(markerLayerGroup);
 
-                // -------------------------------------------------------
-                // STEP 1: Run Dijkstra & BFS on internal road graph
-                // These give us algorithm stats (hops, intersections, path)
-                // -------------------------------------------------------
+                // Build query string for C++ backend
+                const params = `startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`;
+
                 let dRes = null, bRes = null;
-                let sNear = findNearestNode(sLoc.lat, sLoc.lon);
-                let eNear = findNearestNode(eLoc.lat, eLoc.lon);
-                // Only use internal graph if both nodes are within road data bbox
-                const inBBox = (loc) => loc.lat >= 28.52 && loc.lat <= 28.68 && loc.lon >= 77.17 && loc.lon <= 77.42;
-
-                if (sNear && sNear.node && eNear && eNear.node && inBBox(sLoc) && inBBox(eLoc)) {
-                    if (mode === 'dijkstra' || mode === 'both') dRes = runRoadDijkstra(sNear.node, eNear.node, sLoc, eLoc);
-                    if (mode === 'bfs' || mode === 'both') bRes = runRoadBFS(sNear.node, eNear.node, sLoc, eLoc);
-                }
-                // Also run client NCR graph for stats if road graph didn't connect
-                if (!dRes && (mode === 'dijkstra' || mode === 'both')) dRes = runClientDijkstra(sLoc.name, eLoc.name);
-                if (!bRes && (mode === 'bfs' || mode === 'both')) bRes = runClientBFS(sLoc.name, eLoc.name);
-
-                // -------------------------------------------------------
-                // STEP 2: Fetch actual road geometry from OSRM API
-                // This renders the proper road-following polyline on the map
-                // for ANY location across Delhi-NCR and beyond
-                // -------------------------------------------------------
-                let osrmRoute = await fetchOSRMRoute(sLoc.lon, sLoc.lat, eLoc.lon, eLoc.lat);
-
-                // Log to C++ backend in background
-                if (isBackendLive) {
-                    try {
-                        let dUrl = getBackendUrl(`/api/routes/dijkstra?start=${encodeURIComponent(sLoc.name)}&end=${encodeURIComponent(eLoc.name)}&startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`);
-                        safeFetchJson(dUrl);
-                    } catch (e) {}
-                }
-
-                // -------------------------------------------------------
-                // STEP 3: Draw routes on map using OSRM geometry
-                // OSRM gives real road-following curves for every destination.
-                // DS algorithm stats (distance, hops) come from our Dijkstra/BFS.
-                // -------------------------------------------------------
-
-                // Determine actual distance: prefer OSRM (accurate), fallback DS result
-                let actualDistKm = osrmRoute ? osrmRoute.distKm : (dRes ? dRes.dist : (bRes ? bRes.dist : 0));
-                let durationMin = osrmRoute ? osrmRoute.durationMin : null;
-
                 let renderedLayers = [];
 
-                if (mode === 'both' && osrmRoute) {
-                    // Compare Both: draw OSRM as the "shortest" Dijkstra route (solid pink)
-                    // and a slightly offset lighter version as BFS "min intersections" (dashed cyan)
-                    let polyD = L.polyline(osrmRoute.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                    polyD.bindPopup(`<b>Dijkstra Shortest Route (via OSRM road network):</b><br>${actualDistKm.toFixed(2)} km • ~${durationMin} min drive`);
-                    renderedLayers.push(polyD);
-
-                    // BFS "minimum connections": fetch alternative route via different profile or just show same with dashes
-                    let polyB = L.polyline(osrmRoute.geom, { color: '#06b6d4', weight: 4, dashArray: '10,8', opacity: 0.75 }).addTo(routeLayerGroup);
-                    polyB.bindPopup(`<b>BFS Minimum Intersections (road network):</b><br>${bRes ? bRes.hops + ' graph hops' : 'road route'} • ${actualDistKm.toFixed(2)} km`);
-                    renderedLayers.push(polyB);
-
-                } else if (mode === 'dijkstra' && osrmRoute) {
-                    let polyD = L.polyline(osrmRoute.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                    polyD.bindPopup(`<b>Dijkstra Shortest Route:</b> ${actualDistKm.toFixed(2)} km${durationMin ? ' • ~' + durationMin + ' min' : ''}`);
-                    renderedLayers.push(polyD);
-
-                } else if (mode === 'bfs' && osrmRoute) {
-                    let polyB = L.polyline(osrmRoute.geom, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.9 }).addTo(routeLayerGroup);
-                    polyB.bindPopup(`<b>BFS Minimum Connections Route:</b> ${actualDistKm.toFixed(2)} km${dRes || bRes ? ' (' + (bRes ? bRes.hops : dRes.hops) + ' intersections)' : ''}`);
-                    renderedLayers.push(polyB);
-
-                } else {
-                    // OSRM unavailable — fallback to internal DS graph geometry
-                    if (!dRes && !bRes) throw new Error("No route found. OSRM unavailable and no internal graph path found.");
-
-                    if (bRes && bRes.geom && bRes.geom.length > 0 && (mode === 'bfs' || mode === 'both')) {
-                        let polyB = L.polyline(bRes.geom, { color: '#06b6d4', weight: 5, dashArray: '8,8', opacity: 0.9 }).addTo(routeLayerGroup);
-                        polyB.bindPopup(`<b>BFS Minimum Connections:</b> ${bRes.dist.toFixed(2)} km (${bRes.hops} intersections)`);
-                        renderedLayers.push(polyB);
-                    }
-                    if (dRes && dRes.geom && dRes.geom.length > 0 && (mode === 'dijkstra' || mode === 'both')) {
-                        let polyD = L.polyline(dRes.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                        polyD.bindPopup(`<b>Dijkstra Shortest:</b> ${dRes.dist.toFixed(2)} km (${dRes.hops} intersections)`);
-                        renderedLayers.push(polyD);
-                    }
-                    actualDistKm = dRes ? dRes.dist : bRes.dist;
+                // Call C++ backend Dijkstra (Priority Queue Min-Heap on OSM road graph)
+                if (mode === 'dijkstra' || mode === 'both') {
+                    try {
+                        dRes = await safeFetchJson(getBackendUrl(`/api/routes/dijkstra?${params}`));
+                    } catch (e) { console.warn('Dijkstra backend error:', e); }
                 }
 
+                // Call C++ backend BFS (FIFO Queue on OSM road graph)
+                if (mode === 'bfs' || mode === 'both') {
+                    try {
+                        bRes = await safeFetchJson(getBackendUrl(`/api/routes/bfs?${params}`));
+                    } catch (e) { console.warn('BFS backend error:', e); }
+                }
+
+                // Validate results
+                if (mode === 'dijkstra' && (!dRes || !dRes.success || !Array.isArray(dRes.coordinates) || dRes.coordinates.length < 2)) {
+                    throw new Error("Dijkstra could not find a route between these locations. Try locations within Delhi-NCR.");
+                }
+                if (mode === 'bfs' && (!bRes || !bRes.success || !Array.isArray(bRes.coordinates) || bRes.coordinates.length < 2)) {
+                    throw new Error("BFS could not find a route between these locations. Try locations within Delhi-NCR.");
+                }
+                if (mode === 'both' && (!dRes || !dRes.success) && (!bRes || !bRes.success)) {
+                    throw new Error("No route found between these locations. Try locations within Delhi-NCR.");
+                }
+
+                // Draw Dijkstra route (solid pink line)
+                if ((mode === 'dijkstra' || mode === 'both') && dRes && dRes.success && dRes.coordinates && dRes.coordinates.length >= 2) {
+                    let latLngs = dRes.coordinates.map(c => [c[0], c[1]]);
+                    let polyD = L.polyline(latLngs, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
+                    polyD.bindPopup(`<b>Dijkstra Shortest Route:</b> ${dRes.distanceKm.toFixed(2)} km (${dRes.hops} road segments, Priority Queue Min-Heap)`);
+                    renderedLayers.push(polyD);
+                }
+
+                // Draw BFS route (dashed cyan line)
+                if ((mode === 'bfs' || mode === 'both') && bRes && bRes.success && bRes.coordinates && bRes.coordinates.length >= 2) {
+                    let latLngs = bRes.coordinates.map(c => [c[0], c[1]]);
+                    let polyB = L.polyline(latLngs, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.9 }).addTo(routeLayerGroup);
+                    polyB.bindPopup(`<b>BFS Minimum Connections:</b> ${bRes.distanceKm.toFixed(2)} km (${bRes.hops} road segments, FIFO Queue)`);
+                    renderedLayers.push(polyB);
+                }
+
+                // Fit map to show route
                 if (renderedLayers.length > 0) {
                     let fg = L.featureGroup(renderedLayers);
                     map.fitBounds(fg.getBounds(), { padding: [50, 50] });
                 } else {
-                    // At minimum center the map on the two points
                     map.fitBounds([[sLoc.lat, sLoc.lon], [eLoc.lat, eLoc.lon]], { padding: [50, 50] });
                 }
 
-                // -------------------------------------------------------
-                // STEP 4: Render route summary with DS algorithm results
-                // -------------------------------------------------------
+                // Show route summary
                 summary.style.display = 'block';
-                let html = `<strong>Route Result:</strong> ${sLoc.name} ➔ ${eLoc.name}<br>`;
-                const osrmNote = osrmRoute ? `<small style="color:var(--text-muted)">(Road geometry via OpenStreetMap OSRM)</small>` : `<small style="color:#fbbf24">(OSRM offline — using internal graph geometry)</small>`;
+                let html = `<strong>Route Result:</strong> ${sLoc.name} to ${eLoc.name}<br>`;
+                html += `<small style="color:var(--text-muted)">Routes computed by C++ Dijkstra/BFS on OpenStreetMap road graph</small><br>`;
 
-                if (mode === 'dijkstra' || mode === 'both') {
-                    const dist = dRes ? dRes.dist : actualDistKm;
-                    const hops = dRes ? dRes.hops : (osrmRoute ? osrmRoute.geom.length - 1 : 0);
-                    const pts = osrmRoute ? osrmRoute.geom.length : (dRes ? dRes.geom.length : 0);
-                    html += `<strong>Dijkstra (Shortest Road Distance):</strong> <span style="color:var(--accent-pink);font-weight:700;">${actualDistKm.toFixed(2)} km</span>`;
-                    if (durationMin) html += ` • ~${durationMin} min drive`;
-                    html += ` (${hops} road intersections, ${pts} coordinate points via Priority Queue Min-Heap) ${osrmNote}<br>`;
+                if ((mode === 'dijkstra' || mode === 'both') && dRes && dRes.success) {
+                    html += `<strong>Dijkstra (Shortest Road Distance):</strong> <span style="color:var(--accent-pink);font-weight:700;">${dRes.distanceKm.toFixed(2)} km</span>`;
+                    html += ` (${dRes.hops} road segments, ${dRes.coordinates.length} coordinate points via Priority Queue Min-Heap)<br>`;
                 }
-                if (mode === 'bfs' || mode === 'both') {
-                    const hops = bRes ? bRes.hops : (dRes ? dRes.hops : (osrmRoute ? Math.round(osrmRoute.geom.length * 0.15) : 0));
-                    const dist = bRes ? bRes.dist : actualDistKm;
-                    const pts = osrmRoute ? osrmRoute.geom.length : (bRes ? bRes.geom.length : 0);
-                    html += `<strong>BFS (Minimum Intersections / Turns):</strong> <span style="color:var(--accent-cyan);font-weight:700;">${hops} intersections</span>`;
-                    html += ` (${actualDistKm.toFixed(2)} km, ${pts} coordinate points via FIFO Queue) ${osrmNote}<br>`;
+                if ((mode === 'bfs' || mode === 'both') && bRes && bRes.success) {
+                    html += `<strong>BFS (Minimum Connections):</strong> <span style="color:var(--accent-cyan);font-weight:700;">${bRes.hops} road segments</span>`;
+                    html += ` (${bRes.distanceKm.toFixed(2)} km, ${bRes.coordinates.length} coordinate points via FIFO Queue)<br>`;
                 }
                 summary.innerHTML = html;
 

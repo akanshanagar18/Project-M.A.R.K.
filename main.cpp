@@ -687,120 +687,90 @@ void handleClient(SOCKET clientSocket) {
         return;
     }
 
-    // 14. GET /api/routes/dijkstra
+    // 14. GET /api/routes/dijkstra — Shortest distance using Dijkstra on OSM road graph
     if (method == "GET" && path == "/api/routes/dijkstra") {
-        string start = getQueryParam(url, "start");
-        if (start.empty()) start = getQueryParam(url, "src");
-        string end = getQueryParam(url, "end");
-        if (end.empty()) end = getQueryParam(url, "dst");
-
         string sLatStr = getQueryParam(url, "startLat");
         string sLonStr = getQueryParam(url, "startLon");
         string eLatStr = getQueryParam(url, "endLat");
         string eLonStr = getQueryParam(url, "endLon");
 
-        // Coordinate-based node fallback if name not recognized directly
-        LocationRecord lStart, lEnd;
-        if (routeManager.findLocationByName(start, lStart)) {
-            start = lStart.name;
-        } else if (!sLatStr.empty() && !sLonStr.empty()) {
-            try {
-                double sLat = stod(sLatStr), sLon = stod(sLonStr);
-                start = routeManager.findNearestLocation(sLat, sLon).name;
-            } catch (...) {}
-        }
-        if (routeManager.findLocationByName(end, lEnd)) {
-            end = lEnd.name;
-        } else if (!eLatStr.empty() && !eLonStr.empty()) {
-            try {
-                double eLat = stod(eLatStr), eLon = stod(eLonStr);
-                end = routeManager.findNearestLocation(eLat, eLon).name;
-            } catch (...) {}
+        if (sLatStr.empty() || sLonStr.empty() || eLatStr.empty() || eLonStr.empty()) {
+            sendJsonResponse("400 Bad Request", "{\"success\":false,\"error\":\"Missing startLat/startLon/endLat/endLon\"}");
+            return;
         }
 
-        auto result = routeManager.getShortestPath(start, end);
-        auto coords = routeManager.getPathCoordinates(result.first);
-        cout << "[Graph Dijkstra] Evaluated shortest path between " << start << " and " << end 
-             << " -> Distance: " << result.second << " km (" << result.first.size() << " nodes)\n";
+        try {
+            double sLat = stod(sLatStr), sLon = stod(sLonStr);
+            double eLat = stod(eLatStr), eLon = stod(eLonStr);
+            RoadRouteResult result = routeManager.getRoadDijkstraRoute(sLat, sLon, eLat, eLon);
+            cout << "[Dijkstra] Route from (" << sLat << "," << sLon << ") to (" << eLat << "," << eLon
+                 << ") -> " << (result.success ? "OK" : "FAIL") << " dist=" << result.distanceKm << " km, hops=" << result.hops << "\n";
 
-        ostringstream json;
-        json << "{"
-             << "\"success\":" << (result.second != -1.0 ? "true" : "false") << ","
-             << "\"start\":\"" << escapeJson(start) << "\","
-             << "\"end\":\"" << escapeJson(end) << "\","
-             << "\"distance\":" << result.second << ","
-             << "\"distanceKm\":" << result.second << ","
-             << "\"hops\":" << (result.first.empty() ? 0 : (int)result.first.size() - 1) << ","
-             << "\"path\":[";
-        for (size_t i = 0; i < result.first.size(); ++i) {
-            json << "\"" << escapeJson(result.first[i]) << "\"";
-            if (i + 1 < result.first.size()) json << ",";
+            ostringstream json;
+            json << fixed << setprecision(7);
+            json << "{\"success\":" << (result.success ? "true" : "false") << ","
+                 << "\"distanceKm\":" << setprecision(2) << result.distanceKm << ","
+                 << "\"distance\":" << result.distanceKm << ","
+                 << "\"hops\":" << result.hops << ","
+                 << "\"path\":[";
+            for (size_t i = 0; i < result.path.size(); ++i) {
+                json << "\"" << escapeJson(result.path[i]) << "\"";
+                if (i + 1 < result.path.size()) json << ",";
+            }
+            json << "],\"coordinates\":[";
+            json << setprecision(7);
+            for (size_t i = 0; i < result.coordinates.size(); ++i) {
+                json << "[" << result.coordinates[i].first << "," << result.coordinates[i].second << "]";
+                if (i + 1 < result.coordinates.size()) json << ",";
+            }
+            json << "]}";
+            sendJsonResponse("200 OK", json.str());
+        } catch (...) {
+            sendJsonResponse("400 Bad Request", "{\"success\":false,\"error\":\"Invalid coordinates\"}");
         }
-        json << "],\"coordinates\":[";
-        for (size_t i = 0; i < coords.size(); ++i) {
-            json << "[" << coords[i].first << "," << coords[i].second << "]";
-            if (i + 1 < coords.size()) json << ",";
-        }
-        json << "]}";
-
-        sendJsonResponse("200 OK", json.str());
         return;
     }
 
-    // 15. GET /api/routes/bfs
+    // 15. GET /api/routes/bfs — Minimum connections using BFS on OSM road graph
     if (method == "GET" && path == "/api/routes/bfs") {
-        string start = getQueryParam(url, "start");
-        if (start.empty()) start = getQueryParam(url, "src");
-        string end = getQueryParam(url, "end");
-        if (end.empty()) end = getQueryParam(url, "dst");
-
         string sLatStr = getQueryParam(url, "startLat");
         string sLonStr = getQueryParam(url, "startLon");
         string eLatStr = getQueryParam(url, "endLat");
         string eLonStr = getQueryParam(url, "endLon");
 
-        LocationRecord lStart, lEnd;
-        if (routeManager.findLocationByName(start, lStart)) {
-            start = lStart.name;
-        } else if (!sLatStr.empty() && !sLonStr.empty()) {
-            try {
-                double sLat = stod(sLatStr), sLon = stod(sLonStr);
-                start = routeManager.findNearestLocation(sLat, sLon).name;
-            } catch (...) {}
-        }
-        if (routeManager.findLocationByName(end, lEnd)) {
-            end = lEnd.name;
-        } else if (!eLatStr.empty() && !eLonStr.empty()) {
-            try {
-                double eLat = stod(eLatStr), eLon = stod(eLonStr);
-                end = routeManager.findNearestLocation(eLat, eLon).name;
-            } catch (...) {}
+        if (sLatStr.empty() || sLonStr.empty() || eLatStr.empty() || eLonStr.empty()) {
+            sendJsonResponse("400 Bad Request", "{\"success\":false,\"error\":\"Missing startLat/startLon/endLat/endLon\"}");
+            return;
         }
 
-        vector<string> pathNodes = routeManager.getBFSPath(start, end);
-        auto coords = routeManager.getPathCoordinates(pathNodes);
-        cout << "[Graph BFS] Evaluated minimum connections between " << start << " and " << end 
-             << " -> Hops: " << (pathNodes.empty() ? 0 : pathNodes.size() - 1) << "\n";
+        try {
+            double sLat = stod(sLatStr), sLon = stod(sLonStr);
+            double eLat = stod(eLatStr), eLon = stod(eLonStr);
+            RoadRouteResult result = routeManager.getRoadBFSRoute(sLat, sLon, eLat, eLon);
+            cout << "[BFS] Route from (" << sLat << "," << sLon << ") to (" << eLat << "," << eLon
+                 << ") -> " << (result.success ? "OK" : "FAIL") << " hops=" << result.hops << "\n";
 
-        ostringstream json;
-        json << "{"
-             << "\"success\":" << (!pathNodes.empty() ? "true" : "false") << ","
-             << "\"start\":\"" << escapeJson(start) << "\","
-             << "\"end\":\"" << escapeJson(end) << "\","
-             << "\"hops\":" << (pathNodes.empty() ? 0 : (int)pathNodes.size() - 1) << ","
-             << "\"path\":[";
-        for (size_t i = 0; i < pathNodes.size(); ++i) {
-            json << "\"" << escapeJson(pathNodes[i]) << "\"";
-            if (i + 1 < pathNodes.size()) json << ",";
+            ostringstream json;
+            json << fixed << setprecision(7);
+            json << "{\"success\":" << (result.success ? "true" : "false") << ","
+                 << "\"distanceKm\":" << setprecision(2) << result.distanceKm << ","
+                 << "\"hops\":" << result.hops << ","
+                 << "\"path\":[";
+            for (size_t i = 0; i < result.path.size(); ++i) {
+                json << "\"" << escapeJson(result.path[i]) << "\"";
+                if (i + 1 < result.path.size()) json << ",";
+            }
+            json << "],\"coordinates\":[";
+            json << setprecision(7);
+            for (size_t i = 0; i < result.coordinates.size(); ++i) {
+                json << "[" << result.coordinates[i].first << "," << result.coordinates[i].second << "]";
+                if (i + 1 < result.coordinates.size()) json << ",";
+            }
+            json << "]}";
+            sendJsonResponse("200 OK", json.str());
+        } catch (...) {
+            sendJsonResponse("400 Bad Request", "{\"success\":false,\"error\":\"Invalid coordinates\"}");
         }
-        json << "],\"coordinates\":[";
-        for (size_t i = 0; i < coords.size(); ++i) {
-            json << "[" << coords[i].first << "," << coords[i].second << "]";
-            if (i + 1 < coords.size()) json << ",";
-        }
-        json << "]}";
-
-        sendJsonResponse("200 OK", json.str());
         return;
     }
 
