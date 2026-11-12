@@ -47,7 +47,7 @@ inline int parseTimeToMinutes(const string& t) {
     string clean = "";
     for (char c : t) if (isdigit(c) || c == ':') clean += c;
     if (clean.empty()) return 0;
-    
+
     size_t colon = clean.find(':');
     if (colon != string::npos) {
         int h = stoi(clean.substr(0, colon));
@@ -96,7 +96,7 @@ inline bool evaluateMatch(const User &u, const User &c, match_class &m) {
             if (s1 >= 0 && d1 >= 0 && s2 >= 0 && d2 >= 0) {
                 bool dir1 = (d1 >= s1);
                 bool dir2 = (d2 >= s2);
-                
+
                 // Must be traveling in the same direction on the metro line
                 if (dir1 == dir2) {
                     int minStop = max(min(s1, d1), min(s2, d2));
@@ -181,11 +181,11 @@ inline bool evaluateMatch(const User &u, const User &c, match_class &m) {
         return false;
 
     // 4. FARE ESTIMATION & BUDGET COMPATIBILITY
-    bool isCabType = (toLower(u.transportMode) == "cab" || toLower(u.transportMode) == "auto" || 
+    bool isCabType = (toLower(u.transportMode) == "cab" || toLower(u.transportMode) == "auto" ||
                       toLower(u.transportMode) == "carpool" || score == 65 || score == 55 || score == 50);
-    
+
     int fare = isCabType ? SHARED_CAB_FARE : FARE_PER_STOP * max(shared, 1);
-    
+
     // Both users' budgets must cover the estimated fare
     if (fare > u.budget || fare > c.budget)
         return false;
@@ -292,3 +292,4 @@ int main() {
 #endif
 
 #endif
+

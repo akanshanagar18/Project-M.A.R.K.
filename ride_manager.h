@@ -11,15 +11,18 @@ private:
     std::queue<riderequest> pending_queue;
     std::stack<RideAction> undo_stack;
     std::vector<Complete_Ride> ride_history;
-    
+
     int next_request_id = 101;
     int next_ride_id = 5001;
 
 public:
-    void add_ride_req(int user_id, std::string initial_dest, std::string final_dest, int time, std::string mode, double budget);
+    int add_ride_req(int user_id, std::string initial_dest, std::string final_dest, int time, std::string mode, double budget);
     void process_nextride(double fare);
+    bool process_nextride_record(double fare, Complete_Ride& outRecord, riderequest& outReq);
     bool undo();
-    
+    bool undo_action(RideAction& poppedAction);
+    void restore_state(const std::vector<riderequest>& reqs, const std::vector<Complete_Ride>& hist, int maxReqId, int maxRideId);
+
     void displaypending_queue() const;
     void display_ride_history() const;
     void displaystats() const;

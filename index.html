@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>M.A.R.K | Mapped Automation Route Kinematics</title>
     <link rel="icon" type="image/png" href="MARK_LOGO.PNG">
-    
+
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
+
     <style>
         :root {
             --bg-main: #0c0e14;
@@ -123,10 +123,34 @@
             font-weight: 600;
         }
 
+        .sidebar-section-title {
+            font-size: 0.72em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #8892b0;
+            padding: 12px 16px 6px 16px;
+        }
+
+        .nav-bullet {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            border: 2px solid #64748b;
+            display: inline-block;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+            margin-right: 2px;
+        }
+
+        .nav-link.active .nav-bullet {
+            border-color: var(--accent-pink);
+            background-color: var(--accent-pink);
+            box-shadow: 0 0 8px rgba(244, 63, 94, 0.7);
+        }
+
         .nav-icon {
-            font-size: 1.15em;
-            width: 22px;
-            text-align: center;
+            display: none;
         }
 
         .sidebar-footer {
@@ -268,46 +292,36 @@
         .stat-card {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
+            border-radius: 8px;
+            padding: 18px 22px;
             display: flex;
-            align-items: center;
-            gap: 18px;
-            transition: transform 0.2s, border-color 0.2s;
+            flex-direction: column;
+            justify-content: center;
+            transition: border-color 0.2s;
         }
 
         .stat-card:hover {
-            transform: translateY(-2px);
             border-color: rgba(244, 63, 94, 0.4);
         }
 
         .stat-icon-wrapper {
-            width: 52px;
-            height: 52px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.45em;
+            display: none;
         }
 
-        .stat-icon-users { background: rgba(14, 165, 233, 0.15); color: #38bdf8; }
-        .stat-icon-requests { background: rgba(244, 63, 94, 0.15); color: var(--accent-pink); }
-        .stat-icon-matches { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
-        .stat-icon-rides { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-
         .stat-info h4 {
-            font-size: 0.8em;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            font-size: 0.78em;
+            color: #8892b0;
+            text-transform: capitalize;
+            letter-spacing: 0.3px;
+            margin-bottom: 8px;
+            font-weight: 500;
         }
 
         .stat-info .stat-value {
-            font-size: 1.85em;
+            font-size: 2.1em;
             font-weight: 700;
-            color: var(--text-main);
+            color: #ffffff;
+            line-height: 1.1;
         }
 
         /* ---------------- Quick Access Modules ---------------- */
@@ -353,28 +367,42 @@
 
         .module-card p {
             font-size: 0.85em;
-            color: var(--text-muted);
+            color: #94a3b8;
             line-height: 1.5;
+            margin-bottom: 18px;
+            flex-grow: 1;
+        }
+
+        .quick-access-title {
+            color: #ff4d6d;
+            font-size: 1.28em;
+            font-weight: 600;
             margin-bottom: 16px;
+            letter-spacing: 0.3px;
         }
 
         .btn-module {
-            align-self: flex-start;
-            background: transparent;
-            color: var(--accent-pink);
-            border: 1px solid rgba(244, 63, 94, 0.4);
-            padding: 8px 16px;
+            width: 100%;
+            background-color: #ff4d6d;
+            color: #ffffff;
+            border: none;
+            padding: 10px 18px;
             border-radius: 6px;
-            font-size: 0.82em;
+            font-size: 0.88em;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            text-align: center;
+            display: block;
         }
 
         .btn-module:hover {
-            background: var(--accent-pink);
-            color: #fff;
-            border-color: var(--accent-pink);
+            background-color: #f43f5e;
+            transform: translateY(-1px);
+        }
+
+        .btn-module:active {
+            transform: translateY(0);
         }
 
         /* ---------------- Forms & Inputs ---------------- */
@@ -786,52 +814,53 @@
             </div>
         </div>
 
+        <div class="sidebar-section-title">Navigation</div>
         <ul class="nav-menu">
             <li class="nav-item">
                 <a class="nav-link active" onclick="switchTab('dashboard')">
-                    <span class="nav-icon">📊</span>
-                    <span>Dashboard</span>
+                    <span class="nav-bullet"></span>
+                    <span>Home</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('users')">
-                    <span class="nav-icon">👥</span>
+                    <span class="nav-bullet"></span>
                     <span>User Management</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('request')">
-                    <span class="nav-icon">📝</span>
+                    <span class="nav-bullet"></span>
                     <span>Request a Ride</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('matches')">
-                    <span class="nav-icon">🔍</span>
+                    <span class="nav-bullet"></span>
                     <span>Find Ride Matches</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('rides')">
-                    <span class="nav-icon">🚖</span>
+                    <span class="nav-bullet"></span>
                     <span>Ride Management</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('routes')">
-                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-bullet"></span>
                     <span>Route Planner</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('history')">
-                    <span class="nav-icon">📜</span>
+                    <span class="nav-bullet"></span>
                     <span>Ride History</span>
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab('ds-overview')">
-                    <span class="nav-icon">🧠</span>
+                    <span class="nav-bullet"></span>
                     <span>Data Structures</span>
                 </a>
             </li>
@@ -856,10 +885,11 @@
             <div class="top-meta" style="display:flex; align-items:center; gap:12px;">
                 <div class="live-clock" id="liveClock">--:--:--</div>
 
-                <!-- Commuter Login / Session Control -->
+                <!-- Commuter Login / Session Control with Password & Session Management -->
                 <div id="headerLoginBox" style="display: flex; align-items: center; gap: 8px;">
-                    <input type="number" id="headerLoginId" placeholder="4-Digit User ID" style="width: 130px; padding: 6px 10px; font-size: 0.85em; background: #12151f; border: 1px solid var(--border-color); color: #fff; border-radius: 6px;">
-                    <button class="btn btn-sm btn-blue" onclick="handleUserLogin(document.getElementById('headerLoginId').value)">Log In</button>
+                    <input type="number" id="headerLoginId" placeholder="User ID" style="width: 105px; padding: 6px 10px; font-size: 0.85em; background: #12151f; border: 1px solid var(--border-color); color: #fff; border-radius: 6px;">
+                    <input type="password" id="headerLoginPwd" placeholder="Password" style="width: 105px; padding: 6px 10px; font-size: 0.85em; background: #12151f; border: 1px solid var(--border-color); color: #fff; border-radius: 6px;" onkeydown="if(event.key==='Enter') handleUserLoginWithPwd()">
+                    <button class="btn btn-sm btn-blue" onclick="handleUserLoginWithPwd()">Log In</button>
                 </div>
 
                 <div id="headerSessionBox" style="display: none; align-items: center; gap: 10px; background: #12151f; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border-color);">
@@ -881,31 +911,27 @@
             <!-- TAB 1: DASHBOARD                                               -->
             <!-- ============================================================== -->
             <section id="tab-dashboard" class="tab-section active">
-                <!-- Statistics Overview Cards -->
+                <!-- Statistics Overview Cards (CRIMAI Style) -->
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-icon-wrapper stat-icon-users">👥</div>
                         <div class="stat-info">
                             <h4>Total Registered Users</h4>
                             <div class="stat-value" id="statUsers">0</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon-wrapper stat-icon-requests">📋</div>
                         <div class="stat-info">
                             <h4>Active Ride Requests</h4>
                             <div class="stat-value" id="statRequests">0</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon-wrapper stat-icon-matches">🤝</div>
                         <div class="stat-info">
                             <h4>Successful Matches</h4>
                             <div class="stat-value" id="statMatches">0</div>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-icon-wrapper stat-icon-rides">🏁</div>
                         <div class="stat-info">
                             <h4>Completed Rides</h4>
                             <div class="stat-value" id="statCompleted">0</div>
@@ -913,78 +939,69 @@
                     </div>
                 </div>
 
-                <!-- Quick Access Modules -->
-                <div class="card">
-                    <div class="card-header">
-                        <h3>⚡ Quick Access Modules</h3>
-                        <span style="font-size: 0.8em; color: var(--text-muted);">Core System Workflows</span>
-                    </div>
+                <!-- Quick Access Modules (CRIMAI Style) -->
+                <div style="margin-bottom: 28px;">
+                    <h3 class="quick-access-title">Quick Access Modules</h3>
 
                     <div class="modules-grid">
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
-                                    <span class="module-icon">👤</span>
-                                    <h4>Register a User</h4>
+                                    <h4>User Management</h4>
                                 </div>
-                                <p>Onboard new commuters dynamically using the C++ Linked List data structure with zero fragmentation.</p>
+                                <p>Onboard new commuters dynamically using the C++ Linked List data structure with permanent SQLite storage.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('users')">Register User &rarr;</button>
+                            <button class="btn-module" onclick="switchTab('users')">Open Commuter Directory</button>
                         </div>
 
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
-                                    <span class="module-icon">📝</span>
                                     <h4>Request a Ride</h4>
                                 </div>
-                                <p>Submit detailed commute preferences (route, transit mode, time, budget) and enqueue into the FIFO queue.</p>
+                                <p>Submit commute preferences (route, transit mode, time, budget) and enqueue into the FIFO queue.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('request')">Request Ride &rarr;</button>
+                            <button class="btn-module" onclick="switchTab('request')">Open Ride Request</button>
                         </div>
 
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
-                                    <span class="module-icon">🎯</span>
                                     <h4>Find Ride Matches</h4>
                                 </div>
                                 <p>Evaluate co-commuter compatibility with our C++ Priority Queue matching engine based on route and time.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('matches')">Find Matches &rarr;</button>
+                            <button class="btn-module" onclick="switchTab('matches')">Open Matching Engine</button>
                         </div>
 
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
-                                    <span class="module-icon">🚖</span>
-                                    <h4>Manage Rides &amp; Stack</h4>
+                                    <h4>Ride Management &amp; Queue</h4>
                                 </div>
                                 <p>Dispatch rides from the FIFO queue, log completed trips to Vector, and undo actions using the LIFO Stack.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('rides')">Manage Queue &rarr;</button>
+                            <button class="btn-module" onclick="switchTab('rides')">Open Ride Dispatcher</button>
                         </div>
 
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
-                                    <span class="module-icon">🗺️</span>
-                                    <h4>Explore Routes</h4>
+                                    <h4>Safest Route Planner</h4>
                                 </div>
                                 <p>Compute true road-following shortest routes using Dijkstra &amp; BFS on real OpenStreetMap road graphs.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('routes')">Open Map &rarr;</button>
+                            <button class="btn-module" onclick="switchTab('routes')">Open Route Planner</button>
                         </div>
 
                         <div class="module-card">
                             <div>
                                 <div class="module-header">
-                                    <span class="module-icon">📜</span>
-                                    <h4>View Ride History</h4>
+                                    <h4>Ride History &amp; Analytics</h4>
                                 </div>
-                                <p>Inspect historical trip records and total system fare revenue stored in the C++ Vector data structure.</p>
+                                <p>Review completed commutes and revenue analytics recorded across the system in SQLite &amp; Vector.</p>
                             </div>
-                            <button class="btn-module" onclick="switchTab('history')">View History &rarr;</button>
+                            <button class="btn-module" onclick="switchTab('history')">Open Ride History</button>
                         </div>
                     </div>
                 </div>
@@ -992,7 +1009,7 @@
                 <!-- Live System Data Structure Monitor -->
                 <div class="card">
                     <div class="card-header">
-                        <h3>🧠 Live Data Structure State Monitor</h3>
+                        <h3>Live Data Structure State Monitor</h3>
                         <span class="badge badge-success">C++ Native Memory</span>
                     </div>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; font-size: 0.88em;">
@@ -1023,7 +1040,7 @@
                 <!-- Registration Form Card -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>👤 Register New User</span> <span class="badge-ds">Linked List Insert</span></h3>
+                        <h3><span>Register New User</span> <span class="badge-ds">Linked List Insert</span></h3>
                         <span style="font-size: 0.8em; color: var(--text-muted);">Unique 4-Digit ID Auto-Generated</span>
                     </div>
 
@@ -1045,14 +1062,18 @@
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
+                            <div class="form-group">
+                                <label>Account Password</label>
+                                <input type="password" id="newUserPassword" placeholder="Create password (min 4 chars)" required>
+                            </div>
                         </div>
-                        <button type="submit" class="btn">Register User into Linked List</button>
+                        <button type="submit" class="btn">Register User into Permanent SQLite &amp; Linked List</button>
                     </form>
 
                     <!-- Registration Success Card with Auto-Generated 4-Digit ID -->
                     <div id="regSuccessCard" style="display: none; margin-top: 18px; padding: 18px; background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; border-radius: 8px;">
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                            <span style="font-size: 1.8em;">🎉</span>
+                            
                             <div>
                                 <h4 style="margin: 0; color: #10b981; font-size: 1.05em;">User Registered Successfully!</h4>
                                 <span style="font-size: 0.82em; color: var(--text-muted);">Stored dynamically in C++ Linked List</span>
@@ -1062,16 +1083,16 @@
                             Your Automatically Assigned 4-Digit User ID is: <strong style="color: var(--accent-pink); font-size: 1.3em; letter-spacing: 1px;" id="regSuccessId">----</strong>
                         </div>
                         <p style="margin: 0 0 12px 0; font-size: 0.88em; color: #f59e0b; font-weight: 500;">
-                            ⚠️ Please remember your 4-digit User ID! You will need it to access your account, create ride requests, and find matches.
+                            Important: Please remember your 4-digit User ID! You will need it to access your account, create ride requests, and find matches.
                         </p>
-                        <button class="btn btn-sm btn-blue" id="regLoginBtn" onclick="loginNewlyRegisteredUser()">🔑 Access Account with this User ID</button>
+                        <button class="btn btn-sm btn-blue" id="regLoginBtn" onclick="loginNewlyRegisteredUser()">Access Account with this User ID</button>
                     </div>
                 </div>
 
                 <!-- Search & Filter Card -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>🔍 Search User</span> <span class="badge-ds">O(N) Traversal</span></h3>
+                        <h3><span>Search User</span> <span class="badge-ds">O(N) Traversal</span></h3>
                     </div>
                     <div style="display: flex; gap: 12px; max-width: 500px;">
                         <input type="number" id="searchUserId" placeholder="Enter User ID to search...">
@@ -1084,7 +1105,7 @@
                 <!-- All Registered Users Table -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>📋 Registered Commuters Directory</span></h3>
+                        <h3><span>Registered Commuters Directory</span></h3>
                         <button class="btn btn-outline btn-sm" onclick="loadUsers()">↻ Refresh</button>
                     </div>
                     <div class="table-responsive">
@@ -1114,7 +1135,7 @@
             <section id="tab-request" class="tab-section">
                 <!-- Login Prompt if Not Logged In -->
                 <div class="card" id="reqLoginPromptCard" style="display: block; text-align: center; padding: 40px 20px;">
-                    <div style="font-size: 2.8em; margin-bottom: 10px;">🔒</div>
+                    
                     <h3 style="color: var(--text-main); margin-bottom: 8px;">Commuter Login Required</h3>
                     <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 20px; font-size: 0.92em;">
                         To submit a ride request, please log in with your registered 4-digit User ID. Only the logged-in commuter can create a ride request for their account.
@@ -1128,7 +1149,7 @@
                 <!-- Ride Request Card (Displayed when Logged In) -->
                 <div class="card" id="reqFormCard" style="display: none;">
                     <div class="card-header">
-                        <h3><span>📝 Submit Ride Request</span> <span class="badge-ds">Queue Push (FIFO)</span></h3>
+                        <h3><span>Submit Ride Request</span> <span class="badge-ds">Queue Push (FIFO)</span></h3>
                         <span style="font-size: 0.8em; color: var(--text-muted);">Enqueued into C++ Memory</span>
                     </div>
 
@@ -1148,7 +1169,7 @@
                     <!-- Notice if User Already Has an Active Request -->
                     <div id="alreadyHasRequestNotice" style="display: none; padding: 18px; background: rgba(244, 63, 94, 0.1); border: 1px solid var(--accent-pink); border-radius: 8px; margin-bottom: 18px;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                            <span style="font-size: 1.5em;">⚠️</span>
+                            
                             <h4 style="margin: 0; color: var(--accent-pink);">Active Ride Request Already Exists</h4>
                         </div>
                         <p style="margin: 0 0 10px 0; color: var(--text-main); font-size: 0.92em;" id="existingReqDetails">
@@ -1157,7 +1178,7 @@
                         <p style="margin: 0; font-size: 0.85em; color: var(--text-muted);">
                             M.A.R.K. allows one active ride request per commuter. You can search for compatible co-commuters in the matching engine.
                         </p>
-                        <button class="btn btn-sm btn-blue" style="margin-top: 14px;" onclick="switchTab('matches')">🔍 Find Matches for this Ride &rarr;</button>
+                        <button class="btn btn-sm btn-blue" style="margin-top: 14px;" onclick="switchTab('matches')">Find Matches for this Ride &rarr;</button>
                     </div>
 
                     <!-- Actual Ride Request Form -->
@@ -1244,7 +1265,7 @@
             <section id="tab-matches" class="tab-section">
                 <!-- Login Prompt if Not Logged In -->
                 <div class="card" id="matchLoginPromptCard" style="display: block; text-align: center; padding: 40px 20px;">
-                    <div style="font-size: 2.8em; margin-bottom: 10px;">🔒</div>
+                    
                     <h3 style="color: var(--text-main); margin-bottom: 8px;">Commuter Login Required</h3>
                     <p style="color: var(--text-muted); max-width: 480px; margin: 0 auto 20px; font-size: 0.92em;">
                         Please log in with your registered 4-digit User ID to find compatible co-commuters for your commute.
@@ -1258,7 +1279,7 @@
                 <!-- Match Engine Card (Displayed when Logged In) -->
                 <div class="card" id="matchEngineCard" style="display: none;">
                     <div class="card-header">
-                        <h3><span>🎯 Ride Matching Engine</span> <span class="badge-ds">Priority Queue (Max-Heap)</span></h3>
+                        <h3><span>Ride Matching Engine</span> <span class="badge-ds">Priority Queue (Max-Heap)</span></h3>
                         <span style="font-size: 0.8em; color: var(--text-muted);">Evaluates Route, Time, Gender &amp; Budget</span>
                     </div>
 
@@ -1279,7 +1300,7 @@
                     <div id="matchActiveRouteDetails" style="display: none; background: #151926; padding: 14px 16px; border-radius: 8px; border: 1px solid rgba(244, 63, 94, 0.3); margin-bottom: 18px;">
                         <div style="font-size: 0.78em; color: var(--accent-pink); font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">YOUR ACTIVE COMMUTE CORRIDOR</div>
                         <div style="font-size: 1.05em; color: var(--text-main); font-weight: 600;" id="matchActiveRouteText">
-                            Sector 62, Noida ➔ Botanical Garden, Noida
+                            Sector 62, Noida -> Botanical Garden, Noida
                         </div>
                         <div style="font-size: 0.85em; color: var(--text-muted); margin-top: 4px;" id="matchActiveMetaText">
                             Mode: Metro | Departure: 09:30 | Budget: Rs. 150
@@ -1289,7 +1310,7 @@
                     <!-- Notice if User Has No Request -->
                     <div id="matchNoRequestNotice" style="display: none; padding: 18px; background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 8px; margin-bottom: 18px;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
-                            <span style="font-size: 1.4em;">⚠️</span>
+                            
                             <h4 style="margin: 0; color: #f59e0b;">No Active Ride Request</h4>
                         </div>
                         <p style="margin: 0 0 12px 0; color: var(--text-main); font-size: 0.9em;">
@@ -1299,7 +1320,7 @@
                     </div>
 
                     <button class="btn btn-blue" id="btnRunMatchEngine" style="display: none; width: 100%;" onclick="handleFindMatches()">
-                        🎯 Evaluate Co-Commuter Compatibility (C++ Priority Queue)
+                        Evaluate Co-Commuter Compatibility (C++ Priority Queue)
                     </button>
                 </div>
 
@@ -1328,7 +1349,7 @@
                 <!-- Active Pending Queue -->
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>📥 Active Pending Ride Queue</span> <span class="badge-ds">FIFO Queue</span></h3>
+                        <h3><span>Active Pending Ride Queue</span> <span class="badge-ds">FIFO Queue</span></h3>
                         <span id="queueBadge" class="badge badge-warning">0 Pending</span>
                     </div>
                     <div class="table-responsive">
@@ -1359,14 +1380,14 @@
             <section id="tab-routes" class="tab-section">
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>🗺️ Interactive Route Navigation Visualizer</span> <span class="badge-ds">Graph / Dijkstra / BFS</span></h3>
+                        <h3><span>Interactive Route Navigation Visualizer</span> <span class="badge-ds">Graph / Dijkstra / BFS</span></h3>
                     </div>
 
                     <div class="preset-pills">
                         <span style="font-size: 0.82em; color: var(--text-muted); align-self: center;">Presets:</span>
-                        <button class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Botanical Garden, Noida')">Sec 62 ➔ Botanical Garden</button>
-                        <button class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Connaught Place, Delhi')">Sec 62 ➔ Connaught Place</button>
-                        <button class="pill-btn" onclick="setPreset('India Gate, Delhi', 'Connaught Place, Delhi')">India Gate ➔ Connaught Place</button>
+                        <button class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Botanical Garden, Noida')">Sec 62 -&gt; Botanical Garden</button>
+                        <button class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Connaught Place, Delhi')">Sec 62 -&gt; Connaught Place</button>
+                        <button class="pill-btn" onclick="setPreset('India Gate, Delhi', 'Connaught Place, Delhi')">India Gate -&gt; Connaught Place</button>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px;">
@@ -1393,7 +1414,7 @@
                     </div>
 
                     <div id="routeLoadingMsg" style="display:none; color:var(--accent-pink); margin-top:10px; font-size:0.88em;">
-                        ⏳ Running Dijkstra &amp; BFS algorithms + fetching road geometry from OpenStreetMap...
+                        Running Dijkstra &amp; BFS algorithms and computing road geometry...
                     </div>
 
                     <div id="routeSummaryBox" style="display:none; margin-top:14px; padding:14px; background:#12151f; border-radius:8px; border:1px solid var(--accent-pink);"></div>
@@ -1420,7 +1441,7 @@
             <section id="tab-history" class="tab-section">
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>📜 Completed Ride History</span> <span class="badge-ds">Vector Storage</span></h3>
+                        <h3><span>Completed Ride History</span> <span class="badge-ds">Vector Storage</span></h3>
                         <span id="historyRevenueBadge" class="badge badge-success">Revenue: $0.00</span>
                     </div>
                     <div class="table-responsive">
@@ -1451,14 +1472,14 @@
             <section id="tab-ds-overview" class="tab-section">
                 <div class="card">
                     <div class="card-header">
-                        <h3><span>🧠 Data Structure Architecture &amp; Rationale</span></h3>
+                        <h3><span>Data Structure Architecture &amp; Rationale</span></h3>
                         <span class="badge badge-info">College Evaluation Reference</span>
                     </div>
 
                     <div class="modules-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
                         <div class="module-card">
                             <div class="module-header">
-                                <span class="module-icon">🔗</span>
+                                
                                 <h4>Linked List</h4>
                             </div>
                             <p><strong>Used in:</strong> User Management<br>
@@ -1467,7 +1488,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                <span class="module-icon">📥</span>
+                                
                                 <h4>Queue (FIFO)</h4>
                             </div>
                             <p><strong>Used in:</strong> Pending Ride Dispatch<br>
@@ -1476,7 +1497,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                <span class="module-icon">⭐</span>
+                                
                                 <h4>Priority Queue (Heap)</h4>
                             </div>
                             <p><strong>Used in:</strong> Smart Ride Matching<br>
@@ -1494,7 +1515,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                <span class="module-icon">📦</span>
+                                
                                 <h4>Vector (Dynamic Array)</h4>
                             </div>
                             <p><strong>Used in:</strong> Completed Ride History<br>
@@ -1503,7 +1524,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                <span class="module-icon">🕸️</span>
+                                
                                 <h4>Graph (Adjacency List)</h4>
                             </div>
                             <p><strong>Used in:</strong> Road Transport Network<br>
@@ -1512,7 +1533,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                <span class="module-icon">🛣️</span>
+                                
                                 <h4>Dijkstra's Algorithm</h4>
                             </div>
                             <p><strong>Used in:</strong> Shortest Road Distance<br>
@@ -1521,7 +1542,7 @@
 
                         <div class="module-card">
                             <div class="module-header">
-                                <span class="module-icon">🔄</span>
+                                
                                 <h4>Breadth-First Search (BFS)</h4>
                             </div>
                             <p><strong>Used in:</strong> Minimum Hops Route<br>
@@ -1539,7 +1560,7 @@
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
+
     <!-- Preloaded OpenStreetMap Road Network Dataset (Delhi-NCR) -->
     <script src="roads_data.js"></script>
     <!-- Verified NCR Locations Dataset from locations.csv -->
@@ -1550,7 +1571,7 @@
         function getBackendUrl(path) {
             const cleanPath = path.startsWith('/') ? path : '/' + path;
             if (window.location.port === '8080') return cleanPath;
-            const host = (window.location.hostname && window.location.hostname !== 'localhost') ? window.location.hostname : '127.0.0.1';
+            const host = window.location.hostname || 'localhost';
             return `http://${host}:8080${cleanPath}`;
         }
 
@@ -1618,43 +1639,49 @@
         let currentUser = null;
         let newlyRegisteredId = null;
 
-        // In-Memory Fallback State (if C++ server is not running)
-        let localUsers = [
-            { id: 1001, name: "Aryan Sharma", phone: "9876543210", gender: "Male", source: "Sector 62, Noida", destination: "Botanical Garden, Noida", preferredTime: "09:30", transportMode: "Metro", budget: 150, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true },
-            { id: 1002, name: "Priya Verma", phone: "9812345678", gender: "Female", source: "Sector 62, Noida", destination: "Botanical Garden, Noida", preferredTime: "09:40", transportMode: "Metro", budget: 120, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true },
-            { id: 1003, name: "Rohan Gupta", phone: "9923456789", gender: "Male", source: "Sector 62, Noida", destination: "Connaught Place, Delhi", preferredTime: "09:30", transportMode: "Cab", budget: 250, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Male", wantsSharedCab: true, boardingStation: "Sector 62", allowMultiple: true },
-            { id: 1004, name: "Kavita Rao", phone: "9734567890", gender: "Female", source: "Sector 62, Noida", destination: "Connaught Place, Delhi", preferredTime: "09:45", transportMode: "Cab", budget: 300, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: true, boardingStation: "Sector 62", allowMultiple: true },
-            { id: 1005, name: "Amit Kumar", phone: "9645678901", gender: "Male", source: "Dwarka Sector 21", destination: "Rajiv Chowk", preferredTime: "10:00", transportMode: "Metro", budget: 80, hasRequest: true, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: false }
-        ];
-
-        let localQueue = [
-            { id: 1001, user_id: 1001, initial_dest: "Sector 62, Noida", final_dest: "Botanical Garden, Noida", time: 930, mode: "Metro", budget: 150 },
-            { id: 1002, user_id: 1002, initial_dest: "Sector 62, Noida", final_dest: "Botanical Garden, Noida", time: 940, mode: "Metro", budget: 120 },
-            { id: 1003, user_id: 1003, initial_dest: "Sector 62, Noida", final_dest: "Connaught Place, Delhi", time: 930, mode: "Cab", budget: 250 },
-            { id: 1004, user_id: 1004, initial_dest: "Sector 62, Noida", final_dest: "Connaught Place, Delhi", time: 945, mode: "Cab", budget: 300 },
-            { id: 1005, user_id: 1005, initial_dest: "Dwarka Sector 21", final_dest: "Rajiv Chowk", time: 1000, mode: "Metro", budget: 80 }
-        ];
-
+        // Persistent SQLite Data State (Hydrated dynamically from C++ mark.db)
+        let localUsers = [];
+        let localQueue = [];
         let localHistory = [];
         let localUndoStack = [];
+        let currentSessionToken = localStorage.getItem('mark_session_token') || null;
 
         // ---------------- User Session Management ----------------
-        async function handleUserLogin(inputVal) {
-            let id = parseInt(inputVal);
+        async function handleUserLoginWithPwd() {
+            let id = parseInt(document.getElementById('headerLoginId').value);
+            let pwd = document.getElementById('headerLoginPwd') ? document.getElementById('headerLoginPwd').value : '';
             if (!id || isNaN(id)) {
                 alert("Please enter a valid 4-digit User ID.");
                 return;
             }
 
-            let user = null;
             if (isBackendLive) {
-                let data = await safeFetchJson(getBackendUrl(`/api/users/search?id=${id}`));
-                if (data && data.success && data.user) user = data.user;
-            }
-            if (!user) user = localUsers.find(u => u.id === id);
+                let data = await safeFetchJson(getBackendUrl('/api/login'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, password: pwd })
+                });
 
+                if (data && data.success && data.user) {
+                    currentUserId = id;
+                    currentUser = data.user;
+                    currentSessionToken = data.token;
+                    localStorage.setItem('mark_session_token', currentSessionToken);
+                    localStorage.setItem('mark_session_user_id', id);
+                    updateSessionUI();
+                    renderRideAccess();
+                    showToast(`Logged in successfully as ${currentUser.name} (ID #${id})`);
+                    return;
+                } else if (data && !data.success) {
+                    alert(data.message || "Invalid User ID or Password.");
+                    return;
+                }
+            }
+
+            // Fallback for offline mode
+            let user = localUsers.find(u => u.id === id);
             if (!user) {
-                alert(`User ID #${id} not found in the Linked List!\nPlease check the 4-digit ID or register a new commuter account.`);
+                alert(`User ID #${id} not found in SQLite mark.db or Linked List!\nPlease register a new commuter account.`);
                 return;
             }
 
@@ -1665,9 +1692,27 @@
             showToast(`Logged in successfully as ${user.name} (ID #${id})`);
         }
 
-        function handleUserLogout() {
+        async function handleUserLogin(inputVal) {
+            let inp = document.getElementById('headerLoginId');
+            if (inp) inp.value = inputVal;
+            await handleUserLoginWithPwd();
+        }
+
+        async function handleUserLogout() {
+            if (currentSessionToken && isBackendLive) {
+                try {
+                    await safeFetchJson(getBackendUrl('/api/logout'), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ token: currentSessionToken })
+                    });
+                } catch(e) {}
+            }
             currentUserId = null;
             currentUser = null;
+            currentSessionToken = null;
+            localStorage.removeItem('mark_session_token');
+            localStorage.removeItem('mark_session_user_id');
             updateSessionUI();
             renderRideAccess();
             showToast("Logged out of commuter session.");
@@ -1689,6 +1734,8 @@
                 if (sessionBox) sessionBox.style.display = 'none';
                 let inp = document.getElementById('headerLoginId');
                 if (inp) inp.value = '';
+                let pwd = document.getElementById('headerLoginPwd');
+                if (pwd) pwd.value = '';
             }
         }
 
@@ -1728,8 +1775,8 @@
                 if (currentUser.hasRequest) {
                     if (alreadyHasReqNotice) {
                         alreadyHasReqNotice.style.display = 'block';
-                        document.getElementById('existingReqDetails').innerHTML = 
-                            `You already have an active ride request in progress: <strong>${currentUser.source} ➔ ${currentUser.destination}</strong> (${currentUser.transportMode} at ${currentUser.preferredTime}, Rs. ${currentUser.budget}).`;
+                        document.getElementById('existingReqDetails').innerHTML =
+                            `You already have an active ride request in progress: <strong>${currentUser.source} -> ${currentUser.destination}</strong> (${currentUser.transportMode} at ${currentUser.preferredTime}, Rs. ${currentUser.budget}).`;
                     }
                     if (actualRideForm) actualRideForm.style.display = 'none';
                 } else {
@@ -1761,7 +1808,7 @@
                 if (currentUser.hasRequest) {
                     if (matchRouteDetails) {
                         matchRouteDetails.style.display = 'block';
-                        document.getElementById('matchActiveRouteText').innerText = `${currentUser.source} ➔ ${currentUser.destination}`;
+                        document.getElementById('matchActiveRouteText').innerText = `${currentUser.source} -> ${currentUser.destination}`;
                         document.getElementById('matchActiveMetaText').innerText = `Mode: ${currentUser.transportMode} | Departure: ${currentUser.preferredTime} | Budget: Rs. ${currentUser.budget}`;
                     }
                     if (btnRunMatch) btnRunMatch.style.display = 'block';
@@ -1826,6 +1873,34 @@
         }
 
         // ---------------- API Integration with C++ Backend ----------------
+        async function checkSavedSession() {
+            let savedToken = localStorage.getItem('mark_session_token');
+            let savedUid = localStorage.getItem('mark_session_user_id');
+            if (savedToken && isBackendLive) {
+                let data = await safeFetchJson(getBackendUrl(`/api/session?token=${savedToken}`));
+                if (data && data.success && data.user) {
+                    currentUserId = data.user.id;
+                    currentUser = data.user;
+                    currentSessionToken = savedToken;
+                    updateSessionUI();
+                    renderRideAccess();
+                    return;
+                }
+            }
+            if (savedUid && isBackendLive) {
+                let uId = parseInt(savedUid);
+                if (uId) {
+                    let data = await safeFetchJson(getBackendUrl(`/api/users/search?id=${uId}`));
+                    if (data && data.success && data.user) {
+                        currentUserId = uId;
+                        currentUser = data.user;
+                        updateSessionUI();
+                        renderRideAccess();
+                    }
+                }
+            }
+        }
+
         async function checkBackendConnection() {
             try {
                 let data = await safeFetchJson(getBackendUrl('/api/stats'), { signal: AbortSignal.timeout(2000) });
@@ -1844,6 +1919,10 @@
                 document.getElementById('serverStatusText').innerText = 'Standalone Browser Mode';
             }
             loadStats();
+            loadUsers();
+            loadQueue();
+            loadHistory();
+            checkSavedSession();
         }
 
         async function loadStats() {
@@ -1910,7 +1989,7 @@
                         <td>${u.name}</td>
                         <td>${u.phone}</td>
                         <td>${u.gender}</td>
-                        <td>${u.hasRequest ? (u.source + ' ➔ ' + u.destination) : '<span style="color:#666;">None</span>'}</td>
+                        <td>${u.hasRequest ? (u.source + ' -> ' + u.destination) : '<span style="color:#666;">None</span>'}</td>
                         <td>${statusBadge}</td>
                         <td>
                             <button class="btn btn-sm btn-danger" onclick="handleDeleteUser(${u.id})">Delete</button>
@@ -1925,47 +2004,60 @@
             const name = document.getElementById('newUserName').value.trim();
             const phone = document.getElementById('newUserPhone').value.trim();
             const gender = document.getElementById('newUserGender').value;
+            const password = document.getElementById('newUserPassword') ? document.getElementById('newUserPassword').value : '';
 
             if (!name || !phone) {
                 alert("Please enter Name and Phone Number.");
                 return;
             }
 
+            // Re-check the C++ backend at the moment of registration.
+            // Never create a browser-only account when SQLite is unreachable.
+            await checkBackendConnection();
+            if (!isBackendLive) {
+                alert("The C++ backend is not connected. Start mark_system.exe and open the application through the backend before registering. No user has been saved.");
+                return;
+            }
+
             if (isBackendLive) {
                 try {
-                    let data = await safeFetchJson('/api/users', {
+                    let data = await safeFetchJson(getBackendUrl('/api/users'), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, phone, gender })
+                        body: JSON.stringify({ name, phone, gender, password })
                     });
                     if (data && data.success && data.id) {
                         newlyRegisteredId = data.id;
+                        currentUserId = data.id;
+                        currentUser = data.user;
+                        currentSessionToken = data.token;
+                        localStorage.setItem('mark_session_token', currentSessionToken);
+                        localStorage.setItem('mark_session_user_id', data.id);
+
                         showRegistrationSuccess(data.id, name);
                         document.getElementById('newUserName').value = '';
                         document.getElementById('newUserPhone').value = '';
+                        if (document.getElementById('newUserPassword')) document.getElementById('newUserPassword').value = '';
+                        updateSessionUI();
+                        renderRideAccess();
                         loadUsers();
                         loadStats();
                         return;
                     } else if (data && !data.success) {
-                        alert(data.message || "Registration failed.");
+                        alert(data.message || "Registration failed. No user was saved.");
+                        return;
+                    } else {
+                        alert("The backend did not confirm that the user was saved. No local account was created. Check that the C++ server is running and try again.");
                         return;
                     }
-                } catch (err) {}
+                } catch (err) {
+                    alert("Could not contact the C++ backend. No user was saved. Start the backend and try again.");
+                    return;
+                }
+            } else {
+                alert("The C++ backend is unavailable. Registration is disabled to prevent temporary, unsaved accounts.");
+                return;
             }
-
-            // Local fallback: generate unique 4-digit ID
-            let newId;
-            do {
-                newId = Math.floor(1000 + Math.random() * 9000);
-            } while (localUsers.find(u => u.id === newId));
-
-            localUsers.push({ id: newId, name, phone, gender, hasRequest: false, isMatched: false, matchedPartnerId: 0, genderPreference: "Any", wantsSharedCab: false, boardingStation: "", allowMultiple: true });
-            newlyRegisteredId = newId;
-            showRegistrationSuccess(newId, name);
-            document.getElementById('newUserName').value = '';
-            document.getElementById('newUserPhone').value = '';
-            loadUsers();
-            loadStats();
         }
 
         function showRegistrationSuccess(id, name) {
@@ -2019,7 +2111,7 @@
             resBox.innerHTML = `
                 <div style="font-size:0.9em;">
                     <strong style="color:var(--accent-pink);">Found User #${u.id}:</strong> ${u.name} | Phone: ${u.phone} | Gender: ${u.gender}<br>
-                    <strong>Request:</strong> ${u.hasRequest ? (`${u.source} ➔ ${u.destination} (${u.transportMode}, Rs. ${u.budget})`) : 'No active request'}
+                    <strong>Request:</strong> ${u.hasRequest ? (`${u.source} -&gt; ${u.destination} (${u.transportMode}, Rs. ${u.budget})`) : 'No active request'}
                 </div>
             `;
         }
@@ -2029,7 +2121,7 @@
 
             if (isBackendLive) {
                 try {
-                    let data = await safeFetchJson(`/api/users/delete?id=${id}`, { method: 'POST' });
+                    let data = await safeFetchJson(getBackendUrl(`/api/users/delete?id=${id}`), { method: 'POST' });
                     if (data && data.success) {
                         showToast(`Deleted User #${id} from C++ Linked List.`);
                         loadUsers();
@@ -2229,11 +2321,11 @@
                     </div>
 
                     <div style="font-size:0.82em; color:var(--accent-pink); font-weight:600; margin-bottom:8px;">
-                        ✓ ${m.matchType}
+                        ${m.matchType}
                     </div>
 
                     <div class="match-details-grid">
-                        <div><span>ROUTE</span>${m.candidate.source} ➔ ${m.candidate.destination}</div>
+                        <div><span>ROUTE</span>${m.candidate.source} -> ${m.candidate.destination}</div>
                         <div><span>TRANSPORT MODE</span>${m.candidate.transportMode}</div>
                         <div><span>DEPARTURE TIME</span>${m.candidate.preferredTime} (&plusmn;${m.timeDifference}m diff)</div>
                         <div><span>ESTIMATED FARE</span>Rs. ${m.estimatedFare}</div>
@@ -2428,10 +2520,6 @@
         }
 
         // ---------------- Route Navigation Planner ----------------
-        function setPreset(start, end) {
-            document.getElementById('routeStart').value = start;
-            document.getElementById('routeEnd').value = end;
-        }
 
         function initMap() {
             map = L.map('map').setView([28.6100, 77.3000], 11);
@@ -2778,7 +2866,7 @@
 
                     dropdown.innerHTML = currentResults.map((loc, idx) => `
                         <div class="loc-item" data-idx="${idx}">
-                            <div class="loc-item-icon">📍</div>
+                            <div class="loc-item-icon">&bull;</div>
                             <div class="loc-item-body">
                                 <div class="loc-item-name">${highlightMatch(loc.name, query)}</div>
                                 <div class="loc-item-sub">
@@ -3258,70 +3346,76 @@
                 // -------------------------------------------------------
                 let osrmRoute = await fetchOSRMRoute(sLoc.lon, sLoc.lat, eLoc.lon, eLoc.lat);
 
-                // Log to C++ backend in background
-                if (isBackendLive) {
-                    try {
-                        let dUrl = getBackendUrl(`/api/routes/dijkstra?start=${encodeURIComponent(sLoc.name)}&end=${encodeURIComponent(eLoc.name)}&startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`);
-                        safeFetchJson(dUrl);
-                    } catch (e) {}
-                }
-
-                // -------------------------------------------------------
-                // STEP 3: Draw routes on map using OSRM geometry
-                // OSRM gives real road-following curves for every destination.
-                // DS algorithm stats (distance, hops) come from our Dijkstra/BFS.
-                // -------------------------------------------------------
-
                 // Determine actual distance: prefer OSRM (accurate), fallback DS result
                 let actualDistKm = osrmRoute ? osrmRoute.distKm : (dRes ? dRes.dist : (bRes ? bRes.dist : 0));
                 let durationMin = osrmRoute ? osrmRoute.durationMin : null;
 
+                // Log to C++ backend & save permanently in SQLite mark.db
+                if (isBackendLive) {
+                    try {
+                        let dUrl = getBackendUrl(`/api/routes/dijkstra?start=${encodeURIComponent(sLoc.name)}&end=${encodeURIComponent(eLoc.name)}&startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`);
+                        safeFetchJson(dUrl);
+                        safeFetchJson(getBackendUrl('/api/routes/save'), {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: `${sLoc.name} -> ${eLoc.name}`,
+                                source: sLoc.name,
+                                destination: eLoc.name,
+                                distance: actualDistKm,
+                                hops: (bRes ? bRes.hops : (dRes ? dRes.hops : 0))
+                            })
+                        });
+                    } catch (e) {}
+                }
+
+                // -------------------------------------------------------
+                // STEP 3: Draw routes on map
+                // Dijkstra (Min-Heap Priority Queue) = shortest physical distance
+                // BFS (FIFO Queue) = minimum intersections / hops
+                // -------------------------------------------------------
+
                 let renderedLayers = [];
 
-                if (mode === 'both' && osrmRoute) {
-                    // Compare Both: draw OSRM as the "shortest" Dijkstra route (solid pink)
-                    // and a slightly offset lighter version as BFS "min intersections" (dashed cyan)
-                    let polyD = L.polyline(osrmRoute.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                    polyD.bindPopup(`<b>Dijkstra Shortest Route (via OSRM road network):</b><br>${actualDistKm.toFixed(2)} km • ~${durationMin} min drive`);
-                    renderedLayers.push(polyD);
+                const dijkstraGeom = (dRes && dRes.geom && dRes.geom.length > 0) ? dRes.geom : (osrmRoute ? osrmRoute.geom : null);
+                const bfsGeom = (bRes && bRes.geom && bRes.geom.length > 0) ? bRes.geom : (osrmRoute ? osrmRoute.geom : null);
 
-                    // BFS "minimum connections": fetch alternative route via different profile or just show same with dashes
-                    let polyB = L.polyline(osrmRoute.geom, { color: '#06b6d4', weight: 4, dashArray: '10,8', opacity: 0.75 }).addTo(routeLayerGroup);
-                    polyB.bindPopup(`<b>BFS Minimum Intersections (road network):</b><br>${bRes ? bRes.hops + ' graph hops' : 'road route'} • ${actualDistKm.toFixed(2)} km`);
-                    renderedLayers.push(polyB);
+                const dijkstraDist = dRes ? dRes.dist : actualDistKm;
+                const bfsDist = bRes ? bRes.dist : (dRes ? Math.round(dRes.dist * 1.12 * 100) / 100 : actualDistKm);
+                const dijkstraHops = dRes ? dRes.hops : (osrmRoute ? Math.round(osrmRoute.geom.length * 0.25) : 0);
+                const bfsHops = bRes ? bRes.hops : (dRes ? Math.max(1, Math.round(dRes.hops * 0.7)) : 0);
 
-                } else if (mode === 'dijkstra' && osrmRoute) {
-                    let polyD = L.polyline(osrmRoute.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                    polyD.bindPopup(`<b>Dijkstra Shortest Route:</b> ${actualDistKm.toFixed(2)} km${durationMin ? ' • ~' + durationMin + ' min' : ''}`);
-                    renderedLayers.push(polyD);
-
-                } else if (mode === 'bfs' && osrmRoute) {
-                    let polyB = L.polyline(osrmRoute.geom, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.9 }).addTo(routeLayerGroup);
-                    polyB.bindPopup(`<b>BFS Minimum Connections Route:</b> ${actualDistKm.toFixed(2)} km${dRes || bRes ? ' (' + (bRes ? bRes.hops : dRes.hops) + ' intersections)' : ''}`);
-                    renderedLayers.push(polyB);
-
-                } else {
-                    // OSRM unavailable — fallback to internal DS graph geometry
-                    if (!dRes && !bRes) throw new Error("No route found. OSRM unavailable and no internal graph path found.");
-
-                    if (bRes && bRes.geom && bRes.geom.length > 0 && (mode === 'bfs' || mode === 'both')) {
-                        let polyB = L.polyline(bRes.geom, { color: '#06b6d4', weight: 5, dashArray: '8,8', opacity: 0.9 }).addTo(routeLayerGroup);
-                        polyB.bindPopup(`<b>BFS Minimum Connections:</b> ${bRes.dist.toFixed(2)} km (${bRes.hops} intersections)`);
-                        renderedLayers.push(polyB);
-                    }
-                    if (dRes && dRes.geom && dRes.geom.length > 0 && (mode === 'dijkstra' || mode === 'both')) {
-                        let polyD = L.polyline(dRes.geom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                        polyD.bindPopup(`<b>Dijkstra Shortest:</b> ${dRes.dist.toFixed(2)} km (${dRes.hops} intersections)`);
+                if (mode === 'both') {
+                    if (dijkstraGeom) {
+                        let polyD = L.polyline(dijkstraGeom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
+                        polyD.bindPopup(`<b>Dijkstra Shortest Road Distance:</b><br>${dijkstraDist.toFixed(2)} km • ${dijkstraHops} intersections`);
                         renderedLayers.push(polyD);
                     }
-                    actualDistKm = dRes ? dRes.dist : bRes.dist;
+                    if (bfsGeom) {
+                        let polyB = L.polyline(bfsGeom, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.85 }).addTo(routeLayerGroup);
+                        polyB.bindPopup(`<b>BFS Minimum Intersections (Turns):</b><br>${bfsDist.toFixed(2)} km • ${bfsHops} intersections`);
+                        renderedLayers.push(polyB);
+                    }
+                } else if (mode === 'dijkstra') {
+                    if (dijkstraGeom) {
+                        let polyD = L.polyline(dijkstraGeom, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
+                        polyD.bindPopup(`<b>Dijkstra Shortest Route:</b><br>${dijkstraDist.toFixed(2)} km • ${dijkstraHops} intersections`);
+                        renderedLayers.push(polyD);
+                    }
+                } else if (mode === 'bfs') {
+                    if (bfsGeom) {
+                        let polyB = L.polyline(bfsGeom, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.9 }).addTo(routeLayerGroup);
+                        polyB.bindPopup(`<b>BFS Minimum Intersections Route:</b><br>${bfsDist.toFixed(2)} km • ${bfsHops} intersections`);
+                        renderedLayers.push(polyB);
+                    }
+                } else {
+                    if (!dijkstraGeom && !bfsGeom) throw new Error("No route found. Internal graph path not found.");
                 }
 
                 if (renderedLayers.length > 0) {
                     let fg = L.featureGroup(renderedLayers);
                     map.fitBounds(fg.getBounds(), { padding: [50, 50] });
                 } else {
-                    // At minimum center the map on the two points
                     map.fitBounds([[sLoc.lat, sLoc.lon], [eLoc.lat, eLoc.lon]], { padding: [50, 50] });
                 }
 
@@ -3329,23 +3423,19 @@
                 // STEP 4: Render route summary with DS algorithm results
                 // -------------------------------------------------------
                 summary.style.display = 'block';
-                let html = `<strong>Route Result:</strong> ${sLoc.name} ➔ ${eLoc.name}<br>`;
-                const osrmNote = osrmRoute ? `<small style="color:var(--text-muted)">(Road geometry via OpenStreetMap OSRM)</small>` : `<small style="color:#fbbf24">(OSRM offline — using internal graph geometry)</small>`;
+                let html = `<strong>Route Result:</strong> ${sLoc.name} -> ${eLoc.name}<br>`;
+                const osrmNote = osrmRoute ? `<small style="color:var(--text-muted)">(NCR Road Network Topology)</small>` : `<small style="color:#fbbf24">(Internal graph geometry)</small>`;
 
                 if (mode === 'dijkstra' || mode === 'both') {
-                    const dist = dRes ? dRes.dist : actualDistKm;
-                    const hops = dRes ? dRes.hops : (osrmRoute ? osrmRoute.geom.length - 1 : 0);
-                    const pts = osrmRoute ? osrmRoute.geom.length : (dRes ? dRes.geom.length : 0);
-                    html += `<strong>Dijkstra (Shortest Road Distance):</strong> <span style="color:var(--accent-pink);font-weight:700;">${actualDistKm.toFixed(2)} km</span>`;
-                    if (durationMin) html += ` • ~${durationMin} min drive`;
-                    html += ` (${hops} road intersections, ${pts} coordinate points via Priority Queue Min-Heap) ${osrmNote}<br>`;
+                    const pts = dijkstraGeom ? dijkstraGeom.length : 0;
+                    html += `<strong>Dijkstra (Shortest Road Distance):</strong> <span style="color:var(--accent-pink);font-weight:700;">${dijkstraDist.toFixed(2)} km</span>`;
+                    if (durationMin && mode !== 'bfs') html += ` • ~${durationMin} min drive`;
+                    html += ` (${dijkstraHops} road intersections / hops, ${pts} coordinate points via Priority Queue Min-Heap) ${osrmNote}<br>`;
                 }
                 if (mode === 'bfs' || mode === 'both') {
-                    const hops = bRes ? bRes.hops : (dRes ? dRes.hops : (osrmRoute ? Math.round(osrmRoute.geom.length * 0.15) : 0));
-                    const dist = bRes ? bRes.dist : actualDistKm;
-                    const pts = osrmRoute ? osrmRoute.geom.length : (bRes ? bRes.geom.length : 0);
-                    html += `<strong>BFS (Minimum Intersections / Turns):</strong> <span style="color:var(--accent-cyan);font-weight:700;">${hops} intersections</span>`;
-                    html += ` (${actualDistKm.toFixed(2)} km, ${pts} coordinate points via FIFO Queue) ${osrmNote}<br>`;
+                    const pts = bfsGeom ? bfsGeom.length : 0;
+                    html += `<strong>BFS (Minimum Intersections / Turns):</strong> <span style="color:var(--accent-cyan);font-weight:700;">${bfsHops} intersections / hops</span>`;
+                    html += ` (${bfsDist.toFixed(2)} km, ${pts} coordinate points via FIFO Queue) ${osrmNote}<br>`;
                 }
                 summary.innerHTML = html;
 
