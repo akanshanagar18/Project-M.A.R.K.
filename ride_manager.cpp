@@ -1,8 +1,9 @@
 #include "ride_manager.h"
 #include <iostream>
+
 using namespace std; 
 
-void Ride_Manager::add_ride_req(int user_id, std::string initial_dest, std::string final_dest, int time, std::string mode, double budget) {
+void Ride_Manager::add_ride_req(int user_id, string initial_dest, string final_dest, int time, string mode, double budget) {
     riderequest new_req;
     new_req.id = next_request_id++;
     new_req.user_id = user_id;
@@ -19,10 +20,8 @@ void Ride_Manager::add_ride_req(int user_id, std::string initial_dest, std::stri
     action.req = new_req;
     undo_stack.push(action);
 
-    cout << "Ride request added successfully"<< endl<<" RIDE Request ID: " << new_req.id << endl;
+    cout << "Ride request added successfully" << endl << " RIDE Request ID: " << new_req.id << endl;
 }
-
-
 
 void Ride_Manager::process_nextride(double fare) {
     if (pending_queue.empty()) {
@@ -42,7 +41,7 @@ void Ride_Manager::process_nextride(double fare) {
     record.mode = req.mode;
     record.fare = fare;
 
-    // Store int the vector
+    // Store in the vector
     ride_history.push_back(record);
 
     RideAction action;
@@ -50,12 +49,10 @@ void Ride_Manager::process_nextride(double fare) {
     action.rec = record;
     undo_stack.push(action);
 
-    cout << "Ride processed successfully! Ride ID: " << record.id <<endl;
+    cout << "Ride processed successfully! Ride ID: " << record.id << endl;
 }
 
-
-
-bool Ride_Manager::undo() {
+bool Ride_Manager::undo(RideAction* undoneAction) {
     if (undo_stack.empty()) {
         cout << "no ride to undo." << endl;
         return false;
@@ -63,10 +60,13 @@ bool Ride_Manager::undo() {
     
     RideAction last_action = undo_stack.top();
     undo_stack.pop();
+    if (undoneAction != nullptr) {
+        *undoneAction = last_action;
+    }
 
     if (last_action.type == BOOK) {
         int target_id = last_action.req.id;
-        std::queue<riderequest> temp_queue;
+        queue<riderequest> temp_queue;
         bool found = false;
 
         while (!pending_queue.empty()) {
@@ -99,14 +99,12 @@ bool Ride_Manager::undo() {
     return false;
 }
 
-
-
 void Ride_Manager::displaypending_queue() const {
     if (pending_queue.empty()) {
         cout << "NO RIDE IN THE PENDING QUEUE" << endl;
         return;
     }
-    std::queue<riderequest> temp = pending_queue;
+    queue<riderequest> temp = pending_queue;
     cout << "\nPENDING RIDE REQUESTS :" << endl;
     while (!temp.empty()) {
         riderequest r = temp.front();
@@ -115,10 +113,8 @@ void Ride_Manager::displaypending_queue() const {
              << " | From: " << r.initial_destination << " To: " << r.final_destination 
              << " | Mode: " << r.mode << " | Budget(in rupees): " << r.budget << endl;
     }
-    cout<< endl;
+    cout << endl;
 }
-
-
 
 void Ride_Manager::display_ride_history() const {
     if (ride_history.empty()) {
@@ -132,10 +128,8 @@ void Ride_Manager::display_ride_history() const {
              << " | From: " << r.initial_destination << " To: " << r.final_destination
              << " | Mode: " << r.mode << " | Fare: $" << r.fare << endl;
     }
-    cout<< endl;
+    cout << endl;
 }
-
-
 
 void Ride_Manager::displaystats() const {
     double total_revenue = 0.0;
@@ -149,11 +143,9 @@ void Ride_Manager::displaystats() const {
     cout << endl;
 }
 
-// FOR MEMBER 444444444444444444444444444444444444444(FOUR)
-
-std::vector<riderequest> Ride_Manager::all_pending_requests() const {
-    std::vector<riderequest> result;
-    std::queue<riderequest> temp = pending_queue;
+vector<riderequest> Ride_Manager::all_pending_requests() const {
+    vector<riderequest> result;
+    queue<riderequest> temp = pending_queue;
     while (!temp.empty()) {
         result.push_back(temp.front());
         temp.pop();
@@ -168,7 +160,7 @@ double Ride_Manager::get_total_revenue() const {
 }
 
 bool Ride_Manager::cancel_request(int req_id) {
-    std::queue<riderequest> temp;
+    queue<riderequest> temp;
     bool found = false;
     while (!pending_queue.empty()) {
         riderequest r = pending_queue.front();

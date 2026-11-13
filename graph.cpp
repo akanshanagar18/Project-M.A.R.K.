@@ -1,13 +1,15 @@
 #include "graph.h"
 #include <iostream>
 
-void Graph::addLocation(const std::string& location) {
+using namespace std;
+
+void Graph::addLocation(const string& location) {
     if (list.find(location) == list.end()) {
-        list[location] = std::vector<dest>();
+        list[location] = vector<dest>();
     }
 }
 
-void Graph::addRoute(const std::string& u, const std::string& v, double distance) {
+void Graph::addRoute(const string& u, const string& v, double distance) {
     addLocation(u);
     addLocation(v);
     // Push the relatable RoadSegment structs into both locations' adjacency vectors
@@ -16,20 +18,20 @@ void Graph::addRoute(const std::string& u, const std::string& v, double distance
 }
 
 void Graph::displayNetwork() const {
-    std::cout << "\n=== TRANSPORT ROUTE NETWORK (GRAPH ADJACENCY LIST) ===\n";
+    cout << "\n=== TRANSPORT ROUTE NETWORK (GRAPH ADJACENCY LIST) ===\n";
     for (const auto& pair : list) {
-        std::cout << "[" << pair.first << "] connected via roads: ";
+        cout << "[" << pair.first << "] connected via roads: ";
         for (const auto& road : pair.second) {
-            std::cout << "-> " << road.target_dest << " (" << road.distance << " km) ";
+            cout << "-> " << road.target_dest << " (" << road.distance << " km) ";
         }
-        std::cout << "\n";
+        cout << "\n";
     }
 }
 
-bool Graph::locationExists(const std::string& location) const {
+bool Graph::locationExists(const string& location) const {
     return list.find(location) != list.end();
 }
 
-const std::unordered_map<std::string, std::vector<dest>>& Graph::getlist() const {
+const unordered_map<string, vector<dest>>& Graph::getlist() const {
     return list;
 }

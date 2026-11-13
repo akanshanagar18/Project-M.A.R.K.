@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+using namespace std;
+
 enum ActionType {
     BOOK,
     COMPLETE
@@ -12,20 +14,20 @@ enum ActionType {
 struct riderequest {
     int id;
     int user_id; // jo user id pass bnaega us se leni hogi ye id
-    std::string initial_destination;
-    std::string final_destination;
+    string initial_destination;
+    string final_destination;
     int time;            
-    std::string mode;    
+    string mode;    
     double budget;
 };
 
 // completed ride record
 struct Complete_Ride {
     int id;
-    std::vector<int> user_ids;
-    std::string initial_destination;
-    std::string final_destination;
-    std::string mode;
+    vector<int> user_ids;
+    string initial_destination;
+    string final_destination;
+    string mode;
     double fare;
 };
 

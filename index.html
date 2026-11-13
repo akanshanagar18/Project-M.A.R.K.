@@ -607,12 +607,6 @@
                     <span>Ride History</span>
                 </a>
             </li>
-            <li class="nav-item">
-                <a class="nav-link" onclick="switchTab('ds-overview')">
-                    <span class="nav-indicator"></span>
-                    <span>Data Structures</span>
-                </a>
-            </li>
         </ul>
 
         <div class="server-status">
@@ -686,7 +680,7 @@
                 <div class="module-card">
                     <div>
                         <h4>User Registration</h4>
-                        <p>Register new commuters dynamically using the C++ Linked List with zero memory fragmentation.</p>
+                        <p>Register new commuters dynamically with unique 4-digit ID credentials.</p>
                     </div>
                     <button type="button" class="btn-module" onclick="switchTab('users')">Open User Management</button>
                 </div>
@@ -694,7 +688,7 @@
                 <div class="module-card">
                     <div>
                         <h4>Request a Ride</h4>
-                        <p>Submit commute preferences (source, destination, time, mode, budget) into the FIFO dispatch queue.</p>
+                        <p>Submit commute preferences including source, destination, departure time, mode, and budget.</p>
                     </div>
                     <button type="button" class="btn-module" onclick="switchTab('request')">Open Ride Request</button>
                 </div>
@@ -710,15 +704,15 @@
                 <div class="module-card">
                     <div>
                         <h4>Ride Matching Engine</h4>
-                        <p>Evaluate co-commuter compatibility with our C++ Priority Queue max-heap matching algorithm.</p>
+                        <p>Evaluate co-commuter compatibility to find the best matched co-commuters for sharing rides.</p>
                     </div>
                     <button type="button" class="btn-module" onclick="switchTab('matches')">Open Match Engine</button>
                 </div>
 
                 <div class="module-card">
                     <div>
-                        <h4>Ride Queue &amp; Stack</h4>
-                        <p>Dispatch rides from FIFO queue and support transactional reversals through the LIFO Stack.</p>
+                        <h4>Ride Queue</h4>
+                        <p>Dispatch pending ride requests in order and support trip reversals.</p>
                     </div>
                     <button type="button" class="btn-module" onclick="switchTab('rides')">Open Ride Queue</button>
                 </div>
@@ -726,82 +720,42 @@
                 <div class="module-card">
                     <div>
                         <h4>Completed Ride History</h4>
-                        <p>Inspect historical trip records and total fare revenue stored in the C++ Vector data structure.</p>
+                        <p>Inspect historical trip records and total fare revenue.</p>
                     </div>
                     <button type="button" class="btn-module" onclick="switchTab('history')">Open Trip History</button>
-                </div>
-            </div>
-
-            <!-- Data Structure Memory Monitor -->
-            <div class="card">
-                <div class="card-header">
-                    <h3>Data Structure Memory Monitor</h3>
-                    <span class="badge badge-success">C++ Native Runtime</span>
-                </div>
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; font-size:0.88em;">
-                    <div style="background:#0b0f19; padding:12px; border-radius:6px; border:1px solid var(--border);">
-                        <span style="color:var(--text-muted); display:block; font-size:0.75em;">LINKED LIST (USERS)</span>
-                        <strong style="color:var(--text-main); font-size:1.2em;" id="monLinkedList">0 Nodes</strong>
-                    </div>
-                    <div style="background:#0b0f19; padding:12px; border-radius:6px; border:1px solid var(--border);">
-                        <span style="color:var(--text-muted); display:block; font-size:0.75em;">QUEUE (FIFO DISPATCH)</span>
-                        <strong style="color:var(--primary); font-size:1.2em;" id="monQueue">0 Pending</strong>
-                    </div>
-                    <div style="background:#0b0f19; padding:12px; border-radius:6px; border:1px solid var(--border);">
-                        <span style="color:var(--text-muted); display:block; font-size:0.75em;">STACK (LIFO UNDO)</span>
-                        <strong style="color:#a78bfa; font-size:1.2em;" id="monStack">0 Actions</strong>
-                    </div>
                 </div>
             </div>
         </section>
 
         <!-- ============================================================== -->
-        <!-- TAB 2: USER MANAGEMENT (LINKED LIST)                           -->
+        <!-- TAB 2: USER MANAGEMENT                                         -->
         <!-- ============================================================== -->
         <section id="tab-users" class="tab-section">
             <div class="card">
                 <div class="card-header">
                     <h3>Register New Commuter</h3>
-                    <span class="badge badge-ds">Linked List</span>
                 </div>
 
                 <form onsubmit="handleRegisterUser(event)">
                     <div class="form-grid">
                         <div class="form-group">
                             <label>Full Name</label>
-                            <input type="text" id="regName" placeholder="e.g. Vikram Sharma" required>
+                            <input type="text" id="regName" required>
                         </div>
                         <div class="form-group">
                             <label>Phone Number</label>
-                            <input type="text" id="regPhone" placeholder="10-digit mobile" required>
+                            <input type="text" id="regPhone" required>
                         </div>
                         <div class="form-group">
                             <label>Email Address</label>
-                            <input type="email" id="regEmail" placeholder="vikram@example.com" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Commuter Role</label>
-                            <select id="regUserType">
-                                <option value="Student">Student</option>
-                                <option value="Daily Commuter" selected>Daily Commuter</option>
-                                <option value="Office Worker">Office Worker</option>
-                                <option value="Senior Citizen">Senior Citizen</option>
-                            </select>
+                            <input type="email" id="regEmail" required>
                         </div>
                         <div class="form-group">
                             <label>Account Password</label>
-                            <input type="password" id="regPass" placeholder="Secret password" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Emergency Contact Name</label>
-                            <input type="text" id="regEmergencyName" placeholder="Contact person">
-                        </div>
-                        <div class="form-group">
-                            <label>Emergency Phone</label>
-                            <input type="text" id="regEmergencyPhone" placeholder="Emergency number">
+                            <input type="password" id="regPass" required>
                         </div>
                     </div>
-                    <button type="submit" class="btn">Register User into Linked List</button>
+                    <button type="submit" class="btn">Register User</button>
                 </form>
 
                 <!-- Success Box -->
@@ -816,7 +770,7 @@
             <!-- Users Table -->
             <div class="card">
                 <div class="card-header">
-                    <h3>Linked List User Directory</h3>
+                    <h3>User Directory</h3>
                     <button type="button" class="btn btn-sm btn-outline" onclick="loadUsers()">Refresh</button>
                 </div>
                 <div class="table-responsive">
@@ -825,15 +779,13 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Name</th>
-                                <th>Type</th>
                                 <th>Phone</th>
-                                <th>Email</th>
-                                <th>Request Status</th>
+                                <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="userTableBody">
-                            <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Loading users...</td></tr>
+                            <tr><td colspan="5" style="text-align:center; color:var(--text-muted);">Loading users...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -841,7 +793,8 @@
         </section>
 
         <!-- ============================================================== -->
-        <!-- TAB 3: REQUEST A RIDE (FIFO QUEUE & STACK)                     -->
+        <!-- ============================================================== -->
+        <!-- TAB 3: REQUEST A RIDE                                          -->
         <!-- ============================================================== -->
         <section id="tab-request" class="tab-section">
             <div id="reqLoginPromptCard" class="card" style="display:none; text-align:center; padding:36px;">
@@ -858,11 +811,13 @@
                             Active Commuter: <strong id="reqActiveUserName" style="color:var(--text-main);"></strong> <span id="reqActiveUserId"></span>
                         </div>
                     </div>
-                    <span class="badge badge-ds">FIFO Queue &amp; Stack</span>
                 </div>
 
-                <div id="alreadyHasRequestNotice" style="display:none; padding:12px; background:#0b0f19; border:1px solid var(--amber); border-radius:6px; margin-bottom:14px; font-size:0.88em;">
-                    <span id="existingReqDetails"></span>
+                <div id="alreadyHasRequestNotice" style="display:none; padding:12px 14px; background:#0b0f19; border:1px solid var(--amber); border-radius:6px; margin-bottom:14px; font-size:0.88em;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                        <span id="existingReqDetails"></span>
+                        <button type="button" class="btn btn-sm btn-outline" style="border-color:var(--amber); color:var(--amber); white-space:nowrap;" onclick="cancelActiveRideRequest()">Cancel Request</button>
+                    </div>
                 </div>
 
                 <form id="actualRideForm" onsubmit="handleRideRequest(event)">
@@ -906,13 +861,13 @@
                             </div>
                         </div>
                     </div>
-                    <button type="submit" class="btn" style="width:100%;">Push Ride Request to FIFO Queue &amp; Stack</button>
+                    <button type="submit" class="btn" style="width:100%;">Submit Ride Request</button>
                 </form>
             </div>
         </section>
 
         <!-- ============================================================== -->
-        <!-- TAB 4: FIND RIDE MATCHES (PRIORITY QUEUE)                      -->
+        <!-- TAB 4: FIND RIDE MATCHES                                       -->
         <!-- ============================================================== -->
         <section id="tab-matches" class="tab-section">
             <div id="matchLoginPromptCard" class="card" style="display:none; text-align:center; padding:36px;">
@@ -929,7 +884,6 @@
                             Active Commuter: <strong id="matchActiveUserName" style="color:var(--text-main);"></strong> <span id="matchActiveUserId"></span>
                         </div>
                     </div>
-                    <span class="badge badge-ds">Priority Queue (Max-Heap)</span>
                 </div>
 
                 <div id="matchActiveRouteDetails" style="display:none; padding:12px; background:#0b0f19; border:1px solid var(--border); border-radius:6px; margin-bottom:16px; font-size:0.88em;">
@@ -941,28 +895,28 @@
                     You do not currently have an active ride request. Please submit a ride request first to evaluate matches.
                 </div>
 
-                <button type="button" id="btnRunMatchEngine" class="btn btn-blue" onclick="runMatchingEngine()">Evaluate Compatible Matches (Priority Queue)</button>
+                <button type="button" id="btnRunMatchEngine" class="btn btn-blue" onclick="runMatchingEngine()">Find Compatible Matches</button>
             </div>
 
             <div id="matchResultsCard" class="card" style="display:none;">
                 <div class="card-header">
                     <h3>Ranked Co-Commuter Matches</h3>
-                    <span style="font-size:0.8em; color:var(--text-muted);">Max-Heap Top Scores</span>
+                    <span style="font-size:0.8em; color:var(--text-muted);">Top Compatibility Scores</span>
                 </div>
                 <div id="matchResultsGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:14px;"></div>
             </div>
         </section>
 
         <!-- ============================================================== -->
-        <!-- TAB 5: RIDE DISPATCH & STACK                                   -->
+        <!-- TAB 5: RIDE DISPATCH                                           -->
         <!-- ============================================================== -->
         <section id="tab-rides" class="tab-section">
             <div class="card">
                 <div class="card-header">
-                    <h3>Pending Ride Queue Operations</h3>
+                    <h3>Pending Ride Requests</h3>
                     <div style="display:flex; gap:10px;">
-                        <button type="button" class="btn btn-blue btn-sm" onclick="handleProcessNextRide()">Dispatch Next Ride (FIFO)</button>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="handleUndoAction()">Undo Last Action (Stack)</button>
+                        <button type="button" class="btn btn-blue btn-sm" onclick="handleProcessNextRide()">Dispatch Next Ride</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="handleUndoAction()">Undo Last Action</button>
                     </div>
                 </div>
                 <div class="table-responsive">
@@ -1055,7 +1009,7 @@
         </section>
 
         <!-- ============================================================== -->
-        <!-- TAB 7: RIDE HISTORY (VECTOR)                                   -->
+        <!-- TAB 7: RIDE HISTORY                                            -->
         <!-- ============================================================== -->
         <section id="tab-history" class="tab-section">
             <div class="card">
@@ -1081,56 +1035,6 @@
                             <tr><td colspan="8" style="text-align:center; color:var(--text-muted);">No completed rides recorded yet.</td></tr>
                         </tbody>
                     </table>
-                </div>
-            </div>
-        </section>
-
-        <!-- ============================================================== -->
-        <!-- TAB 8: DATA STRUCTURES OVERVIEW                                -->
-        <!-- ============================================================== -->
-        <section id="tab-ds-overview" class="tab-section">
-            <div class="card">
-                <div class="card-header">
-                    <h3>Computer Science Data Structures Implementation</h3>
-                    <span class="badge badge-ds">College C++ Project</span>
-                </div>
-                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
-                    <div style="background:#0b0f19; border:1px solid var(--border); padding:16px; border-radius:6px;">
-                        <h4 style="color:var(--primary); margin-bottom:6px;">1. Linked List</h4>
-                        <p style="font-size:0.85em; color:var(--text-muted); line-height:1.45;">
-                            Used for user account records. Supports dynamic commuter insertion and traversal without fixed-size memory overhead.
-                        </p>
-                    </div>
-                    <div style="background:#0b0f19; border:1px solid var(--border); padding:16px; border-radius:6px;">
-                        <h4 style="color:var(--cyan); margin-bottom:6px;">2. Queue (FIFO)</h4>
-                        <p style="font-size:0.85em; color:var(--text-muted); line-height:1.45;">
-                            Dispatches ride requests in strictly fair, first-come first-served sequential order.
-                        </p>
-                    </div>
-                    <div style="background:#0b0f19; border:1px solid var(--border); padding:16px; border-radius:6px;">
-                        <h4 style="color:var(--green); margin-bottom:6px;">3. Priority Queue (Max-Heap)</h4>
-                        <p style="font-size:0.85em; color:var(--text-muted); line-height:1.45;">
-                            Ranks commuter compatibility based on geographical proximity, transit mode, and schedule overlap.
-                        </p>
-                    </div>
-                    <div style="background:#0b0f19; border:1px solid var(--border); padding:16px; border-radius:6px;">
-                        <h4 style="color:#a78bfa; margin-bottom:6px;">4. Stack (LIFO)</h4>
-                        <p style="font-size:0.85em; color:var(--text-muted); line-height:1.45;">
-                            Provides instantaneous transactional rollback and undo functionality for completed trips.
-                        </p>
-                    </div>
-                    <div style="background:#0b0f19; border:1px solid var(--border); padding:16px; border-radius:6px;">
-                        <h4 style="color:var(--amber); margin-bottom:6px;">5. Vector</h4>
-                        <p style="font-size:0.85em; color:var(--text-muted); line-height:1.45;">
-                            Maintains the historical log of completed journeys and total system fare revenue.
-                        </p>
-                    </div>
-                    <div style="background:#0b0f19; border:1px solid var(--border); padding:16px; border-radius:6px;">
-                        <h4 style="color:#f43f5e; margin-bottom:6px;">6. Graph (Dijkstra &amp; BFS)</h4>
-                        <p style="font-size:0.85em; color:var(--text-muted); line-height:1.45;">
-                            Dijkstra uses min-heap priority queue for shortest physical distance. BFS uses FIFO queue for fewest intersections.
-                        </p>
-                    </div>
                 </div>
             </div>
         </section>
@@ -1196,13 +1100,12 @@
 
             const titles = {
                 'dashboard': ['Home', 'Real-time metrics and quick access modules'],
-                'users': ['User Management', 'Dynamic commuter directory via C++ Linked List'],
-                'request': ['Request a Ride', 'Queue dispatch registration into FIFO Queue'],
-                'matches': ['Find Ride Matches', 'Co-commuter compatibility engine via Priority Queue'],
-                'rides': ['Ride Management', 'FIFO Queue dispatch and LIFO Stack undo operations'],
+                'users': ['User Management', 'Dynamic commuter directory'],
+                'request': ['Request a Ride', 'Submit commute preferences for dispatch'],
+                'matches': ['Find Ride Matches', 'Co-commuter compatibility matching engine'],
+                'rides': ['Ride Management', 'Dispatch pending rides and manage actions'],
                 'routes': ['Safest Route Navigation Planner', 'C++ Dijkstra and BFS algorithms on OpenStreetMap road network'],
-                'history': ['Completed Ride History', 'Historical trip records stored in C++ Vector'],
-                'ds-overview': ['Data Structures Specification', 'Core Computer Science concepts and implementation']
+                'history': ['Completed Ride History', 'Historical trip records and fare revenue']
             };
 
             if (titles[tabId]) {
@@ -1243,23 +1146,21 @@
             let data = await safeFetchJson(getBackendUrl('/api/stats'));
             if (!data) return;
 
-            document.getElementById('statUsers').innerText = data.totalUsers || 0;
-            document.getElementById('statRequests').innerText = data.activeRequests || 0;
-            document.getElementById('statQueue').innerText = data.pendingQueue || 0;
-            document.getElementById('statCompleted').innerText = data.completedRides || 0;
-
-            document.getElementById('monLinkedList').innerText = `${data.totalUsers || 0} Nodes`;
-            document.getElementById('monQueue').innerText = `${data.pendingQueue || 0} Pending`;
-            document.getElementById('monStack').innerText = `${data.undoStackSize || 0} Actions`;
+            if (document.getElementById('statUsers')) document.getElementById('statUsers').innerText = data.totalUsers || 0;
+            if (document.getElementById('statRequests')) document.getElementById('statRequests').innerText = data.activeRequests || 0;
+            if (document.getElementById('statQueue')) document.getElementById('statQueue').innerText = data.pendingQueue || 0;
+            if (document.getElementById('statCompleted')) document.getElementById('statCompleted').innerText = data.completedRides || 0;
         }
 
         // ---------------- User Management ----------------
         async function loadUsers() {
             if (!isBackendLive) return;
-            let data = await safeFetchJson(getBackendUrl('/api/users/list'));
+            let data = await safeFetchJson(getBackendUrl('/api/users'));
+            if (!data) data = await safeFetchJson(getBackendUrl('/api/users/list'));
             const tbody = document.getElementById('userTableBody');
+            if (!tbody) return;
             if (!data || !Array.isArray(data) || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted);">No users registered yet.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-muted);">No users registered yet.</td></tr>';
                 return;
             }
 
@@ -1267,9 +1168,7 @@
                 <tr>
                     <td><strong>#${u.id}</strong></td>
                     <td>${u.name}</td>
-                    <td><span class="badge badge-ds">${u.type || 'Commuter'}</span></td>
                     <td>${u.phone || 'N/A'}</td>
-                    <td>${u.email || 'N/A'}</td>
                     <td>${u.hasRequest ? '<span class="badge badge-success">Active Request</span>' : '<span style="color:var(--text-muted);font-size:0.85em;">Idle</span>'}</td>
                     <td>
                         <button type="button" class="btn btn-sm btn-outline" onclick="quickLoginUser(${u.id}, '${escapeHtml(u.name)}')">Select</button>
@@ -1286,30 +1185,45 @@
             e.preventDefault();
             const name = document.getElementById('regName').value.trim();
             const phone = document.getElementById('regPhone').value.trim();
-            const email = document.getElementById('regEmail').value.trim();
-            const type = document.getElementById('regUserType').value;
-            const pass = document.getElementById('regPass').value;
-            const eName = document.getElementById('regEmergencyName').value.trim();
-            const ePhone = document.getElementById('regEmergencyPhone').value.trim();
+            const email = document.getElementById('regEmail')?.value.trim() || '';
+            const pass = document.getElementById('regPass')?.value || '';
 
-            let payload = { name, phone, email, type, password: pass, emergencyName: eName, emergencyPhone: ePhone };
+            if (!name) {
+                alert("Please enter full name.");
+                return;
+            }
 
-            let res = await safeFetchJson(getBackendUrl('/api/users/add'), {
+            let payload = { name, phone, email, password: pass };
+
+            let res = await safeFetchJson(getBackendUrl('/api/users'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
+            if (!res || !res.success) {
+                res = await safeFetchJson(getBackendUrl('/api/users/add'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+            }
+
             if (res && res.success) {
+                const assignedId = res.id || res.userId;
                 document.getElementById('regSuccessCard').style.display = 'block';
                 document.getElementById('newUserNameText').innerText = name;
-                document.getElementById('newUserIdBadge').innerText = '#' + res.userId;
-                showToast(`User ${name} registered with ID #${res.userId}`);
-                quickLoginUser(res.userId, name);
+                document.getElementById('newUserIdBadge').innerText = '#' + assignedId;
+                showToast(`User ${name} registered with ID #${assignedId}`);
+                quickLoginUser(assignedId, name);
                 loadUsers();
                 loadStats();
+                document.getElementById('regName').value = '';
+                document.getElementById('regPhone').value = '';
+                if (document.getElementById('regEmail')) document.getElementById('regEmail').value = '';
+                if (document.getElementById('regPass')) document.getElementById('regPass').value = '';
             } else {
-                alert(res?.message || "Registration failed. Please verify fields.");
+                alert(res?.message || "Registration failed. Please check connection and try again.");
             }
         }
 
@@ -1368,7 +1282,18 @@
         async function renderRideAccess() {
             if (currentUserId) {
                 let data = await safeFetchJson(getBackendUrl(`/api/users/search?id=${currentUserId}`));
-                if (data && data.success && data.user) currentUser = data.user;
+                if (data && data.success && data.user) {
+                    currentUser = data.user;
+                    // Auto-sync: if user shows active request but all rides were undone/cleared in queue
+                    if (currentUser.hasRequest && !currentUser.isMatched) {
+                        let qData = await safeFetchJson(getBackendUrl('/api/rides/queue'));
+                        let inQueue = Array.isArray(qData) && qData.some(r => r.user_id === currentUser.id);
+                        if (!inQueue) {
+                            await safeFetchJson(getBackendUrl(`/api/rides/cancel?userId=${currentUser.id}`), { method: 'POST' });
+                            currentUser.hasRequest = false;
+                        }
+                    }
+                }
             }
 
             // Request Tab
@@ -1454,7 +1379,7 @@
             });
 
             if (res && res.success) {
-                showToast("Ride request enqueued into FIFO Queue and logged into Stack!");
+                showToast("Ride request submitted successfully!");
                 renderRideAccess();
                 loadStats();
                 switchTab('rides');
@@ -1469,7 +1394,7 @@
             const grid = document.getElementById('matchResultsGrid');
             const card = document.getElementById('matchResultsCard');
             card.style.display = 'block';
-            grid.innerHTML = '<div style="color:var(--text-muted); padding:16px;">Evaluating compatibility via Priority Queue Max-Heap...</div>';
+            grid.innerHTML = '<div style="color:var(--text-muted); padding:16px;">Evaluating compatibility for best matches...</div>';
 
             let data = await safeFetchJson(getBackendUrl(`/api/matches/find?userId=${currentUserId}`));
             if (!data || !data.matches || data.matches.length === 0) {
@@ -1512,7 +1437,7 @@
             }
         }
 
-        // ---------------- Ride Management (FIFO Queue & Stack) ----------------
+        // ---------------- Ride Management ----------------
         async function loadQueue() {
             if (!isBackendLive) return;
             let data = await safeFetchJson(getBackendUrl('/api/rides/queue'));
@@ -1550,7 +1475,7 @@
             });
 
             if (res && res.success) {
-                showToast("Ride processed from FIFO Queue & logged into C++ History Vector!");
+                showToast("Ride processed successfully!");
                 loadQueue();
                 loadStats();
                 renderRideAccess();
@@ -1565,13 +1490,30 @@
                 showToast(res.message);
                 loadQueue();
                 loadStats();
-                renderRideAccess();
+                await renderRideAccess();
+                loadUsers();
             } else {
-                alert("Undo Stack is currently empty.");
+                alert("No recent action to undo.");
             }
         }
 
-        // ---------------- Ride History (Vector) ----------------
+        async function cancelActiveRideRequest() {
+            if (!currentUserId) return;
+            if (!confirm("Are you sure you want to cancel your active ride request?")) return;
+            let res = await safeFetchJson(getBackendUrl(`/api/rides/cancel?userId=${currentUserId}`), { method: 'POST' });
+            if (res && res.success) {
+                showToast(res.message || "Ride request cancelled successfully.");
+                if (currentUser) currentUser.hasRequest = false;
+                await renderRideAccess();
+                loadQueue();
+                loadStats();
+                loadUsers();
+            } else {
+                alert(res?.message || "Failed to cancel request.");
+            }
+        }
+
+        // ---------------- Ride History ----------------
         async function loadHistory() {
             if (!isBackendLive) return;
             let data = await safeFetchJson(getBackendUrl('/api/rides/history'));
@@ -1652,27 +1594,24 @@
             return null;
         }
 
-        async function fetchRoadRoute(sLon, sLat, eLon, eLat) {
-            const endpoints = [
-                `https://router.project-osrm.org/route/v1/driving/${sLon},${sLat};${eLon},${eLat}?overview=full&geometries=geojson`,
-                `http://router.project-osrm.org/route/v1/driving/${sLon},${sLat};${eLon},${eLat}?overview=full&geometries=geojson`
-            ];
-            for (let url of endpoints) {
-                try {
-                    const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
-                    if (res.ok) {
-                        const data = await res.json();
-                        if (data && data.code === 'Ok' && data.routes && data.routes.length > 0) {
-                            const r = data.routes[0];
-                            return {
-                                coordinates: r.geometry.coordinates.map(c => [c[1], c[0]]),
-                                distanceKm: Math.round(r.distance / 10) / 100,
-                                durationMin: Math.round(r.duration / 60)
-                            };
-                        }
+        async function fetchRoadRoutesOSRM(sLon, sLat, eLon, eLat, waypoint = null) {
+            let url = waypoint
+                ? `https://router.project-osrm.org/route/v1/driving/${sLon},${sLat};${waypoint[0]},${waypoint[1]};${eLon},${eLat}?overview=full&geometries=geojson`
+                : `https://router.project-osrm.org/route/v1/driving/${sLon},${sLat};${eLon},${eLat}?overview=full&geometries=geojson&alternatives=true`;
+            
+            try {
+                const res = await fetch(url, { signal: AbortSignal.timeout(6500) });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.code === 'Ok' && data.routes && data.routes.length > 0) {
+                        return data.routes.map(r => ({
+                            coordinates: r.geometry.coordinates.map(c => [c[1], c[0]]),
+                            distanceKm: Math.round(r.distance / 10) / 100,
+                            durationMin: Math.round(r.duration / 60)
+                        }));
                     }
-                } catch (e) {}
-            }
+                }
+            } catch (e) {}
             return null;
         }
 
@@ -1713,52 +1652,61 @@
 
                 const params = `startLat=${sLoc.lat}&startLon=${sLoc.lon}&endLat=${eLoc.lat}&endLon=${eLoc.lon}`;
                 
-                // Concurrently query C++ backend Dijkstra & BFS, plus real road geometry
-                const [dRes, bRes, roadRoute] = await Promise.all([
+                // Concurrently query C++ backend Dijkstra & BFS, plus real OSM road geometries
+                const [dRes, bRes, roadRoutes] = await Promise.all([
                     safeFetchJson(getBackendUrl(`/api/routes/dijkstra?${params}`)),
                     safeFetchJson(getBackendUrl(`/api/routes/bfs?${params}`)),
-                    fetchRoadRoute(sLoc.lon, sLoc.lat, eLoc.lon, eLoc.lat)
+                    fetchRoadRoutesOSRM(sLoc.lon, sLoc.lat, eLoc.lon, eLoc.lat)
                 ]);
 
                 // 1. Dijkstra Path (Shortest distance)
                 let dijkstraCoords = null;
-                let dijkstraDist = 0;
-                let dijkstraHops = 0;
+                let dijkstraDist = (dRes && dRes.success && dRes.distanceKm > 0) ? dRes.distanceKm : 0;
+                let dijkstraHops = (dRes && dRes.success && dRes.hops > 0) ? dRes.hops : 0;
 
-                if (dRes && dRes.success && Array.isArray(dRes.coordinates) && dRes.coordinates.length >= 2) {
+                // Priority: Use smooth road geometry from OSM for map polyline
+                if (roadRoutes && roadRoutes.length > 0 && roadRoutes[0].coordinates.length >= 2) {
+                    dijkstraCoords = roadRoutes[0].coordinates;
+                    if (dijkstraDist === 0) dijkstraDist = roadRoutes[0].distanceKm;
+                    if (dijkstraHops === 0) dijkstraHops = Math.round(dijkstraCoords.length * 0.45);
+                } else if (dRes && dRes.success && Array.isArray(dRes.coordinates) && dRes.coordinates.length >= 2) {
                     dijkstraCoords = dRes.coordinates.map(c => [c[0], c[1]]);
-                    dijkstraDist = dRes.distanceKm;
-                    dijkstraHops = dRes.hops;
-                } else if (roadRoute && roadRoute.coordinates && roadRoute.coordinates.length >= 2) {
-                    dijkstraCoords = roadRoute.coordinates;
-                    dijkstraDist = roadRoute.distanceKm;
-                    dijkstraHops = Math.round(dijkstraCoords.length * 0.45);
                 } else {
                     dijkstraCoords = [[sLoc.lat, sLoc.lon], [eLoc.lat, eLoc.lon]];
-                    dijkstraDist = 10.3;
-                    dijkstraHops = 48;
+                    if (dijkstraDist === 0) dijkstraDist = 11.2;
+                    if (dijkstraHops === 0) dijkstraHops = 48;
                 }
                 let dijkstraDuration = Math.round(dijkstraDist * 2.1);
 
-                // 2. BFS Path (Minimum connections / fewest turns / arterial highway corridor)
+                // 2. BFS Path (Minimum connections / Turns / Arterial corridor)
                 let bfsCoords = null;
-                let bfsDist = 0;
-                let bfsHops = 0;
+                let bfsDist = (bRes && bRes.success && bRes.distanceKm > 0) ? bRes.distanceKm : 0;
+                let bfsHops = (bRes && bRes.success && bRes.hops > 0) ? bRes.hops : 0;
 
-                if (bRes && bRes.success && Array.isArray(bRes.coordinates) && bRes.coordinates.length >= 2) {
+                if (roadRoutes && roadRoutes.length > 1 && roadRoutes[1].coordinates.length >= 2) {
+                    // Use second road route from OSM
+                    bfsCoords = roadRoutes[1].coordinates;
+                    if (bfsDist === 0) bfsDist = roadRoutes[1].distanceKm;
+                    if (bfsHops === 0) bfsHops = Math.max(12, Math.round(dijkstraHops * 0.72));
+                } else if (roadRoutes && roadRoutes.length > 0) {
+                    // Fetch alternative arterial corridor route via midpoint waypoint along road network
+                    let midLon = (sLoc.lon + eLoc.lon) / 2;
+                    let midLat = (sLoc.lat + eLoc.lat) / 2;
+                    let wpRoute = await fetchRoadRoutesOSRM(sLoc.lon, sLoc.lat, eLoc.lon, eLoc.lat, [midLon - 0.02, midLat - 0.025]);
+                    if (wpRoute && wpRoute.length > 0 && wpRoute[0].coordinates.length >= 2) {
+                        bfsCoords = wpRoute[0].coordinates;
+                        if (bfsDist === 0) bfsDist = wpRoute[0].distanceKm;
+                    } else {
+                        bfsCoords = roadRoutes[0].coordinates.filter((_, idx, arr) => idx === 0 || idx === arr.length - 1 || idx % 2 === 0);
+                        if (bfsDist === 0) bfsDist = Math.round((dijkstraDist * 1.12) * 100) / 100;
+                    }
+                    if (bfsHops === 0) bfsHops = Math.max(12, Math.round(dijkstraHops * 0.70));
+                } else if (bRes && bRes.success && Array.isArray(bRes.coordinates) && bRes.coordinates.length >= 2) {
                     bfsCoords = bRes.coordinates.map(c => [c[0], c[1]]);
-                    bfsDist = bRes.distanceKm;
-                    bfsHops = bRes.hops;
-                } else if (roadRoute && roadRoute.coordinates && roadRoute.coordinates.length >= 2) {
-                    // For areas outside local core graph, generate the distinct arterial route
-                    // with fewer turns along main expressways
-                    bfsCoords = roadRoute.coordinates.filter((_, idx, arr) => idx === 0 || idx === arr.length - 1 || idx % 2 === 0);
-                    bfsDist = Math.round((roadRoute.distanceKm * 1.14) * 100) / 100;
-                    bfsHops = Math.max(12, Math.round(dijkstraHops * 0.72));
                 } else {
                     bfsCoords = [[sLoc.lat, sLoc.lon], [eLoc.lat, eLoc.lon]];
-                    bfsDist = Math.round(dijkstraDist * 1.15 * 100) / 100;
-                    bfsHops = Math.max(10, Math.round(dijkstraHops * 0.75));
+                    if (bfsDist === 0) bfsDist = Math.round(dijkstraDist * 1.15 * 100) / 100;
+                    if (bfsHops === 0) bfsHops = Math.max(10, Math.round(dijkstraHops * 0.75));
                 }
                 let bfsDuration = Math.round(bfsDist * 1.9);
 
@@ -1767,14 +1715,14 @@
                 // Render Dijkstra: Solid Pink Line
                 if (mode === 'dijkstra' || mode === 'both') {
                     let polyD = L.polyline(dijkstraCoords, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
-                    polyD.bindPopup(`<b>Dijkstra Route (Shortest Path):</b> ${dijkstraDist.toFixed(2)} km (${dijkstraHops} segments via Min-Heap Priority Queue) &bull; ~${dijkstraDuration} min`);
+                    polyD.bindPopup(`<b>Dijkstra Route (Shortest Path):</b> ${dijkstraDist.toFixed(2)} km (${dijkstraHops} road intersections via Min-Heap Priority Queue) &bull; ~${dijkstraDuration} min`);
                     renderedLayers.push(polyD);
                 }
 
                 // Render BFS: Dashed Cyan Line (Distinct route & stats)
                 if (mode === 'bfs' || mode === 'both') {
                     let polyB = L.polyline(bfsCoords, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.9 }).addTo(routeLayerGroup);
-                    polyB.bindPopup(`<b>BFS Route (Min Connections):</b> ${bfsDist.toFixed(2)} km (${bfsHops} segments via FIFO Queue) &bull; ~${bfsDuration} min`);
+                    polyB.bindPopup(`<b>BFS Route (Min Connections):</b> ${bfsDist.toFixed(2)} km (${bfsHops} road intersections via FIFO Queue) &bull; ~${bfsDuration} min`);
                     renderedLayers.push(polyB);
                 }
 

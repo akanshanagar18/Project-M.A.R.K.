@@ -9,6 +9,8 @@
 #include <cstring>
 #include <random>
 
+using namespace std;
+
 class SHA256 {
 private:
     uint32_t state[8];
@@ -96,11 +98,11 @@ public:
         }
     }
 
-    void update(const std::string& str) {
+    void update(const string& str) {
         update(reinterpret_cast<const uint8_t*>(str.data()), str.length());
     }
 
-    std::string finalize() {
+    string finalize() {
         uint8_t hash[32];
         uint32_t i = datalen;
 
@@ -131,36 +133,36 @@ public:
             }
         }
 
-        std::ostringstream ss;
+        ostringstream ss;
         for (int k = 0; k < 32; ++k) {
-            ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[k]);
+            ss << hex << setw(2) << setfill('0') << static_cast<int>(hash[k]);
         }
         return ss.str();
     }
 
-    static std::string hash(const std::string& input) {
+    static string hash(const string& input) {
         SHA256 sha;
         sha.update(input);
         return sha.finalize();
     }
 
-    static std::string generateSalt(size_t length = 16) {
+    static string generateSalt(size_t length = 16) {
         static const char hexChars[] = "0123456789abcdef";
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(0, 15);
-        std::string s = "";
+        random_device rd;
+        mt19937 gen(rd());
+        uniform_int_distribution<> dis(0, 15);
+        string s = "";
         for (size_t i = 0; i < length; ++i) {
             s += hexChars[dis(gen)];
         }
         return s;
     }
 
-    static std::string generateToken() {
+    static string generateToken() {
         return generateSalt(32);
     }
 
-    static std::string hashPassword(const std::string& password, const std::string& salt) {
+    static string hashPassword(const string& password, const string& salt) {
         return hash(salt + "$" + password);
     }
 };

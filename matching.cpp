@@ -9,6 +9,8 @@
 #include <algorithm>
 #include "users_management.cpp"
 
+using namespace std;
+
 const int MAX_TIME_DIFFERENCE = 45; // Minutes
 const int FARE_PER_STOP = 10;
 const int SHARED_CAB_FARE = 80;

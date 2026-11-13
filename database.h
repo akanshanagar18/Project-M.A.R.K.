@@ -11,6 +11,8 @@
 #include "users_management.cpp"
 #include "ride.h"
 
+using namespace std;
+
 class DatabaseManager {
 private:
     sqlite3* db;
@@ -33,10 +35,10 @@ public:
 
     bool isOpen() const { return is_open; }
 
-    bool init(const std::string& dbPath = "mark.db") {
+    bool init(const string& dbPath = "mark.db") {
         int rc = sqlite3_open(dbPath.c_str(), &db);
         if (rc != SQLITE_OK) {
-            std::cerr << "[Database] Cannot open database " << dbPath << ": " << sqlite3_errmsg(db) << "\n";
+            cerr << "[Database] Cannot open database " << dbPath << ": " << sqlite3_errmsg(db) << "\n";
             is_open = false;
             return false;
         }
@@ -46,7 +48,7 @@ public:
         char* errMsg = nullptr;
         rc = sqlite3_exec(db, "PRAGMA foreign_keys = ON;", nullptr, nullptr, &errMsg);
         if (rc != SQLITE_OK) {
-            std::cerr << "[Database] Failed to enable foreign keys: " << errMsg << "\n";
+            cerr << "[Database] Failed to enable foreign keys: " << errMsg << "\n";
             sqlite3_free(errMsg);
         }
 
@@ -113,23 +115,23 @@ public:
 
         rc = sqlite3_exec(db, schema, nullptr, nullptr, &errMsg);
         if (rc != SQLITE_OK) {
-            std::cerr << "[Database] Schema creation failed: " << errMsg << "\n";
+            cerr << "[Database] Schema creation failed: " << errMsg << "\n";
             sqlite3_free(errMsg);
             return false;
         }
 
-        std::cout << "[Database] SQLite initialized successfully with persistent database: " << dbPath << "\n";
+        cout << "[Database] SQLite initialized successfully with persistent database: " << dbPath << "\n";
         return true;
     }
 
     // ------------------- USER OPERATIONS -------------------
 
-    bool registerUser(const User& u, const std::string& plainPassword = "") {
+    bool registerUser(const User& u, const string& plainPassword = "") {
         if (!is_open) return false;
 
-        std::string salt = SHA256::generateSalt(16);
-        std::string pwdToHash = plainPassword.empty() ? std::to_string(u.id) : plainPassword;
-        std::string hash = SHA256::hashPassword(pwdToHash, salt);
+        string salt = SHA256::generateSalt(16);
+        string pwdToHash = plainPassword.empty() ? to_string(u.id) : plainPassword;
+        string hash = SHA256::hashPassword(pwdToHash, salt);
 
         const char* sql = "INSERT INTO users (id, name, phone, gender, password_hash, salt, "
                           "source, destination, preferred_time, transport_mode, budget, "
@@ -139,7 +141,7 @@ public:
 
         sqlite3_stmt* stmt = nullptr;
         if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
-            std::cerr << "[Database] prepare failed: " << sqlite3_errmsg(db) << "\n";
+            cerr << "[Database] prepare failed: " << sqlite3_errmsg(db) << "\n";
             return false;
         }
 
@@ -166,13 +168,13 @@ public:
         sqlite3_finalize(stmt);
 
         if (rc != SQLITE_DONE) {
-            std::cerr << "[Database] User registration failed: " << sqlite3_errmsg(db) << "\n";
+            cerr << "[Database] User registration failed: " << sqlite3_errmsg(db) << "\n";
             return false;
         }
         return true;
     }
 
-    bool authenticateUser(int id, const std::string& password, std::string& outToken, User& outUser) {
+    bool authenticateUser(int id, const string& password, string& outToken, User& outUser) {
         if (!is_open) return false;
 
         const char* sql = "SELECT password_hash, salt, name, phone, gender, source, destination, "
@@ -192,10 +194,10 @@ public:
             return false;
         }
 
-        std::string storedHash = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-        std::string salt = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
+        string storedHash = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+        string salt = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1));
 
-        std::string computedHash = SHA256::hashPassword(password, salt);
+        string computedHash = SHA256::hashPassword(password, salt);
         if (computedHash != storedHash) {
             sqlite3_finalize(stmt);
             return false; // Invalid password
@@ -227,7 +229,7 @@ public:
         return true;
     }
 
-    bool createSession(const std::string& token, int userId) {
+    bool createSession(const string& token, int userId) {
         if (!is_open) return false;
         const char* sql = "INSERT OR REPLACE INTO sessions (token, user_id) VALUES (?, ?);";
         sqlite3_stmt* stmt = nullptr;
@@ -239,7 +241,7 @@ public:
         return (rc == SQLITE_DONE);
     }
 
-    bool validateSession(const std::string& token, int& outUserId) {
+    bool validateSession(const string& token, int& outUserId) {
         if (!is_open || token.empty()) return false;
         const char* sql = "SELECT user_id FROM sessions WHERE token = ?;";
         sqlite3_stmt* stmt = nullptr;
@@ -254,7 +256,7 @@ public:
         return false;
     }
 
-    void deleteSession(const std::string& token) {
+    void deleteSession(const string& token) {
         if (!is_open || token.empty()) return;
         const char* sql = "DELETE FROM sessions WHERE token = ?;";
         sqlite3_stmt* stmt = nullptr;
@@ -265,8 +267,8 @@ public:
         }
     }
 
-    std::vector<User> loadAllUsers() {
-        std::vector<User> users;
+    vector<User> loadAllUsers() {
+        vector<User> users;
         if (!is_open) return users;
 
         const char* sql = "SELECT id, name, phone, gender, source, destination, preferred_time, "
@@ -315,7 +317,7 @@ public:
         return users;
     }
 
-    bool updateUserProfile(int id, const std::string& name, const std::string& phone, const std::string& gender) {
+    bool updateUserProfile(int id, const string& name, const string& phone, const string& gender) {
         if (!is_open) return false;
         const char* sql = "UPDATE users SET name = COALESCE(NULLIF(?, ''), name), "
                           "phone = COALESCE(NULLIF(?, ''), phone), "
@@ -392,8 +394,8 @@ public:
         return (rc == SQLITE_DONE);
     }
 
-    std::vector<riderequest> loadAllPendingRequests() {
-        std::vector<riderequest> list;
+    vector<riderequest> loadAllPendingRequests() {
+        vector<riderequest> list;
         if (!is_open) return list;
 
         const char* sql = "SELECT id, user_id, source, destination, time, mode, budget "
@@ -419,7 +421,7 @@ public:
         return list;
     }
 
-    bool updateRideRequestStatus(int reqId, const std::string& status) {
+    bool updateRideRequestStatus(int reqId, const string& status) {
         if (!is_open) return false;
         const char* sql = "UPDATE ride_requests SET status = ? WHERE id = ?;";
         sqlite3_stmt* stmt = nullptr;
@@ -453,8 +455,8 @@ public:
         return (rc == SQLITE_DONE);
     }
 
-    std::vector<Complete_Ride> loadAllCompletedRides() {
-        std::vector<Complete_Ride> list;
+    vector<Complete_Ride> loadAllCompletedRides() {
+        vector<Complete_Ride> list;
         if (!is_open) return list;
 
         const char* sql = "SELECT id, user_id, source, destination, mode, fare FROM rides ORDER BY id ASC;";
@@ -481,7 +483,7 @@ public:
 
     // ------------------- ROUTES OPERATIONS -------------------
 
-    bool saveRoute(const std::string& name, const std::string& src, const std::string& dst, double distKm, int hops) {
+    bool saveRoute(const string& name, const string& src, const string& dst, double distKm, int hops) {
         if (!is_open) return false;
         const char* sql = "INSERT INTO routes (name, source, destination, distance_km, hops) VALUES (?, ?, ?, ?, ?);";
         sqlite3_stmt* stmt = nullptr;

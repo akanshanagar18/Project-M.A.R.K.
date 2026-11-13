@@ -362,7 +362,7 @@ void handleClient(SOCKET clientSocket) {
     }
 
     // 2. GET /api/users
-    if (method == "GET" && path == "/api/users") {
+    if (method == "GET" && (path == "/api/users" || path == "/api/users/list")) {
         vector<User> users = userManager.getAllUsers();
         ostringstream json;
         json << "[";
@@ -377,10 +377,14 @@ void handleClient(SOCKET clientSocket) {
     }
 
     // 3. POST /api/users (Register User with Automatic Unique 4-Digit ID)
-    if (method == "POST" && path == "/api/users") {
+    if (method == "POST" && (path == "/api/users" || path == "/api/users/add")) {
         string name = getJsonString(body, "name");
         string phone = getJsonString(body, "phone");
         string gender = getJsonString(body, "gender");
+        string email = getJsonString(body, "email");
+        if (gender.empty()) gender = getJsonString(body, "type");
+        if (gender.empty() && !email.empty()) gender = email;
+        if (gender.empty()) gender = "Daily Commuter";
 
         if (name.empty()) {
             sendJsonResponse("400 Bad Request", "{\"success\":false,\"message\":\"Name cannot be empty.\"}");
@@ -394,15 +398,16 @@ void handleClient(SOCKET clientSocket) {
         u.id = newId;
         u.name = name;
         u.phone = phone;
-        u.gender = gender.empty() ? "Other" : gender;
+        u.gender = gender;
 
         bool ok = userManager.registerUserDirect(u);
-        cout << "[Linked List] Automatically generated ID #" << newId 
+        cout << "[User Directory] Automatically generated ID #" << newId 
              << " -> Registered user: " << name << " (Phone: " << phone << ")\n";
 
         ostringstream json;
         json << "{\"success\":" << (ok ? "true" : "false") << ","
              << "\"id\":" << newId << ","
+             << "\"userId\":" << newId << ","
              << "\"user\":" << userToJson(u) << ","
              << "\"message\":\"User registered successfully! Your unique 4-digit User ID is " << newId << ". Please remember this ID to log in and access your account.\"}";
 
@@ -598,13 +603,47 @@ void handleClient(SOCKET clientSocket) {
 
     // 11. POST /api/rides/undo (Undo Last Action via Stack)
     if (method == "POST" && path == "/api/rides/undo") {
-        bool ok = rideManager.undo();
+        RideAction undoneAction;
+        bool ok = rideManager.undo(&undoneAction);
+        if (ok) {
+            if (undoneAction.type == BOOK) {
+                userManager.clearRequest(undoneAction.req.user_id);
+                cout << "[Linked List] Cleared active ride request for User #" << undoneAction.req.user_id << " due to undo.\n";
+            } else if (undoneAction.type == COMPLETE) {
+                for (int uid : undoneAction.rec.user_ids) {
+                    userManager.resetMatch(uid);
+                }
+            }
+        }
         cout << "[Stack LIFO] Undo action triggered: " << (ok ? "Success (Restored state)" : "Stack is empty") << "\n";
 
         ostringstream json;
         json << "{\"success\":" << (ok ? "true" : "false") << ","
              << "\"message\":\"" << (ok ? "Undo successful: Popped last action from Stack!" : "Undo Stack is empty!") << "\"}";
         sendJsonResponse("200 OK", json.str());
+        return;
+    }
+
+    // 11.5 POST /api/rides/cancel or /api/rides/clear (Cancel an active ride request for a user)
+    if (method == "POST" && (path == "/api/rides/cancel" || path == "/api/rides/clear")) {
+        int uid = getJsonInt(body, "userId");
+        if (uid == 0) {
+            string uidStr = getQueryParam(url, "userId");
+            try { if (!uidStr.empty()) uid = stoi(uidStr); } catch (...) {}
+        }
+        if (uid > 0) {
+            userManager.clearRequest(uid);
+            auto pending = rideManager.all_pending_requests();
+            for (const auto& r : pending) {
+                if (r.user_id == uid) {
+                    rideManager.cancel_request(r.id);
+                }
+            }
+            cout << "[Ride Dispatcher] Cancelled active ride request for User #" << uid << "\n";
+            sendJsonResponse("200 OK", "{\"success\":true,\"message\":\"Active ride request cancelled successfully.\"}");
+            return;
+        }
+        sendJsonResponse("400 Bad Request", "{\"success\":false,\"message\":\"User ID required.\"}");
         return;
     }
 
