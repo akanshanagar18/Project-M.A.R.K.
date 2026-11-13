@@ -35,36 +35,100 @@ struct compare {
 
 typedef priority_queue<match_class, vector<match_class>, compare> MatchQueue;
 
+inline string cleanLocationName(const string& str) {
+    string s = toLower(str);
+    string wordsToRemove[] = {"metro", "station", "stn", ",", ".", "-", "(", ")", "noida", "delhi"};
+    for (const string& w : wordsToRemove) {
+        size_t pos = 0;
+        while ((pos = s.find(w, pos)) != string::npos) {
+            s.replace(pos, w.length(), " ");
+            pos += 1;
+        }
+    }
+    string res = "";
+    bool lastSpace = true;
+    for (char c : s) {
+        if (isalnum(c)) {
+            res += c;
+            lastSpace = false;
+        } else if (!lastSpace) {
+            res += ' ';
+            lastSpace = true;
+        }
+    }
+    while (!res.empty() && res.back() == ' ') res.pop_back();
+    return res;
+}
+
+inline bool same(const string& a, const string& b) {
+    string la = toLower(a);
+    string lb = toLower(b);
+    if (la == lb) return true;
+    if (la.empty() || lb.empty()) return false;
+    if (la.find(lb) != string::npos || lb.find(la) != string::npos) return true;
+
+    string ca = cleanLocationName(a);
+    string cb = cleanLocationName(b);
+    if (!ca.empty() && !cb.empty()) {
+        if (ca == cb) return true;
+        if (ca.find(cb) != string::npos || cb.find(ca) != string::npos) return true;
+    }
+
+    if (la.find("sector 62") != string::npos && lb.find("sector 62") != string::npos) return true;
+    if (la.find("sector 18") != string::npos && lb.find("sector 18") != string::npos) return true;
+    if (la.find("botanical garden") != string::npos && lb.find("botanical garden") != string::npos) return true;
+    if (la.find("connaught place") != string::npos && lb.find("connaught place") != string::npos) return true;
+    if (la.find("rajiv chowk") != string::npos && lb.find("rajiv chowk") != string::npos) return true;
+    if (la.find("dwarka") != string::npos && lb.find("dwarka") != string::npos) return true;
+
+    return false;
+}
+
 inline int findStation(const string& name) {
     string sLower = toLower(name);
     for (int i = 0; i < TOTAL_STATIONS; i++) {
         string stLower = toLower(stations[i]);
         if (stLower == sLower || sLower.find(stLower) != string::npos || stLower.find(sLower) != string::npos)
             return i;
+        if (same(name, stations[i]))
+            return i;
     }
     return -1;
 }
 
 inline int parseTimeToMinutes(const string& t) {
+    string tLower = toLower(t);
+    bool isPM = (tLower.find("pm") != string::npos);
+    bool isAM = (tLower.find("am") != string::npos);
+
     string clean = "";
     for (char c : t) if (isdigit(c) || c == ':') clean += c;
-    if (clean.empty()) return 0;
+    if (clean.empty()) return 540; // Default 09:00 AM
     
+    int h = 9, m = 0;
     size_t colon = clean.find(':');
     if (colon != string::npos) {
-        int h = stoi(clean.substr(0, colon));
-        int m = (colon + 1 < clean.length()) ? stoi(clean.substr(colon + 1)) : 0;
-        return (h * 60 + m) % 1440;
+        try {
+            h = stoi(clean.substr(0, colon));
+            if (colon + 1 < clean.length()) m = stoi(clean.substr(colon + 1));
+        } catch (...) {}
     } else {
-        int val = stoi(clean);
-        if (val >= 100) {
-            int h = val / 100;
-            int m = val % 100;
-            return (h * 60 + m) % 1440;
-        } else {
-            return (val * 60) % 1440;
-        }
+        try {
+            int val = stoi(clean);
+            if (val >= 100) {
+                h = val / 100;
+                m = val % 100;
+            } else {
+                h = val;
+                m = 0;
+            }
+        } catch (...) {}
     }
+
+    if (isPM && h < 12) h += 12;
+    if (isAM && h == 12) h = 0;
+
+    return (h * 60 + m) % 1440;
 }
 
 inline int timeDifference(const string& a, const string& b) {
@@ -74,12 +138,9 @@ inline int timeDifference(const string& a, const string& b) {
     return min(diff, 1440 - diff);
 }
 
-inline bool same(const string& a, const string& b) {
-    return toLower(a) == toLower(b);
-}
-
 inline bool isPublic(const string& mode) {
-    return mode == "Metro" || mode == "Train" || mode == "Bus";
+    string m = toLower(mode);
+    return m.find("metro") != string::npos || m.find("train") != string::npos || m.find("bus") != string::npos;
 }
 
 inline bool evaluateMatch(const User &u, const User &c, match_class &m) {
@@ -89,9 +150,17 @@ inline bool evaluateMatch(const User &u, const User &c, match_class &m) {
     bool sameSrc = same(u.source, c.source);
     bool sameDst = same(u.destination, c.destination);
 
-    // 1. MATCHING ON SAME TRANSPORT MODE
-    if (toLower(u.transportMode) == toLower(c.transportMode)) {
-        if (toLower(u.transportMode) == "metro") {
+    bool uCab = (toLower(u.transportMode).find("cab") != string::npos || toLower(u.transportMode).find("auto") || toLower(u.transportMode).find("van") || toLower(u.transportMode).find("carpool") || toLower(u.transportMode).find("taxi"));
+    bool cCab = (toLower(c.transportMode).find("cab") != string::npos || toLower(c.transportMode).find("auto") || toLower(c.transportMode).find("van") || toLower(c.transportMode).find("carpool") || toLower(c.transportMode).find("taxi"));
+
+    bool uMetro = (toLower(u.transportMode).find("metro") != string::npos || toLower(u.transportMode).find("train") || toLower(u.transportMode).find("transit"));
+    bool cMetro = (toLower(c.transportMode).find("metro") != string::npos || toLower(c.transportMode).find("train") || toLower(c.transportMode).find("transit"));
+
+    bool sameMode = (toLower(u.transportMode) == toLower(c.transportMode)) || (uCab && cCab) || (uMetro && cMetro);
+
+    // 1. MATCHING ON SAME OR COMPATIBLE TRANSPORT MODE
+    if (sameMode) {
+        if (uMetro || cMetro) {
             int s1 = findStation(u.source), d1 = findStation(u.destination);
             int s2 = findStation(c.source), d2 = findStation(c.destination);
 

@@ -844,8 +844,9 @@
                             <label>Preferred Mode</label>
                             <select id="reqMode">
                                 <option value="Cab" selected>Cab / Taxi</option>
+                                <option value="Metro">Metro</option>
                                 <option value="Auto">Auto Rickshaw</option>
-                                <option value="Metro Feed">Metro Feeder</option>
+                                <option value="Metro Feeder">Metro Feeder</option>
                                 <option value="Shared Van">Shared Van</option>
                             </select>
                         </div>
@@ -1082,6 +1083,40 @@
             t.innerText = msg;
             t.style.display = 'block';
             setTimeout(() => { t.style.display = 'none'; }, 3000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatDisplayTime(t) {
+            if (t === undefined || t === null || t === '' || t === 0 || t === '0') return '09:00 AM';
+            let str = String(t).trim();
+            if (str.includes(':')) {
+                return str;
+            }
+            let num = parseInt(str, 10);
+            if (isNaN(num) || num === 0) return '09:00 AM';
+            let h = 0, m = 0;
+            if (num >= 100) {
+                h = Math.floor(num / 100);
+                m = num % 100;
+            } else {
+                h = num;
+                m = 0;
+            }
+            let period = h >= 12 ? 'PM' : 'AM';
+            let displayH = h % 12;
+            if (displayH === 0) displayH = 12;
+            let hStr = displayH < 10 ? '0' + displayH : '' + displayH;
+            let mStr = m < 10 ? '0' + m : '' + m;
+            return `${hStr}:${mStr} ${period}`;
         }
 
         // ---------------- Navigation & Tab Switching ----------------
@@ -1343,7 +1378,7 @@
                 if (currentUser.hasRequest) {
                     matchRoute.style.display = 'block';
                     document.getElementById('matchActiveRouteText').innerText = `${currentUser.source} to ${currentUser.destination}`;
-                    document.getElementById('matchActiveMetaText').innerText = `Mode: ${currentUser.transportMode} | Departure: ${currentUser.preferredTime} | Budget: Rs. ${currentUser.budget}`;
+                    document.getElementById('matchActiveMetaText').innerText = `Mode: ${currentUser.transportMode || 'Cab'} | Departure: ${formatDisplayTime(currentUser.preferredTime)} | Budget: Rs. ${currentUser.budget}`;
                     btnMatch.style.display = 'inline-block';
                     matchNoReq.style.display = 'none';
                 } else {
@@ -1370,7 +1405,20 @@
             const budget = parseFloat(document.getElementById('reqBudget').value) || 200.0;
             const station = document.getElementById('reqStation').value.trim();
 
-            let payload = { userId: currentUserId, source: src, destination: dst, time, mode, budget, station };
+            let payload = { 
+                userId: currentUserId, 
+                source: src, 
+                destination: dst, 
+                preferredTime: time,
+                time: time, 
+                transportMode: mode,
+                mode: mode, 
+                budget: budget, 
+                station: station,
+                boardingStation: station,
+                wantsSharedCab: true,
+                genderPreference: 'Any'
+            };
 
             let res = await safeFetchJson(getBackendUrl('/api/rides/request'), {
                 method: 'POST',
@@ -1380,8 +1428,10 @@
 
             if (res && res.success) {
                 showToast("Ride request submitted successfully!");
+                await fetchCurrentUser();
                 renderRideAccess();
                 loadStats();
+                loadQueue();
                 switchTab('rides');
             } else {
                 alert(res?.message || "Failed to submit ride request.");
@@ -1396,41 +1446,47 @@
             card.style.display = 'block';
             grid.innerHTML = '<div style="color:var(--text-muted); padding:16px;">Evaluating compatibility for best matches...</div>';
 
-            let data = await safeFetchJson(getBackendUrl(`/api/matches/find?userId=${currentUserId}`));
+            let data = await safeFetchJson(getBackendUrl(`/api/rides/matches?userId=${currentUserId}`));
             if (!data || !data.matches || data.matches.length === 0) {
                 grid.innerHTML = '<div style="color:var(--text-muted); padding:16px;">No compatible co-commuters currently found. Other requests will appear here as they register.</div>';
                 return;
             }
 
-            grid.innerHTML = data.matches.map(m => `
+            grid.innerHTML = data.matches.map(m => {
+                const c = m.candidate || {};
+                return `
                 <div style="background:#0b0f19; border:1px solid var(--border); padding:16px; border-radius:6px; display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
                     <div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                            <strong>${m.partnerName}</strong>
+                            <strong>${escapeHtml(c.name || 'Co-Commuter')} (#${c.id || ''})</strong>
                             <span class="badge badge-success">${m.score}% Match</span>
                         </div>
                         <div style="font-size:0.85em; color:var(--text-muted); line-height:1.45;">
-                            Route: <strong>${m.source} to ${m.destination}</strong><br>
-                            Departure: ${m.time} | Mode: ${m.mode}<br>
-                            Estimated Share Fare: Rs. ${m.estimatedFare || 120}
+                            Route: <strong>${escapeHtml(c.source || '')} ➔ ${escapeHtml(c.destination || '')}</strong><br>
+                            Departure: <strong>${formatDisplayTime(c.preferredTime)}</strong> | Mode: <strong>${escapeHtml(c.transportMode || 'Cab')}</strong><br>
+                            Compatibility: <span style="color:var(--accent);">${escapeHtml(m.matchType || 'Compatible Route')}</span><br>
+                            Estimated Share Fare: <strong>Rs. ${m.estimatedFare || 120}</strong>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-sm" onclick="acceptMatch(${m.requestId}, ${m.partnerId})">Accept &amp; Share Ride</button>
+                    <button type="button" class="btn btn-sm btn-blue" onclick="acceptMatch(${c.id})">Accept &amp; Share Ride</button>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
-        async function acceptMatch(reqId, partnerId) {
-            let res = await safeFetchJson(getBackendUrl('/api/matches/accept'), {
+        async function acceptMatch(partnerId) {
+            let res = await safeFetchJson(getBackendUrl('/api/rides/confirm_match'), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userId: currentUserId, requestId: reqId, partnerId })
+                body: JSON.stringify({ user1: currentUserId, user2: partnerId, userId: currentUserId, partnerId: partnerId })
             });
 
             if (res && res.success) {
                 showToast("Co-commuter match accepted! Dispatched to Shared Ride Queue.");
+                await fetchCurrentUser();
                 renderRideAccess();
                 loadStats();
+                loadQueue();
                 switchTab('rides');
             } else {
                 alert(res?.message || "Match acceptance failed.");
@@ -1451,10 +1507,10 @@
                 <tr>
                     <td><strong>#${r.id}</strong></td>
                     <td>User #${r.user_id}</td>
-                    <td>${r.initial_dest}</td>
-                    <td>${r.final_dest}</td>
-                    <td>${r.mode}</td>
-                    <td>${r.time}</td>
+                    <td>${escapeHtml(r.initial_dest || '')}</td>
+                    <td>${escapeHtml(r.final_dest || '')}</td>
+                    <td>${escapeHtml(r.mode || 'Cab')}</td>
+                    <td>${formatDisplayTime(r.time)}</td>
                     <td>Rs. ${r.budget}</td>
                     <td>
                         <button type="button" class="btn btn-sm btn-outline" onclick="setPreset('${escapeHtml(r.initial_dest)}', '${escapeHtml(r.final_dest)}'); switchTab('routes'); executeRouting('dijkstra');">Route Map</button>

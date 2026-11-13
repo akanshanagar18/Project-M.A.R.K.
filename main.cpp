@@ -477,11 +477,19 @@ void handleClient(SOCKET clientSocket) {
         string src = getJsonString(body, "source");
         string dst = getJsonString(body, "destination");
         string time = getJsonString(body, "preferredTime");
+        if (time.empty()) time = getJsonString(body, "time");
+        if (time.empty()) time = "09:00 AM";
+
         string mode = getJsonString(body, "transportMode");
+        if (mode.empty()) mode = getJsonString(body, "mode");
+        if (mode.empty()) mode = "Cab";
+
         double budget = getJsonDouble(body, "budget", 200.0);
         string genderPref = getJsonString(body, "genderPreference");
-        bool wantsCab = getJsonBool(body, "wantsSharedCab", false);
+        if (genderPref.empty()) genderPref = "Any";
+        bool wantsCab = getJsonBool(body, "wantsSharedCab", true);
         string station = getJsonString(body, "boardingStation");
+        if (station.empty()) station = getJsonString(body, "station");
         bool allowMultiple = getJsonBool(body, "allowMultiple", true);
 
         User u;
@@ -499,15 +507,32 @@ void handleClient(SOCKET clientSocket) {
         // Set request in Linked List
         userManager.setRideRequestDirect(userId, src, dst, time, mode, budget, genderPref, wantsCab, station, allowMultiple);
 
-        // Convert time to numeric (e.g. 930) for Ride_Manager
-        int numericTime = 930;
-        try {
-            numericTime = parseTimeToMinutes(time);
-        } catch (...) {}
+        // Convert time to numeric HHMM (e.g. 900, 930) for Ride_Manager
+        int hh = 9, mm = 0;
+        string digitsOnly = "";
+        for (char c : time) if (isdigit(c) || c == ':') digitsOnly += c;
+        size_t col = digitsOnly.find(':');
+        if (col != string::npos) {
+            try {
+                hh = stoi(digitsOnly.substr(0, col));
+                if (col + 1 < digitsOnly.length()) mm = stoi(digitsOnly.substr(col + 1));
+            } catch (...) {}
+        } else if (!digitsOnly.empty()) {
+            try {
+                int val = stoi(digitsOnly);
+                if (val >= 100) { hh = val / 100; mm = val % 100; }
+                else { hh = val; mm = 0; }
+            } catch (...) {}
+        }
+        string timeLower = toLower(time);
+        if (timeLower.find("pm") != string::npos && hh < 12) hh += 12;
+        if (timeLower.find("am") != string::npos && hh == 12) hh = 0;
+        int numericTime = hh * 100 + mm;
+        if (numericTime == 0) numericTime = 900;
 
         // Push to FIFO Queue & Undo Stack
         rideManager.add_ride_req(userId, src, dst, numericTime, mode, budget);
-        cout << "[Queue FIFO] Enqueued ride request for User #" << userId << " (" << src << " -> " << dst << ")\n";
+        cout << "[Queue FIFO] Enqueued ride request for User #" << userId << " (" << src << " -> " << dst << ", Time: " << numericTime << ", Mode: " << mode << ")\n";
 
         ostringstream json;
         json << "{\"success\":true,\"message\":\"Ride request saved & pushed to FIFO Queue!\"}";
@@ -516,8 +541,9 @@ void handleClient(SOCKET clientSocket) {
         return;
     }
 
-    // 8. GET /api/rides/matches?userId=... or POST /api/rides/matches (Find Ride Matches for Logged-in User)
-    if ((method == "GET" && path == "/api/rides/matches") || (method == "POST" && path == "/api/rides/matches")) {
+    // 8. GET /api/rides/matches or /api/matches/find (Find Ride Matches for Logged-in User)
+    if ((method == "GET" && (path == "/api/rides/matches" || path == "/api/matches/find" || path == "/api/matches")) ||
+        (method == "POST" && (path == "/api/rides/matches" || path == "/api/matches/find" || path == "/api/matches"))) {
         int userId = 0;
         if (method == "GET") {
             string uidStr = getQueryParam(url, "userId");
@@ -569,10 +595,12 @@ void handleClient(SOCKET clientSocket) {
         return;
     }
 
-    // 9. POST /api/rides/confirm_match (Confirm Match between Logged-in User and Candidate)
-    if (method == "POST" && path == "/api/rides/confirm_match") {
+    // 9. POST /api/rides/confirm_match or /api/matches/accept
+    if (method == "POST" && (path == "/api/rides/confirm_match" || path == "/api/matches/accept")) {
         int u1 = getJsonInt(body, "user1");
+        if (u1 == 0) u1 = getJsonInt(body, "userId");
         int u2 = getJsonInt(body, "user2");
+        if (u2 == 0) u2 = getJsonInt(body, "partnerId");
 
         userManager.markMatched(u1, u2);
         userManager.markMatched(u2, u1);
