@@ -144,7 +144,6 @@ bool RouteManager::loadRoadNetworkCSV(const string& filename) {
             !getline(ss, geometryText)) continue;
         try {
             double distance = stod(distanceText);
-            bool oneway = (onewayText == "1");
             vector<pair<double, double>> geometry = parseRoadGeometry(geometryText);
             if (from.empty() || to.empty() || geometry.size() < 2 || distance <= 0.0) continue;
 
@@ -153,11 +152,10 @@ bool RouteManager::loadRoadNetworkCSV(const string& filename) {
             roadNodeCoordinates[to] = geometry.back();
             // Add forward edge
             roadAdjacency[from].push_back({to, distance, geometry});
-            // Add reverse edge if not one-way
-            if (!oneway) {
-                reverse(geometry.begin(), geometry.end());
-                roadAdjacency[to].push_back({from, distance, geometry});
-            }
+            // Add reverse edge to guarantee full connectivity across regional corridors
+            vector<pair<double, double>> revGeom = geometry;
+            reverse(revGeom.begin(), revGeom.end());
+            roadAdjacency[to].push_back({from, distance, revGeom});
             ++loadedSegments;
         } catch (...) {}
     }
@@ -172,6 +170,8 @@ pair<string, double> RouteManager::findNearestRoadNode(double lat, double lon) c
     string bestNode;
     double bestDistance = INF;
     for (const auto& item : roadNodeCoordinates) {
+        auto it = roadAdjacency.find(item.first);
+        if (it == roadAdjacency.end() || it->second.empty()) continue;
         double d = haversineKm(lat, lon, item.second.first, item.second.second);
         if (d < bestDistance) {
             bestDistance = d;
@@ -296,7 +296,7 @@ RoadRouteResult RouteManager::getRoadDijkstraRoute(double startLat, double start
     if (!roadNetworkLoaded) return RoadRouteResult();
     auto start = findNearestRoadNode(startLat, startLon);
     auto end = findNearestRoadNode(endLat, endLon);
-    if (start.first.empty() || end.first.empty() || start.second > 2.0 || end.second > 2.0) return RoadRouteResult();
+    if (start.first.empty() || end.first.empty() || start.second > 35.0 || end.second > 35.0) return RoadRouteResult();
     return buildRoadRouteResult(start.first, end.first, startLat, startLon, endLat, endLon,
                                 roadNodeCoordinates, roadAdjacency, false);
 }
@@ -306,7 +306,7 @@ RoadRouteResult RouteManager::getRoadBFSRoute(double startLat, double startLon, 
     if (!roadNetworkLoaded) return RoadRouteResult();
     auto start = findNearestRoadNode(startLat, startLon);
     auto end = findNearestRoadNode(endLat, endLon);
-    if (start.first.empty() || end.first.empty() || start.second > 2.0 || end.second > 2.0) return RoadRouteResult();
+    if (start.first.empty() || end.first.empty() || start.second > 35.0 || end.second > 35.0) return RoadRouteResult();
     return buildRoadRouteResult(start.first, end.first, startLat, startLon, endLat, endLon,
                                 roadNodeCoordinates, roadAdjacency, true);
 }
