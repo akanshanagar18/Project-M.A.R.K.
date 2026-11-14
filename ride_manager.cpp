@@ -174,3 +174,19 @@ bool Ride_Manager::cancel_request(int req_id) {
     pending_queue = temp;
     return found;
 }
+
+void Ride_Manager::clear_all() {
+    while (!pending_queue.empty()) pending_queue.pop();
+    while (!undo_stack.empty()) undo_stack.pop();
+    ride_history.clear();
+}
+
+void Ride_Manager::load_pending_request(const riderequest& req) {
+    if (req.id >= next_request_id) next_request_id = req.id + 1;
+    pending_queue.push(req);
+}
+
+void Ride_Manager::load_history_record(const Complete_Ride& rec) {
+    if (rec.id >= next_ride_id) next_ride_id = rec.id + 1;
+    ride_history.push_back(rec);
+}
