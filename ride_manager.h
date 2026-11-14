@@ -32,6 +32,10 @@ public:
     int get_history_size() const { return (int)ride_history.size(); }
     double get_total_revenue() const;
     bool cancel_request(int req_id);
+
+    void clear_all();
+    void load_pending_request(const riderequest& req);
+    void load_history_record(const Complete_Ride& rec);
 };
 
 #endif

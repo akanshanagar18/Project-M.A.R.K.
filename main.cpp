@@ -121,6 +121,9 @@ string escapeJson(const string& s) {
     return o.str();
 }
 
+const string USERS_FILE = "mark_users.json";
+const string RIDES_FILE = "mark_rides.json";
+
 // Convert User object to JSON
 string userToJson(const User& u) {
     ostringstream ss;
@@ -129,6 +132,7 @@ string userToJson(const User& u) {
        << "\"name\":\"" << escapeJson(u.name) << "\","
        << "\"phone\":\"" << escapeJson(u.phone) << "\","
        << "\"gender\":\"" << escapeJson(u.gender) << "\","
+       << "\"password\":\"" << escapeJson(u.password) << "\","
        << "\"hasRequest\":" << (u.hasRequest ? "true" : "false") << ","
        << "\"isMatched\":" << (u.isMatched ? "true" : "false") << ","
        << "\"matchedPartnerId\":" << u.matchedPartnerId << ","
@@ -145,50 +149,288 @@ string userToJson(const User& u) {
     return ss.str();
 }
 
-void initializeSampleData() {
-    cout << "[Initialization] Setting up realistic sample data in C++ Data Structures...\n";
+User parseUserFromJson(const string& objStr) {
+    User u;
+    u.id = getJsonInt(objStr, "id");
+    u.name = getJsonString(objStr, "name");
+    u.phone = getJsonString(objStr, "phone");
+    u.gender = getJsonString(objStr, "gender");
+    u.password = getJsonString(objStr, "password");
+    if (u.password.empty()) u.password = "1234";
+    u.hasRequest = getJsonBool(objStr, "hasRequest", false);
+    u.isMatched = getJsonBool(objStr, "isMatched", false);
+    u.matchedPartnerId = getJsonInt(objStr, "matchedPartnerId", 0);
+    u.source = getJsonString(objStr, "source");
+    u.destination = getJsonString(objStr, "destination");
+    u.preferredTime = getJsonString(objStr, "preferredTime");
+    u.transportMode = getJsonString(objStr, "transportMode");
+    u.budget = getJsonDouble(objStr, "budget", 0.0);
+    u.genderPreference = getJsonString(objStr, "genderPreference");
+    if (u.genderPreference.empty()) u.genderPreference = "Any";
+    u.wantsSharedCab = getJsonBool(objStr, "wantsSharedCab", false);
+    u.boardingStation = getJsonString(objStr, "boardingStation");
+    u.allowMultiple = getJsonBool(objStr, "allowMultiple", true);
+    return u;
+}
 
-    // 1. Aryan Sharma
-    User u1; u1.id = 1001; u1.name = "Aryan Sharma"; u1.phone = "9876543210"; u1.gender = "Male";
-    u1.source = "Sector 62, Noida"; u1.destination = "Botanical Garden, Noida";
-    u1.preferredTime = "09:30"; u1.transportMode = "Metro"; u1.budget = 150.0;
-    u1.hasRequest = true; u1.genderPreference = "Any"; u1.wantsSharedCab = false; u1.allowMultiple = true;
-    userManager.registerUserDirect(u1);
-    rideManager.add_ride_req(1001, u1.source, u1.destination, 930, u1.transportMode, u1.budget);
+vector<User> loadUsersFromFile(const string& filename) {
+    vector<User> users;
+    ifstream inFile(filename);
+    if (!inFile.is_open()) return users;
+    
+    string content((istreambuf_iterator<char>(inFile)), istreambuf_iterator<char>());
+    inFile.close();
 
-    // 2. Priya Verma
-    User u2; u2.id = 1002; u2.name = "Priya Verma"; u2.phone = "9812345678"; u2.gender = "Female";
-    u2.source = "Sector 62, Noida"; u2.destination = "Botanical Garden, Noida";
-    u2.preferredTime = "09:40"; u2.transportMode = "Metro"; u2.budget = 120.0;
-    u2.hasRequest = true; u2.genderPreference = "Any"; u2.wantsSharedCab = false; u2.allowMultiple = true;
-    userManager.registerUserDirect(u2);
-    rideManager.add_ride_req(1002, u2.source, u2.destination, 940, u2.transportMode, u2.budget);
+    size_t pos = 0;
+    while (pos < content.length()) {
+        size_t start = content.find('{', pos);
+        if (start == string::npos) break;
+        
+        size_t end = string::npos;
+        int depth = 0;
+        bool inQuotes = false;
+        for (size_t i = start; i < content.length(); ++i) {
+            char c = content[i];
+            if (c == '"' && (i == 0 || content[i - 1] != '\\')) {
+                inQuotes = !inQuotes;
+            } else if (!inQuotes) {
+                if (c == '{') depth++;
+                else if (c == '}') {
+                    depth--;
+                    if (depth == 0) {
+                        end = i;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if (end == string::npos) break;
+        string objStr = content.substr(start, end - start + 1);
+        User u = parseUserFromJson(objStr);
+        if (u.id > 0 && !u.name.empty()) {
+            users.push_back(u);
+        }
+        pos = end + 1;
+    }
+    return users;
+}
 
-    // 3. Rohan Gupta
-    User u3; u3.id = 1003; u3.name = "Rohan Gupta"; u3.phone = "9923456789"; u3.gender = "Male";
-    u3.source = "Sector 62, Noida"; u3.destination = "Connaught Place, Delhi";
-    u3.preferredTime = "09:30"; u3.transportMode = "Cab"; u3.budget = 250.0;
-    u3.hasRequest = true; u3.genderPreference = "Male"; u3.wantsSharedCab = true; u3.boardingStation = "Sector 62"; u3.allowMultiple = true;
-    userManager.registerUserDirect(u3);
-    rideManager.add_ride_req(1003, u3.source, u3.destination, 930, u3.transportMode, u3.budget);
+void saveUsersToFile(const string& filename, const vector<User>& users) {
+    ofstream outFile(filename);
+    if (!outFile.is_open()) {
+        cerr << "[Storage Error] Could not open " << filename << " for writing.\n";
+        return;
+    }
+    outFile << "[\n";
+    for (size_t i = 0; i < users.size(); ++i) {
+        outFile << "  " << userToJson(users[i]);
+        if (i + 1 < users.size()) outFile << ",";
+        outFile << "\n";
+    }
+    outFile << "]\n";
+    outFile.close();
+}
 
-    // 4. Kavita Rao
-    User u4; u4.id = 1004; u4.name = "Kavita Rao"; u4.phone = "9734567890"; u4.gender = "Female";
-    u4.source = "Sector 62, Noida"; u4.destination = "Connaught Place, Delhi";
-    u4.preferredTime = "09:45"; u4.transportMode = "Cab"; u4.budget = 300.0;
-    u4.hasRequest = true; u4.genderPreference = "Any"; u4.wantsSharedCab = true; u4.boardingStation = "Sector 62"; u4.allowMultiple = true;
-    userManager.registerUserDirect(u4);
-    rideManager.add_ride_req(1004, u4.source, u4.destination, 945, u4.transportMode, u4.budget);
+void loadRidesFromFile(const string& filename, vector<riderequest>& outPending, vector<Complete_Ride>& outHistory) {
+    ifstream inFile(filename);
+    if (!inFile.is_open()) return;
+    string content((istreambuf_iterator<char>(inFile)), istreambuf_iterator<char>());
+    inFile.close();
 
-    // 5. Amit Kumar
-    User u5; u5.id = 1005; u5.name = "Amit Kumar"; u5.phone = "9645678901"; u5.gender = "Male";
-    u5.source = "Dwarka Sector 21"; u5.destination = "Rajiv Chowk";
-    u5.preferredTime = "10:00"; u5.transportMode = "Metro"; u5.budget = 80.0;
-    u5.hasRequest = true; u5.genderPreference = "Any"; u5.wantsSharedCab = false; u5.allowMultiple = false;
-    userManager.registerUserDirect(u5);
-    rideManager.add_ride_req(1005, u5.source, u5.destination, 1000, u5.transportMode, u5.budget);
+    size_t pendingPos = content.find("\"pending\"");
+    size_t historyPos = content.find("\"history\"");
+    
+    if (pendingPos != string::npos) {
+        size_t arrStart = content.find('[', pendingPos);
+        size_t arrEnd = (historyPos != string::npos) ? historyPos : content.length();
+        if (arrStart != string::npos && arrStart < arrEnd) {
+            size_t pos = arrStart;
+            while (pos < arrEnd) {
+                size_t oStart = content.find('{', pos);
+                if (oStart == string::npos || oStart >= arrEnd) break;
+                size_t oEnd = content.find('}', oStart);
+                if (oEnd == string::npos || oEnd >= arrEnd) break;
+                string obj = content.substr(oStart, oEnd - oStart + 1);
+                
+                riderequest r;
+                r.id = getJsonInt(obj, "id");
+                r.user_id = getJsonInt(obj, "user_id");
+                r.initial_destination = getJsonString(obj, "initial_dest");
+                r.final_destination = getJsonString(obj, "final_dest");
+                r.time = getJsonInt(obj, "time", 900);
+                r.mode = getJsonString(obj, "mode");
+                if (r.mode.empty()) r.mode = "Cab";
+                r.budget = getJsonDouble(obj, "budget", 150.0);
+                
+                if (r.id > 0 && r.user_id > 0) {
+                    outPending.push_back(r);
+                }
+                pos = oEnd + 1;
+            }
+        }
+    }
 
-    cout << "[Initialization] Complete! 5 users in Linked List (IDs 1001-1005), 5 ride requests in FIFO Queue.\n";
+    if (historyPos != string::npos) {
+        size_t arrStart = content.find('[', historyPos);
+        if (arrStart != string::npos) {
+            size_t pos = arrStart;
+            while (pos < content.length()) {
+                size_t oStart = content.find('{', pos);
+                if (oStart == string::npos) break;
+                size_t oEnd = content.find('}', oStart);
+                if (oEnd == string::npos) break;
+                string obj = content.substr(oStart, oEnd - oStart + 1);
+
+                Complete_Ride cr;
+                cr.id = getJsonInt(obj, "id");
+                cr.initial_destination = getJsonString(obj, "initial_dest");
+                cr.final_destination = getJsonString(obj, "final_dest");
+                cr.mode = getJsonString(obj, "mode");
+                cr.fare = getJsonDouble(obj, "fare", 0.0);
+                
+                size_t uidsPos = obj.find("\"user_ids\"");
+                if (uidsPos != string::npos) {
+                    size_t uStart = obj.find('[', uidsPos);
+                    size_t uEnd = obj.find(']', uStart);
+                    if (uStart != string::npos && uEnd != string::npos) {
+                        string uidsStr = obj.substr(uStart + 1, uEnd - uStart - 1);
+                        stringstream ss(uidsStr);
+                        string item;
+                        while (getline(ss, item, ',')) {
+                            try {
+                                int uid = stoi(item);
+                                if (uid > 0) cr.user_ids.push_back(uid);
+                            } catch (...) {}
+                        }
+                    }
+                }
+                if (cr.user_ids.empty()) {
+                    int singleUid = getJsonInt(obj, "user_id");
+                    if (singleUid > 0) cr.user_ids.push_back(singleUid);
+                }
+                if (cr.id > 0) {
+                    outHistory.push_back(cr);
+                }
+                pos = oEnd + 1;
+            }
+        }
+    }
+}
+
+void saveRidesToFile(const string& filename, const vector<riderequest>& pending, const vector<Complete_Ride>& history) {
+    ofstream outFile(filename);
+    if (!outFile.is_open()) return;
+    
+    outFile << "{\n  \"pending\": [\n";
+    for (size_t i = 0; i < pending.size(); ++i) {
+        outFile << "    {"
+                << "\"id\":" << pending[i].id << ","
+                << "\"user_id\":" << pending[i].user_id << ","
+                << "\"initial_dest\":\"" << escapeJson(pending[i].initial_destination) << "\","
+                << "\"final_dest\":\"" << escapeJson(pending[i].final_destination) << "\","
+                << "\"time\":" << pending[i].time << ","
+                << "\"mode\":\"" << escapeJson(pending[i].mode) << "\","
+                << "\"budget\":" << pending[i].budget
+                << "}";
+        if (i + 1 < pending.size()) outFile << ",";
+        outFile << "\n";
+    }
+    outFile << "  ],\n  \"history\": [\n";
+    for (size_t i = 0; i < history.size(); ++i) {
+        outFile << "    {"
+                << "\"id\":" << history[i].id << ","
+                << "\"user_ids\":[";
+        for (size_t j = 0; j < history[i].user_ids.size(); ++j) {
+            outFile << history[i].user_ids[j];
+            if (j + 1 < history[i].user_ids.size()) outFile << ",";
+        }
+        outFile << "],"
+                << "\"initial_dest\":\"" << escapeJson(history[i].initial_destination) << "\","
+                << "\"final_dest\":\"" << escapeJson(history[i].final_destination) << "\","
+                << "\"mode\":\"" << escapeJson(history[i].mode) << "\","
+                << "\"fare\":" << history[i].fare
+                << "}";
+        if (i + 1 < history.size()) outFile << ",";
+        outFile << "\n";
+    }
+    outFile << "  ]\n}\n";
+    outFile.close();
+}
+
+void syncUsersToDisk() {
+    saveUsersToFile(USERS_FILE, userManager.getAllUsers());
+}
+
+void syncRidesToDisk() {
+    saveRidesToFile(RIDES_FILE, rideManager.all_pending_requests(), rideManager.get_history());
+}
+
+void initializePersistence() {
+    cout << "[Storage] Checking persistent storage files...\n";
+    
+    // 1. Users
+    vector<User> savedUsers = loadUsersFromFile(USERS_FILE);
+    if (!savedUsers.empty()) {
+        cout << "[Storage] Found " << savedUsers.size() << " saved users in " << USERS_FILE << ". Loading into Linked List...\n";
+        for (const auto& u : savedUsers) {
+            userManager.registerUserDirect(u);
+        }
+    } else {
+        cout << "[Storage] Initializing default sample users into Linked List and saving to " << USERS_FILE << "...\n";
+        User u1; u1.id = 1001; u1.name = "Aryan Sharma"; u1.phone = "9876543210"; u1.gender = "Male";
+        u1.source = "Sector 62, Noida"; u1.destination = "Botanical Garden, Noida";
+        u1.preferredTime = "09:30"; u1.transportMode = "Metro"; u1.budget = 150.0;
+        u1.hasRequest = true; u1.genderPreference = "Any"; u1.wantsSharedCab = false; u1.allowMultiple = true;
+        userManager.registerUserDirect(u1);
+
+        User u2; u2.id = 1002; u2.name = "Priya Verma"; u2.phone = "9812345678"; u2.gender = "Female";
+        u2.source = "Sector 62, Noida"; u2.destination = "Botanical Garden, Noida";
+        u2.preferredTime = "09:40"; u2.transportMode = "Metro"; u2.budget = 120.0;
+        u2.hasRequest = true; u2.genderPreference = "Any"; u2.wantsSharedCab = false; u2.allowMultiple = true;
+        userManager.registerUserDirect(u2);
+
+        User u3; u3.id = 1003; u3.name = "Rohan Gupta"; u3.phone = "9923456789"; u3.gender = "Male";
+        u3.source = "Sector 62, Noida"; u3.destination = "Connaught Place, Delhi";
+        u3.preferredTime = "09:30"; u3.transportMode = "Cab"; u3.budget = 250.0;
+        u3.hasRequest = true; u3.genderPreference = "Male"; u3.wantsSharedCab = true; u3.boardingStation = "Sector 62"; u3.allowMultiple = true;
+        userManager.registerUserDirect(u3);
+
+        User u4; u4.id = 1004; u4.name = "Kavita Rao"; u4.phone = "9734567890"; u4.gender = "Female";
+        u4.source = "Sector 62, Noida"; u4.destination = "Connaught Place, Delhi";
+        u4.preferredTime = "09:45"; u4.transportMode = "Cab"; u4.budget = 300.0;
+        u4.hasRequest = true; u4.genderPreference = "Any"; u4.wantsSharedCab = true; u4.boardingStation = "Sector 62"; u4.allowMultiple = true;
+        userManager.registerUserDirect(u4);
+
+        User u5; u5.id = 1005; u5.name = "Amit Kumar"; u5.phone = "9645678901"; u5.gender = "Male";
+        u5.source = "Dwarka Sector 21"; u5.destination = "Rajiv Chowk";
+        u5.preferredTime = "10:00"; u5.transportMode = "Metro"; u5.budget = 80.0;
+        u5.hasRequest = true; u5.genderPreference = "Any"; u5.wantsSharedCab = false; u5.allowMultiple = false;
+        userManager.registerUserDirect(u5);
+
+        syncUsersToDisk();
+    }
+
+    // 2. Rides
+    vector<riderequest> savedPending;
+    vector<Complete_Ride> savedHistory;
+    loadRidesFromFile(RIDES_FILE, savedPending, savedHistory);
+    
+    if (!savedPending.empty() || !savedHistory.empty()) {
+        cout << "[Storage] Found " << savedPending.size() << " pending rides and " << savedHistory.size() << " history records in " << RIDES_FILE << ". Loading into Ride Manager...\n";
+        for (const auto& r : savedPending) rideManager.load_pending_request(r);
+        for (const auto& h : savedHistory) rideManager.load_history_record(h);
+    } else {
+        cout << "[Storage] Initializing default ride requests in FIFO Queue and saving to " << RIDES_FILE << "...\n";
+        rideManager.add_ride_req(1001, "Sector 62, Noida", "Botanical Garden, Noida", 930, "Metro", 150.0);
+        rideManager.add_ride_req(1002, "Sector 62, Noida", "Botanical Garden, Noida", 940, "Metro", 120.0);
+        rideManager.add_ride_req(1003, "Sector 62, Noida", "Connaught Place, Delhi", 930, "Cab", 250.0);
+        rideManager.add_ride_req(1004, "Sector 62, Noida", "Connaught Place, Delhi", 945, "Cab", 300.0);
+        rideManager.add_ride_req(1005, "Dwarka Sector 21", "Rajiv Chowk", 1000, "Metro", 80.0);
+        syncRidesToDisk();
+    }
+    
+    cout << "[Storage] Persistent Storage System ready!\n";
 }
 
 void handleClient(SOCKET clientSocket) {
@@ -401,6 +643,7 @@ void handleClient(SOCKET clientSocket) {
         u.gender = gender;
 
         bool ok = userManager.registerUserDirect(u);
+        if (ok) syncUsersToDisk();
         cout << "[User Directory] Automatically generated ID #" << newId 
              << " -> Registered user: " << name << " (Phone: " << phone << ")\n";
 
@@ -443,6 +686,7 @@ void handleClient(SOCKET clientSocket) {
         string gender = getJsonString(body, "gender");
 
         bool ok = userManager.updateUserDirect(id, name, phone, gender);
+        if (ok) syncUsersToDisk();
         cout << "[Linked List] " << (ok ? "Updated user #" : "Failed update for user #") << id << "\n";
 
         ostringstream json;
@@ -461,6 +705,16 @@ void handleClient(SOCKET clientSocket) {
         if (id == 0) id = getJsonInt(body, "id");
 
         bool ok = (id > 0) && userManager.deleteUser(id);
+        if (ok) {
+            auto pending = rideManager.all_pending_requests();
+            for (const auto& r : pending) {
+                if (r.user_id == id) {
+                    rideManager.cancel_request(r.id);
+                }
+            }
+            syncUsersToDisk();
+            syncRidesToDisk();
+        }
         cout << "[Linked List] " << (ok ? "Deleted user node #" : "Could not delete user #") << id << "\n";
 
         ostringstream json;
@@ -532,6 +786,8 @@ void handleClient(SOCKET clientSocket) {
 
         // Push to FIFO Queue & Undo Stack
         rideManager.add_ride_req(userId, src, dst, numericTime, mode, budget);
+        syncUsersToDisk();
+        syncRidesToDisk();
         cout << "[Queue FIFO] Enqueued ride request for User #" << userId << " (" << src << " -> " << dst << ", Time: " << numericTime << ", Mode: " << mode << ")\n";
 
         ostringstream json;
@@ -604,6 +860,7 @@ void handleClient(SOCKET clientSocket) {
 
         userManager.markMatched(u1, u2);
         userManager.markMatched(u2, u1);
+        syncUsersToDisk();
         cout << "[Matching Engine] Confirmed match between User #" << u1 << " and User #" << u2 << "\n";
 
         ostringstream json;
@@ -621,6 +878,8 @@ void handleClient(SOCKET clientSocket) {
         }
 
         rideManager.process_nextride(fare);
+        syncUsersToDisk();
+        syncRidesToDisk();
         cout << "[Ride Manager] Processed next ride from FIFO Queue with fare $" << fare << " -> Stored in History Vector & Logged in Stack\n";
 
         ostringstream json;
@@ -642,6 +901,10 @@ void handleClient(SOCKET clientSocket) {
                     userManager.resetMatch(uid);
                 }
             }
+        }
+        if (ok) {
+            syncUsersToDisk();
+            syncRidesToDisk();
         }
         cout << "[Stack LIFO] Undo action triggered: " << (ok ? "Success (Restored state)" : "Stack is empty") << "\n";
 
@@ -668,6 +931,8 @@ void handleClient(SOCKET clientSocket) {
                 }
             }
             cout << "[Ride Dispatcher] Cancelled active ride request for User #" << uid << "\n";
+            syncUsersToDisk();
+            syncRidesToDisk();
             sendJsonResponse("200 OK", "{\"success\":true,\"message\":\"Active ride request cancelled successfully.\"}");
             return;
         }
@@ -889,7 +1154,7 @@ int main(int argc, char* argv[]) {
     cout << "   - Graph & BFS     : Minimum Hops Route Navigation             \n";
     cout << "=================================================================\n";
 
-    initializeSampleData();
+    initializePersistence();
 
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2,2), &wsa) != 0) {

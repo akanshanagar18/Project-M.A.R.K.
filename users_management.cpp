@@ -30,6 +30,7 @@ public:
     string name;
     string phone;
     string gender;
+    string password = "1234";
     
     // Ride request properties
     string source;
@@ -121,6 +122,14 @@ public:
             newId = 1000 + (rand() % 9000);
         } while (userExists(newId));
         return newId;
+    }
+
+    void clearAllUsers() {
+        while (head != nullptr) {
+            Node* temp = head;
+            head = head->next;
+            delete temp;
+        }
     }
 
     vector<User> getAllUsers() {

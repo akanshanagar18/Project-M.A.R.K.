@@ -1168,6 +1168,21 @@
                     document.getElementById('serverStatusText').innerText = 'Connected (Port 8080)';
                     loadStats();
                     loadUsers();
+
+                    // Restore active logged-in user from localStorage if saved
+                    let savedUid = localStorage.getItem('mark_active_user_id');
+                    if (savedUid) {
+                        let id = parseInt(savedUid);
+                        if (id > 0) {
+                            let uData = await safeFetchJson(getBackendUrl(`/api/users/search?id=${id}`));
+                            if (uData && uData.success && uData.user) {
+                                currentUserId = id;
+                                currentUser = uData.user;
+                                updateSessionUI();
+                                renderRideAccess();
+                            }
+                        }
+                    }
                     return;
                 }
             } catch (e) {}
@@ -1265,6 +1280,7 @@
         function quickLoginUser(id, name) {
             currentUserId = id;
             currentUser = { id, name };
+            try { localStorage.setItem('mark_active_user_id', id); } catch(e) {}
             updateSessionUI();
             renderRideAccess();
             showToast(`Active commuter set to ${name} (#${id})`);
@@ -1282,6 +1298,7 @@
             if (data && data.success && data.user) {
                 currentUserId = id;
                 currentUser = data.user;
+                try { localStorage.setItem('mark_active_user_id', id); } catch(e) {}
                 updateSessionUI();
                 renderRideAccess();
                 showToast(`Welcome back, ${data.user.name}!`);
@@ -1293,6 +1310,7 @@
         function handleUserLogout() {
             currentUserId = null;
             currentUser = null;
+            try { localStorage.removeItem('mark_active_user_id'); } catch(e) {}
             updateSessionUI();
             renderRideAccess();
             showToast("Logged out of commuter session.");
