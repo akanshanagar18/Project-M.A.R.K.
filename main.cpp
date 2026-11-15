@@ -5,11 +5,10 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
-#include <algorithm>
 #include <iomanip>
-#include <cstring>
+#include <cstdio>
+#include <cctype>
 #include <winsock2.h>
-#include <ws2tcpip.h>
 
 #include "users_management.cpp"
 #include "matching.cpp"
@@ -1114,7 +1113,6 @@ int main(int argc, char* argv[]) {
     // Check if user requested CLI mode
     if (argc > 1 && string(argv[1]) == "-cli") {
         Ride_Manager manager;
-        RouteManager routes;
         int choice;
         do {
             cout << "\n=== M.A.R.K CLI MODE ===\n";

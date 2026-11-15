@@ -1,3 +1,4 @@
+﻿
 #ifndef USERS_MANAGEMENT_H
 #define USERS_MANAGEMENT_H
 
@@ -6,7 +7,6 @@
 #include <vector>
 #include <limits>
 #include <algorithm>
-#include <sstream>
 #include <cstdlib>
 #include <ctime>
 
@@ -32,7 +32,6 @@ public:
     string gender;
     string password = "1234";
     
-    // Ride request properties
     string source;
     string destination;
     string preferredTime;
@@ -48,18 +47,6 @@ public:
     bool allowMultiple = true;
     string genderPreference = "Any";
     string boardingStation = "";
-
-    void input() {
-        cout << "\nEnter User ID: ";
-        cin >> id;
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cout << "Enter Name: ";
-        getline(cin, name);
-        cout << "Enter Phone: ";
-        getline(cin, phone);
-        cout << "Enter Gender (Male/Female/Other): ";
-        getline(cin, gender);
-    }
 
     void display() const {
         cout << "\n====================================\n";
@@ -114,22 +101,12 @@ public:
         }
         return false;
     }
-
-    // Generate random 4-digit ID between 1000 and 9999, guaranteed unique
     int generateUniqueId() {
         int newId;
         do {
             newId = 1000 + (rand() % 9000);
         } while (userExists(newId));
         return newId;
-    }
-
-    void clearAllUsers() {
-        while (head != nullptr) {
-            Node* temp = head;
-            head = head->next;
-            delete temp;
-        }
     }
 
     vector<User> getAllUsers() {

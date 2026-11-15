@@ -11,7 +11,7 @@
 
 using namespace std;
 
-const int MAX_TIME_DIFFERENCE = 45; // Minutes
+const int MAX_TIME_DIFFERENCE = 45;
 const int FARE_PER_STOP = 10;
 const int SHARED_CAB_FARE = 80;
 

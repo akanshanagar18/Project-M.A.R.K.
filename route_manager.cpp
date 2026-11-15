@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <limits>
 #include <cmath>
-#include <iomanip>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -162,7 +161,7 @@ bool RouteManager::loadRoadNetworkCSV(const string& filename) {
 
     cout << "[RouteManager] Loaded " << loadedSegments << " OSM road segments, "
          << roadNodeCoordinates.size() << " road nodes from " << filename << endl;
-    return loadedSegments > 0 && roadAdjacency.size() > 0;
+    return loadedSegments > 0;
 }
 
 // Find nearest road node to given lat/lon using haversine distance

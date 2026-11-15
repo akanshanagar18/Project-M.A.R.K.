@@ -12,7 +12,6 @@ void Graph::addLocation(const string& location) {
 void Graph::addRoute(const string& u, const string& v, double distance) {
     addLocation(u);
     addLocation(v);
-    // Push the relatable RoadSegment structs into both locations' adjacency vectors
     list[u].push_back({v, distance});
     list[v].push_back({u, distance}); // Bidirectional commute road
 }

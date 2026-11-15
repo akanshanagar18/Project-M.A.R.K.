@@ -7,17 +7,18 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         :root {
-            --bg-base: #0b0f19;
-            --bg-card: #121826;
-            --bg-hover: #1c2438;
-            --border: #232d42;
-            --text-main: #f1f5f9;
-            --text-muted: #94a3b8;
-            --primary: #f43f5e;
-            --primary-hover: #e11d48;
-            --cyan: #06b6d4;
-            --green: #10b981;
-            --amber: #f59e0b;
+            --bg-base: #F7F6F2;
+            --bg-card: #FFFFFF;
+            --bg-hover: rgba(97, 120, 145, 0.14);
+            --border: #D5B893;
+            --text-main: #252A32;
+            --text-muted: #617891;
+            --primary: #25344F;
+            --primary-hover: #6F4D38;
+            --cyan: #617891;
+            --green: #617891;
+            --amber: #D5B893;
+            --accent: #6F4D38;
             --sidebar-width: 250px;
         }
 
@@ -29,7 +30,7 @@
         }
 
         body {
-            background-color: var(--bg-base);
+            background: var(--bg-base);
             color: var(--text-main);
             display: flex;
             min-height: 100vh;
@@ -38,8 +39,8 @@
         /* ---------------- Sidebar Navigation ---------------- */
         .sidebar {
             width: var(--sidebar-width);
-            background-color: #0d121f;
-            border-right: 1px solid var(--border);
+            background: #25344F;
+            border-right: 1px solid #617891;
             display: flex;
             flex-direction: column;
             position: fixed;
@@ -52,27 +53,38 @@
         .brand {
             padding: 24px 20px;
             border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-logo {
+            width: 44px;
+            height: 44px;
+            object-fit: cover;
+            border: 1px solid rgba(247, 246, 242, 0.4);
+            border-radius: 10px;
         }
 
         .brand-title {
-            font-size: 1.25em;
+            font-size: 1.3em;
             font-weight: 700;
-            letter-spacing: 1.5px;
-            color: var(--text-main);
+            letter-spacing: 1.8px;
+            color: #FFFFFF;
         }
 
         .brand-sub {
-            font-size: 0.75em;
-            color: var(--primary);
+            font-size: 0.68em;
+            color: #D5B893;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 2px;
+            letter-spacing: 1.1px;
+            margin-top: 4px;
         }
 
         .nav-label {
             padding: 16px 20px 8px;
             font-size: 0.72em;
-            color: var(--text-muted);
+            color: #D5B893;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
@@ -93,9 +105,9 @@
             align-items: center;
             gap: 12px;
             padding: 10px 14px;
-            color: var(--text-muted);
+            color: #F7F6F2;
             text-decoration: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 0.88em;
             font-weight: 500;
             cursor: pointer;
@@ -106,23 +118,23 @@
             width: 7px;
             height: 7px;
             border-radius: 50%;
-            background-color: var(--border);
+            background-color: #617891;
             transition: all 0.15s ease;
         }
 
         .nav-link:hover {
-            color: var(--text-main);
-            background-color: var(--bg-hover);
+            color: #FFFFFF;
+            background-color: rgba(247, 246, 242, 0.12);
         }
 
         .nav-link.active {
-            color: #ffffff;
-            background-color: rgba(244, 63, 94, 0.14);
+            color: #25344F;
+            background: #D5B893;
         }
 
         .nav-link.active .nav-indicator {
-            background-color: var(--primary);
-            box-shadow: 0 0 8px var(--primary);
+            background-color: #6F4D38;
+            box-shadow: 0 0 8px rgba(213, 184, 147, 0.7);
         }
 
         .server-status {
@@ -132,14 +144,14 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            color: var(--text-muted);
+            color: #F7F6F2;
         }
 
         .status-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: #ef4444;
+            background-color: #6F4D38;
         }
 
         /* ---------------- Main Content ---------------- */
@@ -148,6 +160,7 @@
             flex: 1;
             padding: 24px 32px;
             max-width: 1300px;
+            min-width: 0;
         }
 
         .topbar {
@@ -180,7 +193,7 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            background: var(--bg-card);
+            background: #FFFFFF;
             border: 1px solid var(--border);
             padding: 6px 14px;
             border-radius: 6px;
@@ -192,7 +205,7 @@
             height: 26px;
             border-radius: 50%;
             background: var(--primary);
-            color: #fff;
+            color: #FFFFFF;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -211,11 +224,12 @@
 
         /* ---------------- Cards & Layout ---------------- */
         .card {
-            background-color: var(--bg-card);
+            background: #FFFFFF;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 22px;
             margin-bottom: 20px;
+            box-shadow: 0 8px 22px rgba(37, 52, 79, 0.08);
         }
 
         .card-header {
@@ -248,10 +262,16 @@
         }
 
         .stat-card {
-            background-color: var(--bg-card);
+            background: #FFFFFF;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 16px 20px;
+            transition: border-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .stat-card:hover {
+            border-color: #6F4D38;
+            transform: translateY(-2px);
         }
 
         .stat-label {
@@ -274,14 +294,20 @@
         }
 
         .module-card {
-            background-color: var(--bg-card);
+            background: #FFFFFF;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             padding: 20px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             gap: 16px;
+            transition: border-color 0.18s ease, transform 0.18s ease;
+        }
+
+        .module-card:hover {
+            border-color: #6F4D38;
+            transform: translateY(-2px);
         }
 
         .module-card h4 {
@@ -299,7 +325,7 @@
 
         .btn-module {
             background-color: var(--primary);
-            color: #ffffff;
+            color: #FFFFFF;
             border: none;
             padding: 10px 16px;
             border-radius: 6px;
@@ -336,7 +362,7 @@
         }
 
         input, select, textarea {
-            background-color: #0b0f19;
+            background-color: #FFFFFF;
             border: 1px solid var(--border);
             color: var(--text-main);
             padding: 10px 14px;
@@ -352,7 +378,7 @@
 
         .btn {
             background-color: var(--primary);
-            color: #ffffff;
+            color: #FFFFFF;
             border: none;
             padding: 10px 18px;
             border-radius: 6px;
@@ -366,19 +392,24 @@
             background-color: var(--primary-hover);
         }
 
+        button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
         .btn-blue {
-            background-color: #0284c7;
+            background-color: #617891;
         }
         .btn-blue:hover {
-            background-color: #0369a1;
+            background-color: #25344F;
         }
 
         .btn-secondary {
-            background-color: #334155;
-            color: var(--text-main);
+            background-color: #617891;
+            color: #FFFFFF;
         }
         .btn-secondary:hover {
-            background-color: #475569;
+            background-color: #25344F;
         }
 
         .btn-sm {
@@ -387,8 +418,8 @@
         }
 
         .btn-outline {
-            background: transparent;
-            border: 1px solid var(--border);
+            background: #FFFFFF;
+            border: 1px solid #617891;
             color: var(--text-main);
         }
         .btn-outline:hover {
@@ -405,21 +436,21 @@
             top: calc(100% + 4px);
             left: 0;
             right: 0;
-            background-color: #121826;
+            background-color: #FFFFFF;
             border: 1px solid var(--border);
             border-radius: 6px;
             max-height: 220px;
             overflow-y: auto;
             z-index: 999;
             display: none;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 8px 24px rgba(37, 52, 79, 0.16);
         }
 
         .loc-item {
             padding: 9px 14px;
             font-size: 0.85em;
             cursor: pointer;
-            border-bottom: 1px solid #1a2235;
+            border-bottom: 1px solid rgba(213, 184, 147, 0.6);
         }
 
         .loc-item:last-child {
@@ -453,9 +484,9 @@
         }
 
         .pill-btn {
-            background: #1a2235;
+            background: #D5B893;
             border: 1px solid var(--border);
-            color: var(--text-muted);
+            color: #25344F;
             padding: 6px 12px;
             border-radius: 4px;
             font-size: 0.8em;
@@ -463,8 +494,8 @@
         }
 
         .pill-btn:hover {
-            color: var(--text-main);
-            background: var(--bg-hover);
+            color: #FFFFFF;
+            background: #617891;
         }
 
         .map-legend {
@@ -486,12 +517,12 @@
         }
 
         .line-dijkstra {
-            background-color: var(--primary);
+            background-color: var(--accent);
         }
 
         .line-bfs {
-            background-color: var(--cyan);
-            border-top: 2px dashed #06b6d4;
+            background-color: #617891;
+            border-top: 2px dashed #617891;
         }
 
         /* ---------------- Tables ---------------- */
@@ -512,16 +543,16 @@
         }
 
         .data-table th {
-            color: var(--text-muted);
+            color: #25344F;
             font-weight: 500;
-            background-color: #0b0f19;
+            background-color: #D5B893;
             font-size: 0.8em;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .data-table tbody tr:hover {
-            background-color: rgba(255, 255, 255, 0.02);
+            background-color: rgba(213, 184, 147, 0.18);
         }
 
         .badge {
@@ -532,23 +563,133 @@
             font-weight: 600;
         }
 
-        .badge-success { background: rgba(16, 185, 129, 0.15); color: var(--green); }
-        .badge-ds { background: rgba(6, 182, 212, 0.15); color: var(--cyan); border: 1px solid rgba(6, 182, 212, 0.3); }
+        .badge-success { background: rgba(213, 184, 147, 0.35); color: #6F4D38; }
+        .badge-ds { background: rgba(97, 120, 145, 0.14); color: #25344F; border: 1px solid rgba(97, 120, 145, 0.35); }
 
         /* ---------------- Toast ---------------- */
         #toast {
             position: fixed;
             bottom: 24px;
             right: 24px;
-            background-color: #1e293b;
-            color: #fff;
+            background-color: #25344F;
+            color: #FFFFFF;
             padding: 12px 20px;
             border-radius: 6px;
-            border-left: 4px solid var(--primary);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border-left: 4px solid #D5B893;
+            box-shadow: 0 10px 25px rgba(37, 52, 79, 0.22);
             font-size: 0.88em;
             display: none;
             z-index: 10000;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                display: block;
+            }
+
+            .sidebar {
+                position: relative;
+                width: 100%;
+                min-height: 0;
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .brand {
+                padding: 14px 20px;
+            }
+
+            .brand-logo {
+                width: 38px;
+                height: 38px;
+            }
+
+            .nav-label {
+                padding: 10px 20px 6px;
+            }
+
+            .nav-menu {
+                display: flex;
+                gap: 4px;
+                padding: 0 10px 10px;
+                overflow-x: auto;
+                overflow-y: hidden;
+            }
+
+            .nav-item {
+                flex: 0 0 auto;
+                margin: 0;
+            }
+
+            .nav-link {
+                white-space: nowrap;
+            }
+
+            .server-status {
+                padding: 10px 18px;
+            }
+
+            .main-content {
+                margin-left: 0;
+                max-width: none;
+                padding: 22px 24px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .main-content {
+                padding: 18px 14px;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 14px;
+            }
+
+            .user-auth-panel {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+            }
+
+            .stat-card {
+                padding: 14px;
+            }
+
+            .stat-value {
+                font-size: 1.5em;
+            }
+
+            .modules-grid, .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 16px;
+            }
+
+            .card-header {
+                align-items: flex-start;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            #tab-routes > .card > div[style*="grid-template-columns:1fr 1fr"] {
+                grid-template-columns: 1fr !important;
+            }
+
+            #tab-routes > .card > div[style*="display:flex"] {
+                flex-wrap: wrap;
+            }
+
+            #map {
+                height: 360px;
+            }
         }
     </style>
 </head>
@@ -559,8 +700,11 @@
     <!-- ============================================================== -->
     <aside class="sidebar">
         <div class="brand">
-            <div class="brand-title">M.A.R.K</div>
-            <div class="brand-sub">Mobility &amp; Routing Kernel</div>
+            <img class="brand-logo" src="MARK_LOGO.PNG" alt="M.A.R.K route logo">
+            <div>
+                <div class="brand-title">M.A.R.K</div>
+                <div class="brand-sub">Mapped Automation Route Kinematics</div>
+            </div>
         </div>
 
         <div class="nav-label">Navigation</div>
@@ -759,7 +903,7 @@
                 </form>
 
                 <!-- Success Box -->
-                <div id="regSuccessCard" style="display:none; margin-top:16px; padding:14px; background:#0b0f19; border:1px solid var(--green); border-radius:6px;">
+                <div id="regSuccessCard" style="display:none; margin-top:16px; padding:14px; background:#FFFFFF; border:1px solid var(--green); border-radius:6px;">
                     <strong style="color:var(--green);">Commuter Registered Successfully!</strong>
                     <div style="margin-top:6px; font-size:0.9em;">
                         Name: <strong id="newUserNameText"></strong> | Assigned 4-Digit ID: <span class="badge badge-success" id="newUserIdBadge" style="font-size:1em;">#0000</span>
@@ -813,7 +957,7 @@
                     </div>
                 </div>
 
-                <div id="alreadyHasRequestNotice" style="display:none; padding:12px 14px; background:#0b0f19; border:1px solid var(--amber); border-radius:6px; margin-bottom:14px; font-size:0.88em;">
+                <div id="alreadyHasRequestNotice" style="display:none; padding:12px 14px; background:#FFFFFF; border:1px solid var(--amber); border-radius:6px; margin-bottom:14px; font-size:0.88em;">
                     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
                         <span id="existingReqDetails"></span>
                         <button type="button" class="btn btn-sm btn-outline" style="border-color:var(--amber); color:var(--amber); white-space:nowrap;" onclick="cancelActiveRideRequest()">Cancel Request</button>
@@ -887,12 +1031,12 @@
                     </div>
                 </div>
 
-                <div id="matchActiveRouteDetails" style="display:none; padding:12px; background:#0b0f19; border:1px solid var(--border); border-radius:6px; margin-bottom:16px; font-size:0.88em;">
+                <div id="matchActiveRouteDetails" style="display:none; padding:12px; background:#FFFFFF; border:1px solid var(--border); border-radius:6px; margin-bottom:16px; font-size:0.88em;">
                     <div>Your Request: <strong id="matchActiveRouteText"></strong></div>
                     <div style="font-size:0.8em; color:var(--text-muted); margin-top:2px;" id="matchActiveMetaText"></div>
                 </div>
 
-                <div id="matchNoRequestNotice" style="display:none; padding:12px; background:#0b0f19; border:1px solid var(--amber); border-radius:6px; margin-bottom:14px; font-size:0.88em;">
+                <div id="matchNoRequestNotice" style="display:none; padding:12px; background:#FFFFFF; border:1px solid var(--amber); border-radius:6px; margin-bottom:14px; font-size:0.88em;">
                     You do not currently have an active ride request. Please submit a ride request first to evaluate matches.
                 </div>
 
@@ -990,7 +1134,7 @@
                     Computing path using C++ graph algorithms on OpenStreetMap road network...
                 </div>
 
-                <div id="routeSummaryBox" style="display:none; margin-top:14px; padding:14px; background:#0b0f19; border-radius:6px; border:1px solid var(--border);"></div>
+                <div id="routeSummaryBox" style="display:none; margin-top:14px; padding:14px; background:#FFFFFF; border-radius:6px; border:1px solid var(--border);"></div>
 
                 <!-- Leaflet Map Container -->
                 <div id="map"></div>
@@ -1186,7 +1330,7 @@
                     return;
                 }
             } catch (e) {}
-            document.getElementById('serverDot').style.backgroundColor = '#ef4444';
+            document.getElementById('serverDot').style.backgroundColor = '#6F4D38';
             document.getElementById('serverStatusText').innerText = 'Offline (Click mark_system.exe)';
         }
 
@@ -1473,7 +1617,7 @@
             grid.innerHTML = data.matches.map(m => {
                 const c = m.candidate || {};
                 return `
-                <div style="background:#0b0f19; border:1px solid var(--border); padding:16px; border-radius:6px; display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
+                <div style="background:#FFFFFF; border:1px solid var(--border); padding:16px; border-radius:6px; display:flex; flex-direction:column; justify-content:space-between; gap:12px;">
                     <div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
                             <strong>${escapeHtml(c.name || 'Co-Commuter')} (#${c.id || ''})</strong>
@@ -1718,8 +1862,8 @@
                 }
 
                 // Markers
-                const startIcon = L.divIcon({ className: '', html: `<div style="background:#f43f5e;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.5);">A</div>`, iconSize: [28,28], iconAnchor: [14,14] });
-                const endIcon = L.divIcon({ className: '', html: `<div style="background:#06b6d4;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.5);">B</div>`, iconSize: [28,28], iconAnchor: [14,14] });
+                const startIcon = L.divIcon({ className: '', html: `<div style="background:#6F4D38;color:#FFFFFF;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(37,52,79,0.35);">A</div>`, iconSize: [28,28], iconAnchor: [14,14] });
+                const endIcon = L.divIcon({ className: '', html: `<div style="background:#617891;color:#FFFFFF;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-weight:700;border:2px solid #FFFFFF;box-shadow:0 2px 6px rgba(37,52,79,0.35);">B</div>`, iconSize: [28,28], iconAnchor: [14,14] });
 
                 L.marker([sLoc.lat, sLoc.lon], { icon: startIcon }).bindPopup(`<b>Start:</b> ${sLoc.name}`).addTo(markerLayerGroup);
                 L.marker([eLoc.lat, eLoc.lon], { icon: endIcon }).bindPopup(`<b>Destination:</b> ${eLoc.name}`).addTo(markerLayerGroup);
@@ -1786,16 +1930,16 @@
 
                 let renderedLayers = [];
 
-                // Render Dijkstra: Solid Pink Line
+                // Render Dijkstra: Solid Coffee Line
                 if (mode === 'dijkstra' || mode === 'both') {
-                    let polyD = L.polyline(dijkstraCoords, { color: '#f43f5e', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
+                    let polyD = L.polyline(dijkstraCoords, { color: '#6F4D38', weight: 6, opacity: 0.95 }).addTo(routeLayerGroup);
                     polyD.bindPopup(`<b>Dijkstra Route (Shortest Path):</b> ${dijkstraDist.toFixed(2)} km (${dijkstraHops} road intersections via Min-Heap Priority Queue) &bull; ~${dijkstraDuration} min`);
                     renderedLayers.push(polyD);
                 }
 
-                // Render BFS: Dashed Cyan Line (Distinct route & stats)
+                // Render BFS: Dashed Slate Line (Distinct route & stats)
                 if (mode === 'bfs' || mode === 'both') {
-                    let polyB = L.polyline(bfsCoords, { color: '#06b6d4', weight: 5, dashArray: '10,8', opacity: 0.9 }).addTo(routeLayerGroup);
+                    let polyB = L.polyline(bfsCoords, { color: '#617891', weight: 5, dashArray: '10,8', opacity: 0.9 }).addTo(routeLayerGroup);
                     polyB.bindPopup(`<b>BFS Route (Min Connections):</b> ${bfsDist.toFixed(2)} km (${bfsHops} road intersections via FIFO Queue) &bull; ~${bfsDuration} min`);
                     renderedLayers.push(polyB);
                 }
