@@ -367,17 +367,13 @@ void syncRidesToDisk() {
 }
 
 void initializePersistence() {
-    cout << "[Storage] Checking persistent storage files...\n";
-    
     // 1. Users
     vector<User> savedUsers = loadUsersFromFile(USERS_FILE);
     if (!savedUsers.empty()) {
-        cout << "[Storage] Found " << savedUsers.size() << " saved users in " << USERS_FILE << ". Loading into Linked List...\n";
         for (const auto& u : savedUsers) {
             userManager.registerUserDirect(u);
         }
     } else {
-        cout << "[Storage] Initializing default sample users into Linked List and saving to " << USERS_FILE << "...\n";
         User u1; u1.id = 1001; u1.name = "Aryan Sharma"; u1.phone = "9876543210"; u1.gender = "Male";
         u1.source = "Sector 62, Noida"; u1.destination = "Botanical Garden, Noida";
         u1.preferredTime = "09:30"; u1.transportMode = "Metro"; u1.budget = 150.0;
@@ -417,11 +413,9 @@ void initializePersistence() {
     loadRidesFromFile(RIDES_FILE, savedPending, savedHistory);
     
     if (!savedPending.empty() || !savedHistory.empty()) {
-        cout << "[Storage] Found " << savedPending.size() << " pending rides and " << savedHistory.size() << " history records in " << RIDES_FILE << ". Loading into Ride Manager...\n";
         for (const auto& r : savedPending) rideManager.load_pending_request(r);
         for (const auto& h : savedHistory) rideManager.load_history_record(h);
     } else {
-        cout << "[Storage] Initializing default ride requests in FIFO Queue and saving to " << RIDES_FILE << "...\n";
         rideManager.add_ride_req(1001, "Sector 62, Noida", "Botanical Garden, Noida", 930, "Metro", 150.0);
         rideManager.add_ride_req(1002, "Sector 62, Noida", "Botanical Garden, Noida", 940, "Metro", 120.0);
         rideManager.add_ride_req(1003, "Sector 62, Noida", "Connaught Place, Delhi", 930, "Cab", 250.0);
@@ -429,8 +423,6 @@ void initializePersistence() {
         rideManager.add_ride_req(1005, "Dwarka Sector 21", "Rajiv Chowk", 1000, "Metro", 80.0);
         syncRidesToDisk();
     }
-    
-    cout << "[Storage] Persistent Storage System ready!\n";
 }
 
 void handleClient(SOCKET clientSocket) {
@@ -625,8 +617,7 @@ void handleClient(SOCKET clientSocket) {
         string gender = getJsonString(body, "gender");
         string email = getJsonString(body, "email");
         if (gender.empty()) gender = getJsonString(body, "type");
-        if (gender.empty() && !email.empty()) gender = email;
-        if (gender.empty()) gender = "Daily Commuter";
+        if (gender.empty() || gender.find("@") != string::npos) gender = "Male";
 
         if (name.empty()) {
             sendJsonResponse("400 Bad Request", "{\"success\":false,\"message\":\"Name cannot be empty.\"}");
@@ -644,8 +635,6 @@ void handleClient(SOCKET clientSocket) {
 
         bool ok = userManager.registerUserDirect(u);
         if (ok) syncUsersToDisk();
-        cout << "[User Directory] Automatically generated ID #" << newId 
-             << " -> Registered user: " << name << " (Phone: " << phone << ")\n";
 
         ostringstream json;
         json << "{\"success\":" << (ok ? "true" : "false") << ","
@@ -665,7 +654,6 @@ void handleClient(SOCKET clientSocket) {
         try { if (!idStr.empty()) id = stoi(idStr); } catch (...) {}
         User u;
         bool found = (id > 0) && userManager.getUserById(id, u);
-        cout << "[Linked List] Searching for user ID #" << id << (found ? " (Found)" : " (Not Found)") << "\n";
 
         ostringstream json;
         if (found) {
@@ -687,7 +675,6 @@ void handleClient(SOCKET clientSocket) {
 
         bool ok = userManager.updateUserDirect(id, name, phone, gender);
         if (ok) syncUsersToDisk();
-        cout << "[Linked List] " << (ok ? "Updated user #" : "Failed update for user #") << id << "\n";
 
         ostringstream json;
         json << "{\"success\":" << (ok ? "true" : "false") << ","
@@ -715,7 +702,6 @@ void handleClient(SOCKET clientSocket) {
             syncUsersToDisk();
             syncRidesToDisk();
         }
-        cout << "[Linked List] " << (ok ? "Deleted user node #" : "Could not delete user #") << id << "\n";
 
         ostringstream json;
         json << "{\"success\":" << (ok ? "true" : "false") << ","
@@ -788,7 +774,6 @@ void handleClient(SOCKET clientSocket) {
         rideManager.add_ride_req(userId, src, dst, numericTime, mode, budget);
         syncUsersToDisk();
         syncRidesToDisk();
-        cout << "[Queue FIFO] Enqueued ride request for User #" << userId << " (" << src << " -> " << dst << ", Time: " << numericTime << ", Mode: " << mode << ")\n";
 
         ostringstream json;
         json << "{\"success\":true,\"message\":\"Ride request saved & pushed to FIFO Queue!\"}";
@@ -822,10 +807,20 @@ void handleClient(SOCKET clientSocket) {
             return;
         }
 
+        string genderPrefParam = "";
+        if (method == "GET") {
+            genderPrefParam = getQueryParam(url, "genderPreference");
+        } else {
+            genderPrefParam = getJsonString(body, "genderPreference");
+        }
+        if (!genderPrefParam.empty()) {
+            user.genderPreference = genderPrefParam;
+            userManager.setRideRequestDirect(user.id, user.source, user.destination, user.preferredTime, user.transportMode, user.budget, genderPrefParam, user.wantsSharedCab, user.boardingStation, user.allowMultiple);
+            syncUsersToDisk();
+        }
+
         // Run Priority Queue Matching Engine in C++
         MatchQueue pq = matchRides(user, userManager.getAllUsers());
-        cout << "[Priority Queue] Evaluated ride matches for Logged-in User #" << userId 
-             << " -> Found " << pq.size() << " compatible matches.\n";
 
         ostringstream json;
         json << "{\"success\":true,\"userId\":" << userId << ",\"totalMatches\":" << pq.size() << ",\"matches\":[";
@@ -861,7 +856,6 @@ void handleClient(SOCKET clientSocket) {
         userManager.markMatched(u1, u2);
         userManager.markMatched(u2, u1);
         syncUsersToDisk();
-        cout << "[Matching Engine] Confirmed match between User #" << u1 << " and User #" << u2 << "\n";
 
         ostringstream json;
         json << "{\"success\":true,\"message\":\"Match confirmed successfully between User #" << u1 << " and User #" << u2 << "!\"}";
@@ -880,7 +874,6 @@ void handleClient(SOCKET clientSocket) {
         rideManager.process_nextride(fare);
         syncUsersToDisk();
         syncRidesToDisk();
-        cout << "[Ride Manager] Processed next ride from FIFO Queue with fare $" << fare << " -> Stored in History Vector & Logged in Stack\n";
 
         ostringstream json;
         json << "{\"success\":true,\"message\":\"Ride processed, stored in History Vector, and logged to Undo Stack!\"}";
@@ -895,7 +888,6 @@ void handleClient(SOCKET clientSocket) {
         if (ok) {
             if (undoneAction.type == BOOK) {
                 userManager.clearRequest(undoneAction.req.user_id);
-                cout << "[Linked List] Cleared active ride request for User #" << undoneAction.req.user_id << " due to undo.\n";
             } else if (undoneAction.type == COMPLETE) {
                 for (int uid : undoneAction.rec.user_ids) {
                     userManager.resetMatch(uid);
@@ -906,7 +898,6 @@ void handleClient(SOCKET clientSocket) {
             syncUsersToDisk();
             syncRidesToDisk();
         }
-        cout << "[Stack LIFO] Undo action triggered: " << (ok ? "Success (Restored state)" : "Stack is empty") << "\n";
 
         ostringstream json;
         json << "{\"success\":" << (ok ? "true" : "false") << ","
@@ -930,7 +921,6 @@ void handleClient(SOCKET clientSocket) {
                     rideManager.cancel_request(r.id);
                 }
             }
-            cout << "[Ride Dispatcher] Cancelled active ride request for User #" << uid << "\n";
             syncUsersToDisk();
             syncRidesToDisk();
             sendJsonResponse("200 OK", "{\"success\":true,\"message\":\"Active ride request cancelled successfully.\"}");
@@ -1035,8 +1025,6 @@ void handleClient(SOCKET clientSocket) {
             double sLat = stod(sLatStr), sLon = stod(sLonStr);
             double eLat = stod(eLatStr), eLon = stod(eLonStr);
             RoadRouteResult result = routeManager.getRoadDijkstraRoute(sLat, sLon, eLat, eLon);
-            cout << "[Dijkstra] Route from (" << sLat << "," << sLon << ") to (" << eLat << "," << eLon
-                 << ") -> " << (result.success ? "OK" : "FAIL") << " dist=" << result.distanceKm << " km, hops=" << result.hops << "\n";
 
             ostringstream json;
             json << fixed << setprecision(7);
@@ -1079,8 +1067,6 @@ void handleClient(SOCKET clientSocket) {
             double sLat = stod(sLatStr), sLon = stod(sLonStr);
             double eLat = stod(eLatStr), eLon = stod(eLonStr);
             RoadRouteResult result = routeManager.getRoadBFSRoute(sLat, sLon, eLat, eLon);
-            cout << "[BFS] Route from (" << sLat << "," << sLon << ") to (" << eLat << "," << eLon
-                 << ") -> " << (result.success ? "OK" : "FAIL") << " hops=" << result.hops << "\n";
 
             ostringstream json;
             json << fixed << setprecision(7);
@@ -1141,19 +1127,6 @@ int main(int argc, char* argv[]) {
     }
 
     // Server mode
-    cout << "=================================================================\n";
-    cout << "   M.A.R.K. | Mapped Automation Route Kinematics (C++ Backend)   \n";
-    cout << "=================================================================\n";
-    cout << " Data Structures Implemented in C++:                             \n";
-    cout << "   - Linked List     : Dynamic User Management                   \n";
-    cout << "   - Queue (FIFO)    : Pending Ride Dispatching                  \n";
-    cout << "   - Priority Queue  : Smart Multi-Parameter Ride Matching       \n";
-    cout << "   - Stack (LIFO)    : Transactional Undo System                 \n";
-    cout << "   - Vector          : Complete Ride History Records             \n";
-    cout << "   - Graph & Dijkstra: Shortest Distance Route Navigation        \n";
-    cout << "   - Graph & BFS     : Minimum Hops Route Navigation             \n";
-    cout << "=================================================================\n";
-
     initializePersistence();
 
     WSADATA wsa;
@@ -1178,7 +1151,6 @@ int main(int argc, char* argv[]) {
     serverAddr.sin_port = htons(8080);
 
     if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
-        cerr << "Error: Port 8080 is in use. Trying port 8000...\n";
         serverAddr.sin_port = htons(8000);
         if (bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
             cerr << "Error: Bind failed on ports 8080 and 8000.\n";
@@ -1196,10 +1168,10 @@ int main(int argc, char* argv[]) {
     }
 
     int port = ntohs(serverAddr.sin_port);
-    cout << "\n[Server Online] Listening on http://localhost:" << port << "\n";
-    cout << "[Server Online] Open your browser at: http://localhost:" << port << "\n";
-    cout << "[Server Online] Ready to receive frontend requests. Press Ctrl+C to stop.\n";
-    cout << "=================================================================\n\n";
+    cout << "\n=================================================================\n";
+    cout << "   M.A.R.K. | Mobility & Routing Kernel (C++ Backend Online)     \n";
+    cout << "   Dashboard URL : http://localhost:" << port << "\n";
+    cout << "=================================================================\n" << endl;
 
     while (true) {
         sockaddr_in clientAddr;

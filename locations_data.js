@@ -234,5 +234,20 @@
             { name: "Sarojini Nagar Market", type: "Landmark", city: "Delhi", lat: 28.5760, lon: 77.1980 },
             { name: "Chandni Chowk Market", type: "Landmark", city: "Delhi", lat: 28.6506, lon: 77.2303 },
             { name: "Khan Market", type: "Landmark", city: "Delhi", lat: 28.6000, lon: 77.2270 },
-            { name: "Dilli Haat INA", type: "Landmark", city: "Delhi", lat: 28.5730, lon: 77.2080 }
+            { name: "Dilli Haat INA", type: "Landmark", city: "Delhi", lat: 28.5730, lon: 77.2080 },
+            { name: "Okhla Bird Sanctuary Metro Station", type: "Metro Station", city: "Noida", lat: 28.5447, lon: 77.3197 },
+            { name: "Kalindi Kunj Metro Station", type: "Metro Station", city: "Delhi", lat: 28.5463, lon: 77.3069 },
+            { name: "Jaypee Institute of Information Technology Sector 62", type: "College/University", city: "Noida", lat: 28.6305, lon: 77.3721 },
+            { name: "Jaypee Institute of Information Technology Sector 128", type: "College/University", city: "Noida", lat: 28.5195, lon: 77.3653 },
+            { name: "JIIT Sector 62", type: "College/University", city: "Noida", lat: 28.6305, lon: 77.3721 },
+            { name: "JIIT Sector 128", type: "College/University", city: "Noida", lat: 28.5195, lon: 77.3653 },
+            { name: "Amity University Noida Sector 125", type: "College/University", city: "Noida", lat: 28.5440, lon: 77.3332 },
+            { name: "Mahamaya Flyover Noida", type: "Transit Hub", city: "Noida", lat: 28.5540, lon: 77.3235 },
+            { name: "Noida Electronic City Metro Station", type: "Metro Station", city: "Noida", lat: 28.6293, lon: 77.3789 },
+            { name: "Candor TechSpace Sector 62", type: "IT Park", city: "Noida", lat: 28.6255, lon: 77.3710 },
+            { name: "Jaypee Greens Wish Town Sector 128", type: "Residential Hub", city: "Noida", lat: 28.5230, lon: 77.3620 },
+            { name: "Noida Expressway Sector 132", type: "Commercial Hub", city: "Noida", lat: 28.5085, lon: 77.3740 },
+            { name: "Jasola Vihar Shaheen Bagh Metro Station", type: "Metro Station", city: "Delhi", lat: 28.5412, lon: 77.2946 },
+            { name: "Okhla Bird Sanctuary", type: "Landmark", city: "Noida", lat: 28.5520, lon: 77.3140 },
+            { name: "Kalindi Kunj Park", type: "Landmark", city: "Delhi", lat: 28.5480, lon: 77.3080 }
         ];

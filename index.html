@@ -125,23 +125,6 @@
             box-shadow: 0 0 8px var(--primary);
         }
 
-        .server-status {
-            padding: 14px 18px;
-            border-top: 1px solid var(--border);
-            font-size: 0.78em;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: var(--text-muted);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: #ef4444;
-        }
-
         /* ---------------- Main Content ---------------- */
         .main-content {
             margin-left: var(--sidebar-width);
@@ -608,11 +591,6 @@
                 </a>
             </li>
         </ul>
-
-        <div class="server-status">
-            <span class="status-dot" id="serverDot"></span>
-            <span id="serverStatusText">Connecting...</span>
-        </div>
     </aside>
 
     <!-- ============================================================== -->
@@ -751,6 +729,14 @@
                             <input type="email" id="regEmail" required>
                         </div>
                         <div class="form-group">
+                            <label>Gender</label>
+                            <select id="regGender" required>
+                                <option value="Male" selected>Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label>Account Password</label>
                             <input type="password" id="regPass" required>
                         </div>
@@ -771,7 +757,6 @@
             <div class="card">
                 <div class="card-header">
                     <h3>User Directory</h3>
-                    <button type="button" class="btn btn-sm btn-outline" onclick="loadUsers()">Refresh</button>
                 </div>
                 <div class="table-responsive">
                     <table class="data-table">
@@ -780,8 +765,8 @@
                                 <th>ID</th>
                                 <th>Name</th>
                                 <th>Phone</th>
+                                <th>Gender</th>
                                 <th>Status</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="userTableBody">
@@ -843,11 +828,10 @@
                         <div class="form-group">
                             <label>Preferred Mode</label>
                             <select id="reqMode">
-                                <option value="Cab" selected>Cab / Taxi</option>
-                                <option value="Metro">Metro</option>
-                                <option value="Auto">Auto Rickshaw</option>
-                                <option value="Metro Feeder">Metro Feeder</option>
-                                <option value="Shared Van">Shared Van</option>
+                                <option value="Cab / Taxi" selected>Cab / Taxi</option>
+                                <option value="Auto Rickshaw">Auto Rickshaw</option>
+                                <option value="E-Rickshaw">E-Rickshaw</option>
+                                <option value="All Preferred">All Preferred (Any Mode)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -855,11 +839,11 @@
                             <input type="number" id="reqBudget" value="250" min="20" required>
                         </div>
                         <div class="form-group">
-                            <label>Nearest Metro / Transit Hub</label>
-                            <div class="loc-input-wrapper">
-                                <input type="text" id="reqStation" placeholder="Optional transit station..." autocomplete="off">
-                                <div class="loc-dropdown" id="dropdown-reqStation"></div>
-                            </div>
+                            <label>Gender Preference</label>
+                            <select id="reqGenderPref">
+                                <option value="Any" selected>No Preference (Any Gender)</option>
+                                <option value="Same">Same Gender Only</option>
+                            </select>
                         </div>
                     </div>
                     <button type="submit" class="btn" style="width:100%;">Submit Ride Request</button>
@@ -894,6 +878,14 @@
 
                 <div id="matchNoRequestNotice" style="display:none; padding:12px; background:#0b0f19; border:1px solid var(--amber); border-radius:6px; margin-bottom:14px; font-size:0.88em;">
                     You do not currently have an active ride request. Please submit a ride request first to evaluate matches.
+                </div>
+
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+                    <label style="font-size:0.85em; color:var(--text-muted); font-weight:600;">Match Filter:</label>
+                    <select id="matchGenderPref" style="padding: 7px 14px; border-radius: 6px; background: #0b0f19; color: var(--text-main); border: 1px solid var(--border);" onchange="runMatchingEngine()">
+                        <option value="Any">No Preference (Any Gender)</option>
+                        <option value="Same">Same Gender Only</option>
+                    </select>
                 </div>
 
                 <button type="button" id="btnRunMatchEngine" class="btn btn-blue" onclick="runMatchingEngine()">Find Compatible Matches</button>
@@ -955,6 +947,9 @@
                 <!-- Presets -->
                 <div class="preset-pills">
                     <span style="font-size:0.82em; color:var(--text-muted); align-self:center;">Presets:</span>
+                    <button type="button" class="pill-btn" onclick="setPreset('Jaypee Institute of Information Technology Sector 62', 'Jaypee Institute of Information Technology Sector 128')">JIIT 62 to JIIT 128</button>
+                    <button type="button" class="pill-btn" onclick="setPreset('Kalindi Kunj Metro Station', 'Jaypee Institute of Information Technology Sector 128')">Kalindi Kunj to JIIT 128</button>
+                    <button type="button" class="pill-btn" onclick="setPreset('Okhla Bird Sanctuary Metro Station', 'Jaypee Institute of Information Technology Sector 62')">Okhla Sanctuary to JIIT 62</button>
                     <button type="button" class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Botanical Garden, Noida')">Sec 62 to Botanical Garden</button>
                     <button type="button" class="pill-btn" onclick="setPreset('Sector 62, Noida', 'Connaught Place, Delhi')">Sec 62 to Connaught Place</button>
                     <button type="button" class="pill-btn" onclick="setPreset('India Gate, Delhi', 'Connaught Place, Delhi')">India Gate to Connaught Place</button>
@@ -1164,8 +1159,10 @@
                 let data = await safeFetchJson(getBackendUrl('/api/stats'), { signal: AbortSignal.timeout(2000) });
                 if (data && data.totalUsers !== undefined) {
                     isBackendLive = true;
-                    document.getElementById('serverDot').style.backgroundColor = 'var(--green)';
-                    document.getElementById('serverStatusText').innerText = 'Connected (Port 8080)';
+                    let sDot = document.getElementById('serverDot');
+                    let sText = document.getElementById('serverStatusText');
+                    if (sDot) sDot.style.backgroundColor = 'var(--green)';
+                    if (sText) sText.innerText = 'Connected (Port 8080)';
                     loadStats();
                     loadUsers();
 
@@ -1186,8 +1183,10 @@
                     return;
                 }
             } catch (e) {}
-            document.getElementById('serverDot').style.backgroundColor = '#ef4444';
-            document.getElementById('serverStatusText').innerText = 'Offline (Click mark_system.exe)';
+            let sDot = document.getElementById('serverDot');
+            let sText = document.getElementById('serverStatusText');
+            if (sDot) sDot.style.backgroundColor = '#ef4444';
+            if (sText) sText.innerText = 'Offline (Click mark_system.exe)';
         }
 
         // ---------------- Dashboard Stats ----------------
@@ -1219,10 +1218,8 @@
                     <td><strong>#${u.id}</strong></td>
                     <td>${u.name}</td>
                     <td>${u.phone || 'N/A'}</td>
+                    <td><span class="badge" style="background:#1a2235; border:1px solid var(--border); color:var(--text-main);">${escapeHtml(u.gender || 'Not specified')}</span></td>
                     <td>${u.hasRequest ? '<span class="badge badge-success">Active Request</span>' : '<span style="color:var(--text-muted);font-size:0.85em;">Idle</span>'}</td>
-                    <td>
-                        <button type="button" class="btn btn-sm btn-outline" onclick="quickLoginUser(${u.id}, '${escapeHtml(u.name)}')">Select</button>
-                    </td>
                 </tr>
             `).join('');
         }
@@ -1236,6 +1233,7 @@
             const name = document.getElementById('regName').value.trim();
             const phone = document.getElementById('regPhone').value.trim();
             const email = document.getElementById('regEmail')?.value.trim() || '';
+            const gender = document.getElementById('regGender')?.value || 'Male';
             const pass = document.getElementById('regPass')?.value || '';
 
             if (!name) {
@@ -1243,7 +1241,7 @@
                 return;
             }
 
-            let payload = { name, phone, email, password: pass };
+            let payload = { name, phone, email, gender, password: pass };
 
             let res = await safeFetchJson(getBackendUrl('/api/users'), {
                 method: 'POST',
@@ -1270,6 +1268,7 @@
                 loadStats();
                 document.getElementById('regName').value = '';
                 document.getElementById('regPhone').value = '';
+                if (document.getElementById('regGender')) document.getElementById('regGender').value = 'Male';
                 if (document.getElementById('regEmail')) document.getElementById('regEmail').value = '';
                 if (document.getElementById('regPass')) document.getElementById('regPass').value = '';
             } else {
@@ -1396,7 +1395,10 @@
                 if (currentUser.hasRequest) {
                     matchRoute.style.display = 'block';
                     document.getElementById('matchActiveRouteText').innerText = `${currentUser.source} to ${currentUser.destination}`;
-                    document.getElementById('matchActiveMetaText').innerText = `Mode: ${currentUser.transportMode || 'Cab'} | Departure: ${formatDisplayTime(currentUser.preferredTime)} | Budget: Rs. ${currentUser.budget}`;
+                    document.getElementById('matchActiveMetaText').innerText = `Mode: ${currentUser.transportMode || 'Cab'} | Departure: ${formatDisplayTime(currentUser.preferredTime)} | Budget: Rs. ${currentUser.budget} | Preference: ${currentUser.genderPreference || 'Any'}`;
+                    if (document.getElementById('matchGenderPref')) {
+                        document.getElementById('matchGenderPref').value = (currentUser.genderPreference && currentUser.genderPreference.toLowerCase().includes('same')) ? 'Same' : 'Any';
+                    }
                     btnMatch.style.display = 'inline-block';
                     matchNoReq.style.display = 'none';
                 } else {
@@ -1421,7 +1423,9 @@
             const time = document.getElementById('reqTime').value.trim();
             const mode = document.getElementById('reqMode').value;
             const budget = parseFloat(document.getElementById('reqBudget').value) || 200.0;
-            const station = document.getElementById('reqStation').value.trim();
+            const genderPref = document.getElementById('reqGenderPref')?.value || 'Any';
+            const stationInp = document.getElementById('reqStation');
+            const station = stationInp ? stationInp.value.trim() : '';
 
             let payload = { 
                 userId: currentUserId, 
@@ -1435,7 +1439,7 @@
                 station: station,
                 boardingStation: station,
                 wantsSharedCab: true,
-                genderPreference: 'Any'
+                genderPreference: genderPref
             };
 
             let res = await safeFetchJson(getBackendUrl('/api/rides/request'), {
@@ -1464,7 +1468,8 @@
             card.style.display = 'block';
             grid.innerHTML = '<div style="color:var(--text-muted); padding:16px;">Evaluating compatibility for best matches...</div>';
 
-            let data = await safeFetchJson(getBackendUrl(`/api/rides/matches?userId=${currentUserId}`));
+            const genderPref = document.getElementById('matchGenderPref')?.value || 'Any';
+            let data = await safeFetchJson(getBackendUrl(`/api/rides/matches?userId=${currentUserId}&genderPreference=${encodeURIComponent(genderPref)}`));
             if (!data || !data.matches || data.matches.length === 0) {
                 grid.innerHTML = '<div style="color:var(--text-muted); padding:16px;">No compatible co-commuters currently found. Other requests will appear here as they register.</div>';
                 return;
@@ -1482,6 +1487,7 @@
                         <div style="font-size:0.85em; color:var(--text-muted); line-height:1.45;">
                             Route: <strong>${escapeHtml(c.source || '')} ➔ ${escapeHtml(c.destination || '')}</strong><br>
                             Departure: <strong>${formatDisplayTime(c.preferredTime)}</strong> | Mode: <strong>${escapeHtml(c.transportMode || 'Cab')}</strong><br>
+                            Gender: <strong>${escapeHtml(c.gender || 'Not specified')}</strong><br>
                             Compatibility: <span style="color:var(--accent);">${escapeHtml(m.matchType || 'Compatible Route')}</span><br>
                             Estimated Share Fare: <strong>Rs. ${m.estimatedFare || 120}</strong>
                         </div>
@@ -1860,7 +1866,7 @@
         }
 
         function initAllLocationAutocompletes() {
-            const allLocFields = ['reqSource', 'reqDest', 'reqStation', 'routeStart', 'routeEnd'];
+            const allLocFields = ['reqSource', 'reqDest', 'routeStart', 'routeEnd'];
             allLocFields.forEach(attachLocationAutocomplete);
 
             let defStart = findLocationInCSV("Sector 62, Noida") || { name: "Sector 62, Noida", lat: 28.6210, lon: 77.3640, city: "Noida" };

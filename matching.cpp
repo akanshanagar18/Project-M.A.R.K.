@@ -75,6 +75,14 @@ inline bool same(const string& a, const string& b) {
     }
 
     if (la.find("sector 62") != string::npos && lb.find("sector 62") != string::npos) return true;
+    if (la.find("sector 128") != string::npos && lb.find("sector 128") != string::npos) return true;
+    if ((la.find("jiit") != string::npos || la.find("jaypee") != string::npos) &&
+        (lb.find("jiit") != string::npos || lb.find("jaypee") != string::npos)) {
+        if (la.find("62") != string::npos && lb.find("62") != string::npos) return true;
+        if (la.find("128") != string::npos && lb.find("128") != string::npos) return true;
+    }
+    if (la.find("okhla bird") != string::npos && lb.find("okhla bird") != string::npos) return true;
+    if (la.find("kalindi kunj") != string::npos && lb.find("kalindi kunj") != string::npos) return true;
     if (la.find("sector 18") != string::npos && lb.find("sector 18") != string::npos) return true;
     if (la.find("botanical garden") != string::npos && lb.find("botanical garden") != string::npos) return true;
     if (la.find("connaught place") != string::npos && lb.find("connaught place") != string::npos) return true;
@@ -150,17 +158,35 @@ inline bool evaluateMatch(const User &u, const User &c, match_class &m) {
     bool sameSrc = same(u.source, c.source);
     bool sameDst = same(u.destination, c.destination);
 
-    bool uCab = (toLower(u.transportMode).find("cab") != string::npos || toLower(u.transportMode).find("auto") || toLower(u.transportMode).find("van") || toLower(u.transportMode).find("carpool") || toLower(u.transportMode).find("taxi"));
-    bool cCab = (toLower(c.transportMode).find("cab") != string::npos || toLower(c.transportMode).find("auto") || toLower(c.transportMode).find("van") || toLower(c.transportMode).find("carpool") || toLower(c.transportMode).find("taxi"));
+    string uMode = toLower(u.transportMode);
+    string cMode = toLower(c.transportMode);
 
-    bool uMetro = (toLower(u.transportMode).find("metro") != string::npos || toLower(u.transportMode).find("train") || toLower(u.transportMode).find("transit"));
-    bool cMetro = (toLower(c.transportMode).find("metro") != string::npos || toLower(c.transportMode).find("train") || toLower(c.transportMode).find("transit"));
+    bool uAny = (uMode == "all" || uMode.find("all") != string::npos || uMode.find("any") != string::npos);
+    bool cAny = (cMode == "all" || cMode.find("all") != string::npos || cMode.find("any") != string::npos);
 
-    bool sameMode = (toLower(u.transportMode) == toLower(c.transportMode)) || (uCab && cCab) || (uMetro && cMetro);
+    bool uERick = (uMode.find("e-rick") != string::npos || uMode.find("erick") != string::npos);
+    bool cERick = (cMode.find("e-rick") != string::npos || cMode.find("erick") != string::npos);
+
+    bool uAuto = (!uERick && (uMode.find("auto") != string::npos || uMode.find("rickshaw") != string::npos));
+    bool cAuto = (!cERick && (cMode.find("auto") != string::npos || cMode.find("rickshaw") != string::npos));
+
+    bool uCab = (uMode.find("cab") != string::npos || uMode.find("taxi") != string::npos || uMode.find("carpool") != string::npos || uMode.find("van") != string::npos);
+    bool cCab = (cMode.find("cab") != string::npos || cMode.find("taxi") != string::npos || cMode.find("carpool") != string::npos || cMode.find("van") != string::npos);
+
+    bool uMetro = (uMode.find("metro") != string::npos || uMode.find("train") != string::npos || uMode.find("transit") != string::npos);
+    bool cMetro = (cMode.find("metro") != string::npos || cMode.find("train") != string::npos || cMode.find("transit") != string::npos);
+
+    bool sameMode = (uMode == cMode) ||
+                    (uCab && cCab) ||
+                    (uAuto && cAuto) ||
+                    (uERick && cERick) ||
+                    ((uAuto || uERick) && (cAuto || cERick)) ||
+                    (uMetro && cMetro) ||
+                    uAny || cAny;
 
     // 1. MATCHING ON SAME OR COMPATIBLE TRANSPORT MODE
     if (sameMode) {
-        if (uMetro || cMetro) {
+        if (uMetro && cMetro && !uAny && !cAny) {
             int s1 = findStation(u.source), d1 = findStation(u.destination);
             int s2 = findStation(c.source), d2 = findStation(c.destination);
 
@@ -200,8 +226,8 @@ inline bool evaluateMatch(const User &u, const User &c, match_class &m) {
                 }
             }
         } else {
-            // Cab, Carpool, Auto, Train, Bus
-            bool partialAllowed = (toLower(u.transportMode) != "bike" && toLower(u.transportMode) != "walking");
+            // Cab, Carpool, Auto, E-Rickshaw, All Preferred
+            bool partialAllowed = (uMode != "bike" && uMode != "walking");
             if (sameSrc && sameDst) {
                 shared = 1;
                 score = 100;
@@ -252,10 +278,18 @@ inline bool evaluateMatch(const User &u, const User &c, match_class &m) {
         return false;
 
     // 4. FARE ESTIMATION & BUDGET COMPATIBILITY
-    bool isCabType = (toLower(u.transportMode) == "cab" || toLower(u.transportMode) == "auto" || 
-                      toLower(u.transportMode) == "carpool" || score == 65 || score == 55 || score == 50);
-    
-    int fare = isCabType ? SHARED_CAB_FARE : FARE_PER_STOP * max(shared, 1);
+    int fare = SHARED_CAB_FARE;
+    if (uERick || cERick) {
+        fare = 30;
+    } else if (uAuto || cAuto) {
+        fare = 50;
+    } else if (uMetro && cMetro) {
+        fare = FARE_PER_STOP * max(shared, 1);
+    } else if (uCab || cCab) {
+        fare = SHARED_CAB_FARE;
+    } else {
+        fare = 50;
+    }
     
     // Both users' budgets must cover the estimated fare
     if (fare > u.budget || fare > c.budget)
@@ -267,6 +301,18 @@ inline bool evaluateMatch(const User &u, const User &c, match_class &m) {
     m.estimatedFare = fare;
     m.matchType = type;
     return true;
+}
+
+inline bool isSameGender(const string& g1, const string& g2) {
+    string a = toLower(g1);
+    string b = toLower(g2);
+    while (!a.empty() && (a.back() == ' ' || a.back() == '\t' || a.back() == '\r' || a.back() == '\n')) a.pop_back();
+    while (!b.empty() && (b.back() == ' ' || b.back() == '\t' || b.back() == '\r' || b.back() == '\n')) b.pop_back();
+    while (!a.empty() && (a.front() == ' ' || a.front() == '\t')) a.erase(a.begin());
+    while (!b.empty() && (b.front() == ' ' || b.front() == '\t')) b.erase(b.begin());
+
+    if (a.empty() || b.empty()) return false;
+    return a == b;
 }
 
 inline MatchQueue matchRides(const User& user, const vector<User>& candidates) {
@@ -288,10 +334,10 @@ inline MatchQueue matchRides(const User& user, const vector<User>& candidates) {
         if (diff > MAX_TIME_DIFFERENCE)
             continue;
 
-        // Gender preference check: if either requests "Same", genders must match
-        bool uSame = (toLower(user.genderPreference) == "same" || toLower(user.genderPreference) == "same gender only");
-        bool cSame = (toLower(c.genderPreference) == "same" || toLower(c.genderPreference) == "same gender only");
-        if ((uSame || cSame) && !same(user.gender, c.gender))
+        // Gender preference check: if either requests "Same", genders must match exactly
+        bool uSame = (toLower(user.genderPreference) == "same" || toLower(user.genderPreference).find("same") != string::npos);
+        bool cSame = (toLower(c.genderPreference) == "same" || toLower(c.genderPreference).find("same") != string::npos);
+        if ((uSame || cSame) && !isSameGender(user.gender, c.gender))
             continue;
 
         match_class result;

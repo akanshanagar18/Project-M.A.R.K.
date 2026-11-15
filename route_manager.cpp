@@ -99,8 +99,6 @@ bool RouteManager::loadLocationsFromCSV(const string& filename) {
     }
 
     file.close();
-    cout << "[RouteManager] Loaded " << locations.size() << " verified NCR locations from " << filename << endl;
-
     return true;
 }
 
@@ -160,8 +158,6 @@ bool RouteManager::loadRoadNetworkCSV(const string& filename) {
         } catch (...) {}
     }
 
-    cout << "[RouteManager] Loaded " << loadedSegments << " OSM road segments, "
-         << roadNodeCoordinates.size() << " road nodes from " << filename << endl;
     return loadedSegments > 0 && roadAdjacency.size() > 0;
 }
 

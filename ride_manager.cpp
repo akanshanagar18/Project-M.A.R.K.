@@ -19,13 +19,10 @@ void Ride_Manager::add_ride_req(int user_id, string initial_dest, string final_d
     action.type = BOOK;
     action.req = new_req;
     undo_stack.push(action);
-
-    cout << "Ride request added successfully" << endl << " RIDE Request ID: " << new_req.id << endl;
 }
 
 void Ride_Manager::process_nextride(double fare) {
     if (pending_queue.empty()) {
-        cout << "No pending ride requests to process." << endl;
         return;
     }
 
@@ -48,13 +45,10 @@ void Ride_Manager::process_nextride(double fare) {
     action.type = COMPLETE;
     action.rec = record;
     undo_stack.push(action);
-
-    cout << "Ride processed successfully! Ride ID: " << record.id << endl;
 }
 
 bool Ride_Manager::undo(RideAction* undoneAction) {
     if (undo_stack.empty()) {
-        cout << "no ride to undo." << endl;
         return false;
     }
     
@@ -81,7 +75,6 @@ bool Ride_Manager::undo(RideAction* undoneAction) {
         pending_queue = temp_queue;
 
         if (found) {
-            cout << "RIDE CANCELLED , request ID " << target_id << endl;
             return true;
         }
     } 
@@ -90,7 +83,6 @@ bool Ride_Manager::undo(RideAction* undoneAction) {
         for (auto it = ride_history.begin(); it != ride_history.end(); ++it) {
             if (it->id == target_id) {
                 ride_history.erase(it);
-                cout << "RIDE CANCELLED , completed ride record ID " << target_id << endl;
                 return true;
             }
         }
